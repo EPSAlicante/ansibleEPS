@@ -1,0 +1,19 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Restarts 
+
+- name: restart bacula-dir 
+  #service: name={{ path.daemons.bacula-dir }} state=restarted enabled=yes
+  # Falla el restart en la Debian Etch, por eso llamo directamente al comando
+  shell: "{{ path.daemons['bacula-dir'] }} restart"
+
+- name: restart bacula-sd
+  #service: name={{ path.daemons.bacula-sd }} state=restarted enabled=yes
+  # Falla el restart en la Debian Etch, por eso llamo directamente al comando
+  shell: "{{ path.daemons['bacula-sd'] }} restart"

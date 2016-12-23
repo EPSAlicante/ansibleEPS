@@ -1,0 +1,107 @@
+######################################################
+                      F.A.Q.
+######################################################
+
+
+(0) Prerequisites of Control server
+(1) Preparing a Linux/Unix host to be a 'node'
+(2) What changes make Ansible server in a node?
+(3) Adding a new Operating System or Version 
+(4) Adding new package managers 
+(5) Exclude nodes of playbooks executions 
+(6) Can we modify Ansible timeout (connection time)?
+(7) How to know if a file has been modified by Control Server?
+
+
+######################################################
+
+
+(0) Prerequisites of Control server
+
+    Control server has to be a CentOS 6 with python 2.6 installed. It needs ssh connection to all nodes and environment variable LANG with UTF8.
+
+
+(1) Preparing a Linux/Unix host to be a 'node'
+
+    If we want a host becomes a node, we have to check and probably made some changes inside:
+
+    * SSH server listenning and permitting Control servers' connections
+
+    * Python 2.X: if python is lower than 2.6 we have to install simplejson package
+
+    * Be sure that host is able to connect to repositories and install software
+
+    * Set the environment variable LANG to UTF8
+
+
+    Then, we can transform host in a new node, using option 'a Add node' of menu '/etc/ansibleEPS/menu.py'
+
+    ** Remember that 'node' has to be introduced manually in inventory file **
+
+
+(2) What changes make Ansible server in a node?
+
+    * Bash and sudo will be installed
+
+    * A new user will be created (user used to connect to nodes and execute jobs inside)
+
+    * Created user will be configured to access from Ansible server without password
+
+    * Sudo will be configured to permit user (created user) execute everything
+
+    * And, of course, every change made by playbooks executed
+
+
+(3) Adding a new Operating System or Version 
+
+    System is ready to work with next Operating System (all of them with 'yum' or 'apt' package manager):
+
+    * CentOS 6
+
+    * Debian 4
+
+    * Debian 6
+
+    * Debian 7
+
+    * Debian 8
+
+    * Ubuntu 14
+
+    These files includes specific variables for a version of a Operating System. For example: specific users, repositories, speci fic software, specific config files, etc.
+
+    Adding a new Operating System and Version (based on 'yum' or 'apt' package manager) is very simple: just create a new file in  '/etc/ansibleEPS/group_vars/' directory with name 'OperatingSystem-Version' and fill file with variables and specific values  (easier copying other similar file and modify valiues that change from a file to other).
+
+      Ex: To prepare system for RedHat 7 nodes, we can copy 'CentOS-6' file (the most similar) to 'RedHat-7', verifying values an d changing if necessary.
+
+
+(4) Adding new package managers
+
+    Most of playbook need to install specific software in nodes. By default playbooks works with 'yum' and 'apt' package managers . To add new package managers, its necessary to modify playbooks code.
+
+    It's not a simple job, but we can watch code for every playbook for a 'installation' task (for example 'yum' modules tasks) and add a new task with new 'module package manager'.
+
+
+(5) Exclude nodes of playbooks executions 
+
+    Sometimes we want to exclude a host (or a list of hosts) of a playbook execution. Every playbook has a line to define hosts. 
+    For example, in 'sudo' playbook there is a line as: 
+
+    hosts: all:!nosudo
+
+    It means that playbook will be executed in all nodes except nodes that belong to 'nosudo' group.
+
+    So, if we want to exclude a node of 'sudo' playbook execution, we'll put node in 'nosudo' group at inventory file.
+
+
+(6) Can we modify Ansible timeout (connection time)?
+
+     Sometimes netload is high and Ansible's errors are produced tryng to connect to nodes. We can increase SSH timeout (just for Ansible software) modifying value of 'timeout' variable in 'ansible.cfg' file.
+
+
+(7) How to know if a file has been modified by Control Server?
+
+    Every file modified by Control Server begins with a comment 'Made by AnsibleEPS'
+
+
+######################################################

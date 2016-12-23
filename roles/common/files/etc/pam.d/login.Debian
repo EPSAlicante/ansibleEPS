@@ -1,0 +1,21 @@
+# Made by AnsibleEPS
+
+auth       required   pam_issue.so issue=/etc/issue
+auth       requisite  pam_securetty.so
+auth       requisite  pam_nologin.so
+auth    sufficient      pam_unix.so debug likeauth nullok shadow
+auth    sufficient      pam_ldap.so use_first_pass
+auth    required        pam_deny.so
+account    sufficient   pam_access.so
+account    sufficient   pam_ldap.so
+account         required        pam_deny.so
+session    required   pam_unix.so
+session    optional     pam_ldap.so
+session    optional   pam_lastlog.so
+session    optional   pam_motd.so
+session    optional   pam_mail.so standard noenv
+session optional pam_mkhomedir.so skel=/etc/skel umask=0077
+session required   pam_tmpdir.so
+password sufficient     pam_unix.so use_authtok nullok md5 shadow
+password sufficient     pam_ldap.so use_authtok
+password required       pam_deny.so

@@ -1,0 +1,210 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+########## Nagios ({{ item }}) ##########
+
+define host{
+        host_name       {{ item }}
+        alias           {{ item }}
+        address         {{ item }}.{{ domain }}
+{% set printUseHost = {'value': True} -%}
+{% set printCheckHost = {'value': True} -%}
+{# Host block -#}
+{% if nagiosHost is defined -%}
+{%  set nextFor = {'value': True} -%}
+{%  for nHost in nagiosHost if item == nHost and nextFor -%}
+{%   set nextFor = {'value': False} -%}
+{%   if nHost.useHost is defined %}
+	use		{{ nHost.useHost }}
+{%    if printUseHost.update({'value': False}) -%}{% endif -%}
+{%   endif -%}
+{%   if nHost.checkHost is defined %}
+        check_command	{{ nHost.checkHost }}
+{%    if printCheckHost.update({'value': False}) -%}{% endif -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{% if printUseHost.value or printCheckHost.value -%}
+{#  Group block -#}
+{%  if nagiosGroup is defined -%}
+{%   for nGroup in nagiosGroup if nGroup.group in groups and item in groups[nGroup.group] -%}
+{%    if printUseHost.value and nGroup.useHost is defined %}
+        use             {{ nGroup.useHost }}
+{%     if printUseHost.update({'value': False}) -%}{% endif -%}
+{%    endif -%}
+{%    if printCheckHost.value and nGroup.checkHost is defined %}
+        check_command	{{ nGroup.checkHost }}
+{%     if printCheckHost.update({'value': False}) -%}{% endif -%}
+{%    endif -%}
+{%   endfor %}
+{%  endif -%}
+{% endif -%}
+{% if printUseHost.value or printCheckHost.value -%}
+{#  Global block -#}
+{%  if nagiosGlobal is defined -%}
+{%   if printUseHost.value %}
+        use		generic-host 
+{%   endif -%}
+{%   if printCheckHost.value %}
+        check_command	check-host-alive 
+{%   endif -%}
+{%  endif -%}
+{% endif %}
+}
+
+
+{##### Services #####}
+{# Global block -#}
+{% if nagiosGlobal is defined -%}
+{%  for check in nagiosGlobal -%}
+{%   set printCheck = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if nagiosGroup is defined -%}
+{%    for nGroup in nagiosGroup if nGroup.group in groups and item in groups[nGroup.group] and nGroup.checks is defined -%}
+{%     set nextFor = {'value': True} -%}
+{%     for gCheck in nGroup.checks if gCheck.label == check.label and nextFor -%}
+{%      set nextFor = {'value': False} -%}
+{%      if printCheck.update({'value': False}) -%}{% endif -%}
+{%     endfor -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printCheck.value -%}
+{%    if nagiosHost is defined -%}
+{%     set nextFor = {'value': True} -%}
+{%     for nHost in nagiosHost if nHost.host == item and nHost.checks is defined and nextFor -%}
+{%      set nextFor = {'value': False} -%}
+{%      set nextFor2 = {'value': True} -%}
+{%      for hCheck in nHost.checks if hCheck.label == check.label and nextFor2 -%}
+{%       set nextFor2 = {'value': False} -%}
+{%       if printCheck.update({'value': False}) -%}{% endif -%}
+{%      endfor -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printCheck.value and check.service is defined -%}
+{%    set nextFor = {'value': True} -%}
+{%    for srv in nagiosServices if srv.name == check.service and nextFor -%}
+{%     set nextFor = {'value': False} -%}
+### {{ check.service }} (global) ###
+define service {
+	host_name		{{ item }}	
+	service_description	{{ check.service }}
+{%     if check.command is defined %}
+        check_command		{{ check.command|replace("hostname",item + "." + domain) }}
+{%     else %}
+	check_command		{{ srv.command|replace("hostname",item + "." + domain) }}
+{%     endif -%}
+{%     if check.handler is defined %}
+        event_handler           {{ check.handler }}
+{%     elif srv.handler is defined %}
+	event_handler		{{ srv.handler }}
+{%     endif -%}
+{%     if check.use is defined %}
+        use                     {{ check.use }}
+{%     elif srv.use is defined %}
+        use			{{ srv.use }}
+{%     else %}
+	use			generic-service
+{%     endif -%}
+}
+
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if nagiosGroup is defined -%}
+{%  for nGroup in nagiosGroup if nGroup.group in groups and item in groups[nGroup.group] and nGroup.checks is defined -%}
+{%   for gCheck in nGroup.checks -%}
+{%    set printCheck = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%    if nagiosHost is defined -%}
+{%     set nextFor = {'value': True} -%}
+{%     for nHost in nagiosHost if nHost.host == item and nHost.checks is defined and nextFor -%}
+{%      set nextFor = {'value': False} -%}
+{%      set nextFor2 = {'value': True} -%}
+{%      for hCheck in nHost.checks if hCheck.label == gCheck.label and nextFor2 -%}
+{%       set nextFor2 = {'value': False} -%}
+{%       if printCheck.update({'value': False}) -%}{% endif -%}
+{%      endfor -%}
+{%     endfor %}
+{%    endif -%}
+{# Print label -#}
+{%    if printCheck.value and gCheck.service is defined -%}
+{%     set nextFor = {'value': True} -%}
+{%     for srv in nagiosServices if srv.name == gCheck.service and nextFor -%}
+{%      set nextFor = {'value': False} -%}
+### {{ gCheck.service }} (group: {{ nGroup.group }}) ###
+define service {
+        host_name               {{ item }}
+        service_description     {{ gCheck.service }}
+{%      if gCheck.command is defined %}
+        check_command           {{ gCheck.command|replace("hostname",item + "." + domain) }}
+{%      else %}
+        check_command           {{ srv.command|replace("hostname",item + "." + domain) }}
+{%      endif -%}
+{%      if gCheck.handler is defined %}
+        event_handler           {{ gCheck.handler }}
+{%      elif srv.handler is defined %}
+        event_handler           {{ srv.handler }}
+{%      endif -%}
+{%      if gCheck.use is defined %}
+        use                     {{ gCheck.use }}
+{%      elif srv.use is defined %}
+        use                     {{ srv.use }}
+{%      else %}
+	use			generic-service
+{%      endif -%} 
+}
+
+{%     endfor -%}
+{%    endif -%}
+{%   endfor -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if nagiosHost is defined -%}
+{%  set nextFor = {'value': True} -%}
+{%  for nHost in nagiosHost if nHost.host == item and nHost.checks is defined and nextFor -%}
+{%   set nextFor = {'value': False} -%}
+{%   for hCheck in nHost.checks if hCheck.service is defined -%}
+{# Print label -#}
+{%    set nextFor2 = {'value': True} -%}
+{%    for srv in nagiosServices if srv.name == hCheck.service and nextFor2 -%}
+{%     set nextFor2 = {'value': False} -%}
+### {{ hCheck.service }} (host: {{ nHost.host }}) ###
+define service {
+        host_name               {{ item }}
+        service_description     {{ hCheck.service }}
+{%     if hCheck.command is defined %}
+        check_command           {{ hCheck.command|replace("hostname",item + "." + domain) }}
+{%     else %}
+        check_command           {{ srv.command|replace("hostname",item + "." + domain) }}
+{%     endif -%}
+{%     if hCheck.handler is defined %}
+        event_handler           {{ hCheck.handler }}
+{%     elif srv.handler is defined %}
+        event_handler           {{ srv.handler }}
+{%     endif -%}
+{%     if hCheck.use is defined %}
+        use                     {{ hCheck.use }}
+{%     elif srv.use is defined %}
+        use                     {{ srv.use }}
+{%     else %}
+	use			generic-service
+{%     endif -%}
+}
+
+{%    endfor -%}
+{%   endfor -%}
+{%  endfor %}
+{% endif %}
+

@@ -1,0 +1,107 @@
+*** BACULAADMON PlayBook ***
+ 
+BaculaAdmon playbook 'baculaAdmon.yml' is able to manage bacula service configuration (backups of servers files) for all servers running bacula service, in a centralized way. Playbook can update changes at once for all bacula servers, but It can also update just one with '--limit serverName' parameter. It checks config files syntax before restart service with updates. In case of syntax error, it undoes updates and doesn't restart service. 
+
+Updates are copied to server by a template located in 'roles/baculaAdmon/templates/etc/bacula/bacula-dir.conf.Centos.j2'. This template is the Bacula Director config file for all servers. But every job are generated automatically by a number of global variables: 'baculaAdmonFilesets', 'baculaAdmonGlobal', 'baculaAdmonGroup' and 'baculaAdmonHost'. Template's variables modifies file, customizing for every server.
+
+Variables are defined by default in 'group_vars/all/baculaAdmon' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook baculaAdmon.yml'
+
+Scope: Playbook will update all server of 'baculaAdmon' group (in inventory)
+
+Templates: 
+
+  * 'roles/baculaAdmon/templates/etc/bacula/bacula-dir.conf.j2' 
+
+  * 'roles/baculaAdmon/templates/etc/bacula/bacula-sd.conf.j2' 
+
+Variables: 
+
+  * 'baculaAdmonFilesets' -> Fileset configuration in bacula-dir.conf file. This variable is a list with the following atributes:
+
+    - compression: Kind of compression used in Fileset (string format). This is an optional attibute. 'GZIP' by default value if not included.
+
+    - signature: Kind of signature used in Fileset (string format). This is an optional attribute. 'MD5' by default value if not included.
+
+    - name: Fileset name used by other variables to run backup jobs
+
+    - includes: Fileset included directories List
+
+    - excludes: Fileset excluded directories List (they should be a 'includes list' subset). This is an optional attribute. No excludes by default 
+
+
+    Example:
+
+      baculaAdmonFilesets:
+      - name: "etc"
+        includes: [ "/etc" ]
+
+
+  * 'baculaAdmonGlobal' -> Clients and jobs configuration in bacula-dir.conf file for all servers. This variable is a list with the following atributes:
+
+    - label: This is the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
+
+    - fileset: Fileset name ('name' attribute of 'baculaAdmonFileset' variable) used to backup jobs (string format)
+
+    Both attributes are required. If any of them are not defined, this item will be ignored.
+
+
+    Example:
+
+      baculaAdmonGlobal:
+      - label: "etc"
+        fileset: "etc"
+
+
+  * 'baculaAdmonGroup' -> Clients and jobs configuration for a specific group. It has two attributes:
+
+    - group: Group name (in inventory)
+  
+    - backup: A list of backup jobs to apply, with the same attributes and meaning than 'baculaAdmonGlobal' variable (label and fileset)
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global items) will be added to config file after global items. 
+    
+    
+    Example:
+
+      baculaAdmonGroup:
+      - group: mysql
+        backup:
+        - label: "root.scripts"
+          fileset: "root.scripts"
+
+
+  * 'baculaAdmonHost' -> Clients and jobs configuration for a specific server. It has two attributes:
+
+    - host: Server name (in inventory)
+
+    - backup: A list of backup jobs to apply, with the same attributes and meaning than 'baculaAdmonGlobal' variable (label and fileset)
+
+      At this point, we can delete or overwrite global or groups items, this way:
+
+        * Overwrite global or groups items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global and groups items) will be added to config file after global and groups items.
+
+
+    Example:
+
+      baculaAdmonHost:
+      - host: version
+        backup:
+        - label: "svn"
+          fileset: "svn"
+
+

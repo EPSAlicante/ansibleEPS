@@ -1,0 +1,57 @@
+# /etc/hosts
+#
+# Variables to generate /etc/hosts file
+#
+# hostsFileGlobal: (List of global NRPE rules)
+# ...
+#
+# hostsFileGroup:
+# - group: value (group name)
+#   rules: (List of rules by group)
+#   ...
+#
+# hostsFileHost:
+# - host: value (host name)
+#   rules: (List of rules by host)
+#   ...
+#
+# Rules definition (syntax)
+# -------------------------
+# label: value --> name used as cooment and used too as key to be called from other variables (required attribute)
+# host: value --> host name (required attribute)
+# IP: value --> IP address (optional attribute, 'DNS value of host' by default)
+# fqdn: value --> fully qualified domain name (optional attribute, 'host name + domain' by default)
+# extra: value --> extra text with more alias (optional attribute)
+#
+# 'hostname' value in 'host' attribute will be changed by 'inventory_hostname' (ansible variable)
+#
+
+hostsFileGlobal:
+- label: Localhost
+  host: localhost
+  fqdn: localhost.localdomain
+  IP: 127.0.0.1
+- label: IP local
+  host: hostname
+- label: server_13 P1 LDAP
+  host: server_13
+- label: server_23 P2 LDAP
+  host: server_23
+- label: server_33 P3 LDAP
+  host: server_33
+
+hostsFileGroup:
+- group: proxmox
+  rules:
+  - label: IP local
+    host: hostname
+    extra: pvelocalhost
+  - label: server_14 Proxmox
+    host: server_14
+  - label: server_24 Proxmox
+    host: server_24
+  - label: server_34 P3 LDAP
+    host: server_34
+
+hostsFileHost:
+

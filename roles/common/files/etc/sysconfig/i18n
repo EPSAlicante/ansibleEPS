@@ -1,0 +1,5 @@
+# Made by AnsibleEPS
+
+#LANG="es_ES@euro"
+LANG="es_ES.UTF-8"
+SYSFONT="latarcyrheb-sun16"

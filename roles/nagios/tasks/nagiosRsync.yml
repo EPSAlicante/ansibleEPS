@@ -1,0 +1,56 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Nagios3 configuration
+
+- name: Rsync /etc/nagios3 files
+  local_action: shell rsync -ai --exclude 'conf.d' --delete --force {{ pathAnsible }}/roles/nagios/files/etc/nagios3/ {{ inventory_hostname }}:/etc/nagios3/
+  register: rsyncNagios3
+  changed_when: rsyncNagios3.stdout != ""
+
+- debug: msg="{{ rsyncNagios3.stdout }}"
+
+- name: Rsync /tmp/nagios3-conf.d files
+  local_action: shell rsync -rlpgoDi --size-only --checksum --delete --force /tmp/nagios3-conf.d/ {{ inventory_hostname }}:/etc/nagios3/conf.d/
+  register: rsyncNagios3Confd
+  changed_when: rsyncNagios3Confd.stdout != ""
+
+- debug: msg="{{ rsyncNagios3Confd.stdout }}"
+
+- name: Rsync /etc/nagios-plugins/config files
+  local_action: shell rsync -ai --delete --force {{ pathAnsible }}/roles/nagios/files/etc/nagios-plugins/config/ {{ inventory_hostname }}:/etc/nagios-plugins/config/
+  register: rsyncNagiosConfig
+  changed_when: rsyncNagiosConfig.stdout != ""
+
+- debug: msg="{{ rsyncNagiosConfig.stdout }}"
+
+- name: Rsync /usr/share/nagios3/plugins files
+  local_action: shell rsync -ai --delete --force {{ pathAnsible }}/roles/nagios/files/usr/share/nagios3/plugins/ {{ inventory_hostname }}:/usr/share/nagios3/plugins/
+  register: rsyncPlugins
+  changed_when: rsyncPlugins.stdout != ""
+
+- debug: msg="{{ rsyncPlugins.stdout }}"
+
+- name: Check syntax
+  shell: "{{ path.commands.nagios }} -v /etc/nagios3/nagios.cfg executable='/bin/bash'"
+  when: rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons.nagios }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.nagios|default("") != ""
+
+- name: Reload nagios
+  service: name={{ serviceName.stdout }} state=reloaded enabled=yes
+  when: rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout
+
+- name: Be sure nagios is running and enabled
+  service: name={{ serviceName.stdout }} state=started enabled=true
+  when: rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout

@@ -1,0 +1,109 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Proxmox node configuration
+
+- name: Delete subscription message 
+  copy: src=usr/share/pve-manager/ext4/pvemanagerlib.js dest=/usr/share/pve-manager/ext4/pvemanagerlib.js owner=www-data group=www-data mode=0644
+  when: "'proxmox' in group_names and ansible_os_family == 'Debian' and ansible_distribution_major_version == '7'"
+
+- name: Modify Migrate Script 
+  copy: src=usr/share/perl5/PVE/OpenVZMigrate.pm dest=/usr/share/perl5/PVE/OpenVZMigrate.pm owner=root group=root mode=0644
+  when: "'proxmox' in group_names"
+
+- name: Add ipt_state to IPTABLES variable in /etc/vz/vz.conf 
+  lineinfile: name=/etc/vz/vz.conf state=present regexp="^IPTABLES=" line='IPTABLES="ipt_REJECT ipt_tos ipt_limit ipt_multiport iptable_filter iptable_mangle iptable_nat ipt_TCPMSS ipt_tcpmss ipt_ttl ipt_length ipt_state"'
+  when: "'proxmox' in group_names"
+
+- name: Check and load ipt_state module 
+  shell: ((grep '^state$' /proc/net/ip_tables_matches > /dev/null) && (echo "Loaded")) || (modprobe ipt_state && echo "Changed")
+  register: stateLoaded
+  changed_when: stateLoaded.stdout == "Changed"  
+  when: "'proxmox' in group_names"
+
+- name: Change /var/lib/vz permissions
+  file: path=/var/lib/vz owner=root group=root mode=0700 state=directory
+  when: "'proxmox' in group_names"
+
+- name: Create /root/scripts directory
+  file: path=/root/scripts owner=root group=root mode=0750 state=directory
+  when: "'proxmox' in group_names"
+
+- name: Create /backup directory
+  file: path=/backup owner=root group=root mode=0755 state=directory
+  when: "'proxmox' in group_names"
+
+- name: Create /foto directory
+  file: path=/foto owner=root group=root mode=0755 state=directory
+  when: "'proxmox' in group_names"
+
+- name: Create /var/log/rsync directory
+  file: path=/var/log/rsync owner=root group=root mode=0755 state=directory
+  when: "'proxmox' in group_names"
+
+- name: Enlazar /root/scripts/log -> /var/log/rsync
+  file: path=/root/scripts/log state=link src=/var/log/rsync force=yes
+  when: "'proxmox' in group_names"
+
+- name: Enlazar /root/scripts/backup -> /backup
+  file: path=/root/scripts/backup state=link src=/backup force=yes
+  when: "'proxmox' in group_names"
+
+- name: Copy script rsyncLocal.sh
+  template: src=root/scripts/rsyncLocal.sh.j2 dest=/root/scripts/rsyncLocal.sh owner=root group=root mode=0750
+  when: "'proxmox' in group_names"
+
+- name: Add Backup Disk to /etc/fstab 
+  lineinfile: name=/etc/fstab state=present regexp="^{{ backupDisk }}" line='{{ backupDisk }} /backup xfs rw,noatime 0 0'
+  when: "'proxmox' in group_names"
+
+- name: Mount Backup Disk in /backup 
+  shell: (mount|grep ' /backup ' >/dev/null && echo "No") || mount /backup >/dev/null && echo "Changed"
+  register: mountBackup
+  changed_when: mountBackup.stdout == "Changed" 
+  when: "'proxmox' in group_names"
+
+- name: Create /backup/rsync directory
+  file: path=/backup/rsync owner=root group=root mode=0700 state=directory
+  when: "'proxmox' in group_names"
+
+- name: Create user rsync
+  user: name=rsync comment="Rsync user" home="/home/rsync"
+  when: "'proxmox' in group_names"
+
+- name: Permission 0770 /home/rsync
+  file: path=/home/rsync mode=0700 state=directory
+  when: "'proxmox' in group_names"
+   
+- name: Get public keys (in Backup Servers)
+  shell: cat /root/.ssh/id_rsa.pub
+  delegate_to: "{{ item }}"
+  register: publicKeys
+  with_items: "{{ backupServers }}"
+  changed_when: False
+  when: "'proxmox' in group_names"
+
+- name: Rsync authorized key
+  authorized_key: user=rsync key="{{ item.stdout }}"
+  with_items: "{{ publicKeys.results }}"
+  when: "'proxmox' in group_names"
+
+- name: Get IPs (Backup Servers)
+  shell: host {{ item }}|cut -d' ' -f4
+  with_items: "{{ backupServers }}"
+  register: backupServersIP
+  changed_when: False
+  when: "'proxmox' in group_names"
+
+- name: SSH access permission 
+  shell: "(! (cat /etc/hosts.allow|grep -i 'sshd'|grep {{ item.stdout }}) >/dev/null && echo \"sshd: {{ item.stdout }}\" >> /etc/hosts.allow && echo 'Changed') || echo 'No' executable='/bin/bash'"
+  with_items: "{{ backupServersIP.results }}"
+  register: sshAccess
+  changed_when: sshAccess.stdout == "Changed"
+  when: "'proxmox' in group_names"
+

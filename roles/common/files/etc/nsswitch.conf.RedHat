@@ -1,0 +1,24 @@
+# Made by AnsibleEPS
+
+passwd:     files ldap
+shadow:     files ldap
+group:      files ldap
+
+hosts:      files dns
+
+bootparams: nisplus [NOTFOUND=return] files
+
+ethers:     files
+netmasks:   files
+networks:   files
+protocols:  files
+rpc:        files
+services:   files
+
+netgroup:   ldap
+
+publickey:  nisplus
+
+automount:  files ldap
+aliases:    files nisplus
+

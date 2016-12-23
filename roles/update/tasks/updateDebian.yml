@@ -1,0 +1,26 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Debian (apt package manager) Update 
+
+- name: Checking python-apt package 
+  shell: dpkg -l|grep python-apt|wc -l
+  register: pythonApt 
+  changed_when: False 
+
+# Using 'when' inside a task make no-effects other outsider 'whens'
+- name: Install python-apt package
+  shell: apt-get -y install python-apt
+  when: ansible_pkg_mgr == "apt" and pythonApt.stdout == '0' 
+
+- name: Debian update
+  apt: update_cache=yes
+
+- name: Debian upgrade
+  apt: upgrade=full
+

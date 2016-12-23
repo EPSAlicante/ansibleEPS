@@ -1,0 +1,16 @@
+*** DHCP PlayBook ***
+
+DHCP playbook 'dhcp.yml' is able to manage DHCP service configuration for all servers running DHCP service, in a centralized way. Playbook can update changes at once for all DHCP servers, but It can also update just one with '--limit serverName' parameter.  It checks config files syntax before restart service with updates. In case of syntax error, it undoes updates and doesn't restart service.
+
+Updates are made modifying static files (in 'roles/dhcp/files/etc/dhcpd/' directory), because all DHCP files are identical for all DHCP servers.
+
+In that directory there are a DHCP config file for every building: dhcpd-P1.conf, dhcpd-P2.conf, dhcpd-P4.conf, dhcpd-TV.conf, dhcpd-Elec.conf
+
+
+Command-line execution: 'ansible-playbook dhcp.yml'
+
+Scope: Playbook will update all dhcp servers.
+
+Files: 'roles/dhcp/files/etc/dhcpd/*'
+
+

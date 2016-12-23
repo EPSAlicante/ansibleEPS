@@ -1,0 +1,118 @@
+#!/bin/bash
+
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+STATE_DEPENDENT=4
+blank=""
+usage1="Usage: $0 -H <host> -u <ups> -v <variable> -w <warn> -c <crit>"
+exitstatus=$STATE_WARNING #default
+if [ -z $1 ]; then
+    echo $usage1;
+    exit $STATE_UNKNOWN;
+fi
+while test -n "$1"; do
+    case "$1" in
+        -c)
+            crit=$2
+            shift
+            ;;
+        -w)
+            warn=$2
+            shift
+            ;;
+        -u)
+            ups=$2
+            shift
+            ;;
+        -v)
+            variable=$2
+            shift
+            ;;
+        -h)
+            echo $usage1;
+            echo
+            exit $STATE_UNKNOWN
+            ;;
+        -H)
+            host=$2
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            echo $usage1;
+            echo
+            exit $STATE_UNKNOWN
+            ;;
+    esac
+    shift
+done
+
+#Faltan parametros
+if [ -z $host ] || [ -z $ups ] || [ -z $variable ] || [ -z $warn ] || [ -z $crit ]; then
+    echo "Faltan parametros";
+    echo "$usage1";
+    exit $STATE_UNKNOWN
+fi
+#warning y critical iguales
+if [ $crit -eq $warn ]; then
+    echo "Warning y Critical deben ser diferentes";
+    echo "$usage1";
+    exit $STATE_UNKNOWN
+fi
+
+value=`/bin/upsc $ups@$host $variable`
+
+salida="$ups@$host - $variable = $value"
+
+#conversion to integer
+value=${value/\.*}
+
+# if blank, warning
+if [ -z $value ]; then
+        echo "SAI WARNING: $salida";
+        exit $STATE_WARNING;
+fi
+
+# if critical<warning
+if [ $crit -lt $warn ]; then
+    #c<value<=W
+    if [ $value -gt $crit ]; then
+        if [ $value -le $warn ]; then
+                echo "SAI WARNING: $salida";
+                exit $STATE_WARNING;
+        fi
+    fi
+    # value<=critical
+    if [ $value -le $crit ]; then
+        echo "SAI CRITICAL: $salida";
+        exit $STATE_CRITICAL;
+    fi
+
+    # value>warning
+    if [ $value -gt $warn ]; then
+        echo "SAI OK: $salida";
+        exit $STATE_OK;
+    fi
+else
+    #w<=value<C
+    if [ $value -ge $warn ]; then
+        if [ $value -lt $crit ]; then
+                echo "SAI WARNING: $salida";
+                exit $STATE_WARNING;
+        fi
+    fi
+    # value>=critical
+    if [ $value -ge $crit ]; then
+        echo "SAI CRITICAL: $salida";
+        exit $STATE_CRITICAL;
+    fi
+
+    # value<warning
+    if [ $value -lt $warn ]; then
+        echo "SAI OK: $salida";
+        exit $STATE_OK;
+    fi
+fi
+

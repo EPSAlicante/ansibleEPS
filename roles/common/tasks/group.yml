@@ -1,0 +1,75 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# /etc/group configuration
+
+- name: Be sure group administradores exists
+  group: name=administradores gid=600 state=present
+
+- name: Be sure group tecnicos exists
+  group: name=tecnicos gid=606 state=present
+
+- name: Add users to group root
+  shell: (((grep "^root:" /etc/group|grep -v "\(:\|,\){{item}}\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^root:" /etc/group)@$(grep "^root:" /etc/group)$(grep "^root:" /etc/group|grep -v ":$" >>/dev/null && echo ","){{item}}@g" /etc/group)) && echo "Changed") || echo "No" executable="/bin/bash" 
+  register: rootUsers
+  changed_when: rootUsers.stdout == "Changed"
+  with_items: "{{ groupRoot }}"
+
+- name: Add users to group manager 
+  shell: (( [ "{{item}}" != "manager" ] && (grep "^manager:" /etc/group|grep -v "\(:\|,\){{item}}\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^manager:" /etc/group)@$(grep "^manager:" /etc/group)$(grep "^manager:" /etc/group|grep -v ":$" >>/dev/null && echo ","){{item}}@g" /etc/group)) && echo "Changed") || echo "No" executable="/bin/bash"
+  register: managerUsers
+  changed_when: managerUsers.stdout == "Changed"
+  with_items: "{{ groupAdmin }}"
+
+- name: Check if wheel group exists
+  shell: grep "^wheel:" /etc/group| wc -l
+  register: wheelGroup
+  changed_when: False
+
+- name: Add users to group wheel (if exists) 
+  shell: (((grep "^wheel:" /etc/group|grep -v "\(:\|,\){{item}}\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^wheel:" /etc/group)@$(grep "^wheel:" /etc/group)$(grep "^wheel:" /etc/group|grep -v ":$" >>/dev/null && echo ","){{item}}@g" /etc/group)) && echo "Changed") || echo "No" executable="/bin/bash"
+  register: wheelUsers
+  changed_when: wheelUsers.stdout == "Changed"
+  with_items: "{{ groupRoot }}"
+  when: wheelGroup.stdout|int > 0
+
+- name: Check if adm group exists
+  shell: grep "^adm:" /etc/group| wc -l
+  register: admGroup
+  changed_when: False
+
+- name: Add users to group adm (if exists)
+  shell: (((grep "^adm:" /etc/group|grep -v "\(:\|,\){{item}}\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^adm:" /etc/group)@$(grep "^adm:" /etc/group)$(grep "^adm:" /etc/group|grep -v ":$" >>/dev/null && echo ","){{item}}@g" /etc/group)) && echo "Changed") || echo "No" executable="/bin/bash"
+  register: admUsers
+  changed_when: admUsers.stdout == "Changed"
+  with_items: "{{ groupAdmin }}"
+  when: admGroup.stdout|int > 0
+
+- name: Check if www-data group exists
+  shell: grep "^www-data:" /etc/group| wc -l
+  register: wwwdataGroup
+  changed_when: False
+
+- name: Add users to group www-data (if exists)
+  shell: (((grep "^www-data:" /etc/group|grep -v "\(:\|,\){{item}}\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^www-data:" /etc/group)@$(grep "^www-data:" /etc/group)$(grep "^www-data:" /etc/group|grep -v ":$" >>/dev/null && echo ","){{item}}@g" /etc/group)) && echo "Changed") || echo "No" executable="/bin/bash"
+  register: wwwdataUsers
+  changed_when: wwwdataUsers.stdout == "Changed"
+  with_items: "{{ groupAdmin }}"
+  when: wwwdataGroup.stdout|int > 0
+
+- name: Check if apache group exists
+  shell: grep "^apache:" /etc/group| wc -l
+  register: apacheGroup
+  changed_when: False
+
+- name: Add users to group apache (if exists)
+  shell: (((grep "^apache:" /etc/group|grep -v "\(:\|,\){{item}}\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^apache:" /etc/group)@$(grep "^apache:" /etc/group)$(grep "^apache:" /etc/group|grep -v ":$" >>/dev/null && echo ","){{item}}@g" /etc/group)) && echo "Changed") || echo "No" executable="/bin/bash"
+  register: apacheUsers
+  changed_when: apacheUsers.stdout == "Changed"
+  with_items: "{{ groupAdmin }}"
+  when: apacheGroup.stdout|int > 0
+

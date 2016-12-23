@@ -1,0 +1,212 @@
+*** SUDO PlayBook ***
+
+Sudo playbook 'sudo.yml' is able to manage '/etc/sudoers' file for all server (except those belonging to 'nosudo' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+
+Changes will be generated using some variables (through a template) to create '/etc/sudoers' file for every server.
+
+Variables are defined by default in 'group_vars/all/sudo' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook sudo.yml'
+
+Scope: Playbook will update all server except those belonging to 'nosudo' group.
+
+Templates: 'roles/sudo/templates/etc/sudoers.j2'
+
+Variables:
+
+    * 'sudoOptions' -> Default options for '/etc/sudoers' file
+
+      This variable is a list of items to define options in sudoers file. These options depend on Destibution and Version of Operating Systems, so they are defined in specific '/group_vars/files' as 'Centos-6', 'Debian-7', etc. 
+
+      Example
+
+        sudoOptions: 
+        - Defaults !visiblepw 
+        - Defaults always_set_home 
+        - Defaults env_reset 
+        - Defaults timestamp_timeout=5 
+        - Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+    * 'sudoGlobal' -> '/etc/sudoers' file configuración for all servers 
+
+      It's a variable with four attributes, each one per each main declaration in a sudoers file: 'users', 'commands' 'runas' and 'privilieges'. 
+
+      These attributes are list of items with atributes:
+
+	- users: Users alias definition
+
+          It's a list of attributes to define an user alias. Attributes are: name (alias name) and list (list of users names belonging to defined alias)
+
+          This is a required attribute, even beeing an empty list -> users: []
+
+        - commands: Commands alias definition
+
+	  It's a list with the same atribute than 'users': name (alias name) and list (commands list). 
+
+	  There are three options to define commands list:
+
+	    * Direct commands -> Commands will be written as they will be used in host using sudo. Useful when this command only exists in this host (a specific script, for example)
+
+	      Ex: /root/scripts/backup.sh all 
+
+	    * Indirect commands -> These commands are not written directly. Every Operating System could have diffeent names for the same command, so we use script 'scripts/path_facts.py' to get path and name of commands. This way, we use variables used by 'path_facts.py' as 'command.commandLabel' or 'daemon.daemonLabel' depending on we are using commands or daemons.
+
+	      If we need a command and daemon, and it doesn't exist in 'path_facts.py' script, first we'll have to add it to script to get path and name when script will be executed.
+
+	      Ex: command.umount ('umount' has to be written in 'path_facts.py' too)
+
+	    * Indirect commands with specific arguments -> Using an indirect command and specifics arguments written directly
+
+	      Ex: command.iptables -nvL ('iptables' has to be written in 'path_facts.py' too)
+
+	  This is a required attribute, even beeing an empty list -> commands: []
+
+        - runas: Runas users alias definition 
+
+	  It's a list with the same attribute than 'users' and 'commands': name (runas alias name) and list (list of users).
+
+	  This is an optional attribute
+
+
+        - privileges: Privileges definition depending on defined alias 
+
+	  It'a a list with four attributes to define privileges:
+ 
+	    * 'user' -> field with an alias users defined (or users name directly)
+
+	    * 'host' -> field with server with privileges. There's an exception to the rule: if value is set to 'hostname' string, playbook will update field with server name ('inventory_hostname' ansible variable).
+
+	    * 'command' -> field with an alias commands defined (or commands directly)
+
+	    * 'password' -> 'Yes' or 'No' dependig on sudo will ask for password or not
+
+
+	  This is a required attribute
+
+
+      Example:
+
+        sudoGlobal:
+         users:
+         - name: ROOT
+           list: [ admin, wwwadm ]
+         
+         - name: ADMIN
+           list: [ manager, admin, wwwadm ]
+         
+         - name: NAGIOS
+           list: [ nagios ]
+         
+         commands:
+         - name: ADMIN
+           list: [ command.shutdown, daemon.ssh, daemon.network, daemon.bacula-fd, daemon.syslog, daemon.nrpe, daemon.nscd, daemon.munin-node, daemon.ossec ]
+         
+         - name: NAGIOS
+           list: [ daemon.bacula-fd, daemon.nscd, daemon.munin-node, daemon.ossec, command.iptables-nL ]
+         
+         privileges:
+         - user: ROOT
+           host: hostname
+           command: ALL
+           password: Yes
+         
+         - user: ADMIN
+           host: hostname
+           command: ADMIN
+           password: No
+         
+         - user: NAGIOS
+           host: hostname
+           command: NAGIOS
+           password: No
+         
+         - user: ansible
+           host: hostname
+           command: ALL
+           password: No
+
+
+    * 'sudoGroup' -> '/etc/sudoers' file configuration for a specific group. It has five attributes:
+
+      - group: Group name (in inventory)
+
+      The rest ('users', 'commands', 'runas' and 'privileges') are the same list of attributes and meaning than 'sudoGlobal' variable
+
+      Defining these last four attributes (all of them are list of items), we have three options:
+
+        * Empty List (if it's a required attribute) -> In this case we don't need more items than we inherit from the same attribute on 'sudoGlobal' variable
+
+	* New items -> In this case we'll get items inherits from the same attribute on 'sudoGlobal' variable, adding these new items
+
+	* Overwrite items -> In this case we'll change values of items inherits from the same attribute on 'sudoGlobal' variable with new values
+
+
+      Example:
+
+        sudoGroup:
+	- group: qmail
+	  users:
+	  - name: GROUP_WWW_QMAIL
+	    list: [ www-data ]
+	
+	  commands:
+	  - name: GROUP_ADMIN_QMAIL
+	    list: [ daemon.apache, daemon.qmail, daemon.qmail-smtp-auth, daemon.dovecot, command.qmail-qstat ]
+	
+	  - name: GROUP_WWW_QMAIL
+	    list: [ command.quota -v * ]
+	
+	  privileges:
+	  - user: ADMIN, NAGIOS
+	    host: hostname
+	    command: GROUP_ADMIN_QMAIL
+	    password: No
+	
+	  - user: GROUP_WWW_QMAIL
+	    host: hostname
+	    command: GROUP_WWW_QMAIL
+        	    
+        - group: ...
+
+
+    * 'sudoHost' -> '/etc/sudoers' file configuration for a specific server. It has five attributes: 
+
+      - host: Server name (in inventory)
+
+      The rest ('users', 'commands', 'runas' and 'privileges') are the same list of attributes and meaning than 'sudoGlobal' and 'sudoGroup' variables
+
+      Defining these last four attributes (all of them are list of items), we have three options:
+
+        * Empty List (if it's a required attribute) -> In this case we don't need more items than we inherit from the same attribute on 'sudoGlobal' and 'sudoGroup' variables
+
+        * New items -> In this case we'll get items inherits from the same attribute on 'sudoGlobal' and 'sudoGroup' variables, adding these new items
+
+        * Overwrite items -> In this case we'll change values of items inherits from the same attribute on 'sudoGlobal' or 'sudoGroup' variables  with new values
+
+
+      Example:
+
+        sudoHost:
+	- host: ansible_server
+	  users:
+	  # ADMIN overwrited global value
+	  - name: ADMIN
+	    list: [ manager, admin, wwwadm ]
+	
+	  - name: HOST_DHCP
+	    list: [ manager, admin, wwwadm ]
+	
+	  commands:
+	  - name: HOST_DHCP
+	    list: [ 'command.ansible-playbook -i /etc/ansibleEPS/eps /etc/ansibleEPS/dhcp.yml -t ??', command.joe /etc/ansibleEPS/roles/dhcp/files/etc/dhcp/dhcpd-??.conf' ]
+	
+	  privileges:
+	  - user: HOST_DHCP
+	    host: hostname
+	    command: HOST_DHCP
+	    password: No
+
+	- host: ...
+

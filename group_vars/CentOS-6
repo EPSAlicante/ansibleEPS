@@ -1,0 +1,72 @@
+# Operating System
+#SO: Centos
+
+
+# Version
+#vSO: Centos6
+
+
+# Password of manager
+managerPassword: $6$CtIxb6i7$lOvaBvrBxdWcJKGXW9KVBWmwXHDA7nAebiQFwHsRH6eseoHjcDs/XLIkW1zWEgD8y4E5tswU9EoXfCI5Yxr3Q0
+
+
+# Groups with manager
+managerGroups: 
+- adm
+- wheel
+- www-data
+- apache
+
+
+# Centos Repositories (files)
+reposCentos:
+- base.repo
+- epel.repo
+- rpmforge.repo 
+
+
+# Exclude Packages (update)
+excludeUpdate:
+- perl-XML-SAX-Base
+
+
+# List of services to stop
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind-utils
+- lsof
+- traceroute
+- telnet
+- openssh-clients
+- man
+
+
+# Syslog conf file
+syslogConf: /etc/rsyslog.conf
+
+
+# Sudo Options
+sudoOptions:
+- Defaults !visiblepw
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+- Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron
+
+
+# Crontab Group file
+crontabGroupFile: root 

@@ -1,0 +1,27 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# locales configuration
+
+- name: Configure /etc/sysconfig/i18n file (Centos)
+  copy: src=etc/sysconfig/i18n dest=/etc/sysconfig/i18n owner=root group=root mode=0644
+  when: ansible_pkg_mgr == "RedHat"
+
+- name: Configure /etc/locale.gen file (Debian) 
+  copy: src=etc/locale.gen dest=/etc/locale.gen owner=root group=root mode=0644
+  register: localeCopy
+  when: ansible_pkg_mgr == "RedHat"
+
+- name: Generate locales (Debian)
+  command: /usr/sbin/locale-gen
+  when: ansible_pkg_mgr == "RedHat" and localeCopy|changed
+
+- name: Configure /etc/localtime
+  shell: (! (cmp -s /etc/localtime /usr/share/zoneinfo/Europe/Madrid) && /bin/cp /usr/share/zoneinfo/Europe/Madrid /etc/localtime && echo "Changed") || echo "No" executable="/bin/bash"
+  register: localtime
+  changed_when: localtime.stdout == "Changed"

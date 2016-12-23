@@ -1,0 +1,193 @@
+# IPTABLES
+#
+# Cleaning rules definition
+#
+
+ipTablesCleaning:
+- "-F"
+- "-X"
+- "-Z"
+
+# Default Policies definition
+ipTablesPolicy:
+- "-P OUTPUT DROP"
+- "-P INPUT DROP"
+- "-P FORWARD DROP"
+
+#
+# ipTablesRulesGlobal: (List of global IPTables rules)
+# ...
+#
+# ipTablesRulesGroup:
+# - group: value (group name)
+#   rules: (List of IPTables rules by group)
+#   ...
+#
+# ipTablesRulesHost:
+# - host: value (host name)
+#   rules: (List of IPTables rules by host)
+#   ...
+#
+# Rules definition (syntax)
+# -------------------------
+# label: value --> name used as key to be called from other variables (required attribute)
+# chain: value --> INPUT, OUPUT, FORWARD, ... , IO (IO generate two rules INPUT+OUTPUT) (optional attribute, 'IO' by default)
+# table: value --> filter, mangle, nat (optional attribute)
+# oper: value --> A, I, D, R ... (optional attribute, 'A' by default)
+# protocol: value --> tcp, udp, icmp, all ... (optional attribute)
+# interfaceIN: value --> ethX, lo ... (optional attribute)
+# interfaceOUT: value --> ethX, lo ... (optional attribute)
+# state: [ value1, ... , valueN ] --> NEW, ESTABLISHED ... (optional attribute)
+# saddr: [ value1, ... , valueN ] --> X.X.X.X/netmask (optional attribute)
+# sport: [ value1, ... , valueN ] --> <port> (optional attribute)
+# daddr: [ value1, ... , valueN ] --> X.X.X.X/netmask (optional attribute)
+# dport: [ value1, ... , valueN ] --> <port> (optional attribute)
+# target: [ value1, ... , valueN ] --> ACCEPT, DROP, LOG ... (optional attribute, 'ACCEPT' by default)
+# free: value --> the whole ipTbles rule, no need of the rest of attributes, only the comment attribute (optional attribute)
+# comment: value --> rule comment (optional attribute) 
+#
+# Example
+#
+#ipTablesRulesGlobal:
+#- label: SSH access from Admon subnet
+#  chain: IO
+#  table: filter
+#  oper: I
+#  protocol: tcp
+#  interfaceIN: eth0
+#  interfaceOUT: eth0
+#  state: [ NEW, ESTABLISHED ]
+#  saddr: [ 172.20.40.0/24 ]
+#  sport: [ 1:1024 ]
+#  daddr: [ 0.0.0.0/32 ]
+#  dport: [ 22 ]
+#  target: [ ACCEPT ]
+#  comment: "SSH access from Admon subnet"
+#- ...
+#
+
+ipTablesRulesGlobal:
+- label: localhost access
+  chain: IO
+  interfaceIN: lo
+  interfaceOUT: lo
+  saddr: [ 127.0.0.1 ]
+  comment: localhost access
+#- chain: INPUT
+#  state: [ RELATED, ESTABLISHED ]
+#  comment: established connections
+- label: Global access 
+  chain: IO
+  saddr: [ 172.20.1.0/24, 172.20.2.0/24, 172.20.3.0/24, 172.20.40.0/24 ]
+  comment: "Global access from servers subnets (P1, P2 and P3) nad Admon subnet"
+- label: NTP access
+  chain: IO
+  protocol: udp
+  saddr: [ ntp.pool.org, es.ntp.pool.org ]
+  sport: [ 123 ]
+  comment: NTP access 
+- label: External DNS access
+  chain: IO
+  protocol: udp
+  saddr: [ 8.8.8.8 ]
+  sport: [ 53 ]
+  comment: External DNS access
+- label: Debian Squeeze-LTS repositories access
+  chain: IO
+  protocol: tcp
+  saddr: [ 46.4.205.44, 80.64.47.13, 82.194.78.250, 163.117.156.54, 137.226.34.42, 193.54.21.4, 46.43.34.31, 131.246.123.4, 77.75.110.242, 195.113.161.73, 212.201.68.60, 212.201.68.61, 195.234.45.114, 129.187.10.100 ]
+  sport: [ 80 ]
+  comment: Debian Squeeze-LTS repositories access
+
+
+ipTablesRulesGroup:
+- group: DHCP
+  rules:
+  - label: DHCP access 
+    chain: IO
+    protocol: udp
+    dport: [ 67 ]
+    comment: DHCP port (67) access
+
+- group: DNS
+  rules:
+  - label: DNS tcp access
+    chain: IO
+    protocol: tcp
+    dport: [ 53 ]
+    comment: DNS tcp port (53) access
+  - label: DNS udp access
+    chain: IO
+    protocol: udp
+    dport: [ 53 ]
+    comment: DNS udp port (53) access
+
+- group: LDAP 
+  rules:
+  - label: Ldap (8365) and Ldaps (636) access
+    chain: IO
+    protocol: tcp
+    dport: [ 636, 8365 ]
+    comment: Ldap port (8365) and Ldaps port(636) access
+
+- group: proxmox
+  rules:
+  - label: Port Redirection TCP/443 to TCP/8006
+    free: -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8006 
+    comment: Port Redirection TCP/443 to TCP/8006
+  - label: INPUT Multicast access
+    free: -A INPUT -m pkttype --pkt-type MULTICAST -j ACCEPT
+    comment: INPUT Multicast access
+  - label: OUTPUT Multicast access
+    free: -A OUTPUT -m pkttype --pkt-type MULTICAST -j ACCEPT
+    comment: OUTPUT Multicast access
+  - label: Multicast error Cman access
+    free: -A INPUT -m addrtype --dst-type MULTICAST -j ACCEPT
+    comment: Multicasti access to avoid cman breaks in Proxmox 3
+  - label: UDP error Cman access
+    free: -A INPUT -p udp -m state --state NEW -m multiport --dports 5404,5405 -j ACCEPT
+    comment: UDP access to avoid cman breaks in Proxmox 3
+  - label: UDP Multicast access
+    chain: IO
+    protocol: udp
+    saddr: [ 224.0.0.0/4 ]
+    comment: UDP Multicast access
+  - label: ICMP Multicast access
+    chain: IO
+    protocol: icmp
+    saddr: [ 224.0.0.0/4 ]
+    comment: ICMP Multicast access
+  - label: IGMP Multicast access
+    chain: IO
+    protocol: igmp
+    saddr: [ 224.0.0.0/4 ]
+    comment: IGMP Multicast access
+
+
+ipTablesRulesHost:
+- host: hermes
+  rules:
+  - label: ESTABLISHED access
+    chain: IO
+    state: [ RELATED, ESTABLISHED ]
+    comment: Established connections access 
+  - label: SSH access
+    chain: IO
+    protocol: tcp
+    dport: [ 22 ]
+    comment: SSH access 
+
+- host: ansible_server 
+  rules:
+  - label: ESTABLISHED sysadm access
+    chain: IO
+    saddr: [ 172.20.40.100 ]
+    state: [ RELATED, ESTABLISHED ]
+    comment: Established sysadm access 
+  - label: SSH sysadm access 
+    chain: IO
+    protocol: tcp
+    saddr: [ 172.20.40.100 ]
+    dport: [ 22 ]
+    comment: SSH sysadm access
+

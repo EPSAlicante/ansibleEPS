@@ -1,0 +1,16 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# TCP Wrappers (/etc/hosts.allow y /etc/hosts.deny) configuration 
+
+- name: Configure /etc/hosts.allow
+  template: src=etc/hosts.allow.j2 dest=/etc/hosts.allow owner=root group=root mode=0644
+
+- name: Configure /etc/hosts.deny
+  template: src=etc/hosts.deny.j2 dest=/etc/hosts.deny owner=root group=root mode=0644
+

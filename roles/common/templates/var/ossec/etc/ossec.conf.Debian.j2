@@ -1,0 +1,98 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+<ossec_config>
+  <client>
+    <server-ip>{{ ossecMaster }}</server-ip>
+  </client>
+
+  <syscheck>
+    <scan_on_start>no</scan_on_start>
+    <scan_time>6:30am</scan_time>
+
+    <!-- Directories to check  (perform all possible verifications) -->
+    <directories check_all="yes">/etc,/usr/bin,/usr/sbin</directories>
+    <directories check_all="yes">/bin,/sbin</directories>
+    <directories check_all="yes">/lib,/usr/lib,/usr/local/lib</directories>
+
+    <!-- Files/directories to ignore -->
+    <ignore>/etc/mtab</ignore>
+    <ignore>/etc/mnttab</ignore>
+    <ignore>/etc/hosts.deny</ignore>
+    <ignore>/etc/mail/statistics</ignore>
+    <ignore>/etc/random-seed</ignore>
+    <ignore>/etc/adjtime</ignore>
+    <ignore>/etc/httpd/logs</ignore>
+    <ignore>/etc/utmpx</ignore>
+    <ignore>/etc/wtmpx</ignore>
+    <ignore>/etc/cups/certs</ignore>
+    <ignore>/etc/dumpdates</ignore>
+    <ignore>/etc/svc/volatile</ignore>
+    <ignore>/etc/lvm</ignore>
+    <ignore>/var/lib/vz/private</ignore>
+
+    <!-- Windows files to ignore -->
+    <ignore>C:\WINDOWS/System32/LogFiles</ignore>
+    <ignore>C:\WINDOWS/Debug</ignore>
+    <ignore>C:\WINDOWS/WindowsUpdate.log</ignore>
+    <ignore>C:\WINDOWS/iis6.log</ignore>
+    <ignore>C:\WINDOWS/system32/wbem/Logs</ignore>
+    <ignore>C:\WINDOWS/system32/wbem/Repository</ignore>
+    <ignore>C:\WINDOWS/Prefetch</ignore>
+    <ignore>C:\WINDOWS/PCHEALTH/HELPCTR/DataColl</ignore>
+    <ignore>C:\WINDOWS/SoftwareDistribution</ignore>
+    <ignore>C:\WINDOWS/Temp</ignore>
+    <ignore>C:\WINDOWS/system32/config</ignore>
+    <ignore>C:\WINDOWS/system32/spool</ignore>
+    <ignore>C:\WINDOWS/system32/CatRoot</ignore>
+  </syscheck>
+
+  <rootcheck>
+    <rootkit_files>/var/ossec/etc/shared/rootkit_files.txt</rootkit_files>
+    <rootkit_trojans>/var/ossec/etc/shared/rootkit_trojans.txt</rootkit_trojans>
+    <system_audit>/var/ossec/etc/shared/system_audit_rcl.txt</system_audit>
+    <system_audit>/var/ossec/etc/shared/cis_debian_linux_rcl.txt</system_audit>
+    <system_audit>/var/ossec/etc/shared/cis_rhel_linux_rcl.txt</system_audit>
+    <system_audit>/var/ossec/etc/shared/cis_rhel5_linux_rcl.txt</system_audit>
+  </rootcheck>
+
+  <active-response>
+    <disabled>yes</disabled>
+  </active-response>
+
+  <!-- Files to monitor (localfiles) -->
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/messages</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/syslog</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/mail.info</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/dpkg.log</location>
+  </localfile>
+
+  <localfile>
+    <log_format>apache</log_format>
+    <location>/var/log/apache2/error.log</location>
+  </localfile>
+
+  <localfile>
+    <log_format>apache</log_format>
+    <location>/var/log/apache2/access.log</location>
+  </localfile>
+</ossec_config>

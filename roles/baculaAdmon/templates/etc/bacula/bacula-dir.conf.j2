@@ -1,0 +1,427 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+#
+# Default Bacula Director Configuration file
+#
+#  The only thing that MUST be changed is to add one or more
+#   file or directory names in the Include directive of the
+#   FileSet resource.
+#
+#  For Bacula release 1.36.2 (28 February 2005) -- debian 3.1
+#
+#  You might also want to change the default email address
+#   from root to your address.  See the "mail" and "operator"
+#   directives in the Messages resource.
+#
+
+Director {                            # define myself
+  Name = {{ ansible_hostname }}-dir
+  DIRport = 9101                # where we listen for UA connections
+  QueryFile = "/usr/libexec/bacula/query.sql"
+  WorkingDirectory = "/var/spool/bacula"
+  PidDirectory = "/var/run"
+  Maximum Concurrent Jobs = 2 
+  Password = "admin"         # Console password
+  Messages = Daemon
+  FD Connect Timeout = 30s 
+  SD Connect Timeout = 30s    
+}
+
+
+############################################################
+#                    Job Defs (Admon)                      #
+############################################################
+
+JobDefs {
+  Name = "DefAdmon"
+  Type = Backup
+  Level = Incremental
+  Storage = FileAdmon
+  Schedule = "Admon"
+  Messages = Standard
+  Priority = 10
+}
+
+JobDefs {
+  Name = "DefRestoreAdmon"
+  Type = Restore
+  Storage = FileAdmon
+  Messages = Standard
+  Where = /
+}
+
+
+############################################################
+#                   Backup Jobs (Admon)                    #
+############################################################
+
+{% for host in groups['all']|sort if host not in groups['nobaculaAdmon'] -%}
+{# Global block -#}
+{% if baculaAdmonGlobal is defined -%}
+{%  for job in baculaAdmonGlobal -%}
+{%   set printJob = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if baculaAdmonGroup is defined -%}
+{%    for jGroup in baculaAdmonGroup -%}
+{%     if host in groups[jGroup.group] -%}
+{%      for gJob in jGroup.backup -%}
+{%       if gJob.label == job.label -%}
+{%        if printJob.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printJob.value -%}
+{%    if baculaAdmonHost is defined -%}
+{%     for jHost in baculaAdmonHost -%}
+{%      if jHost.host==host -%}
+{%       for hJob in jHost.backup -%}
+{%        if hJob.label == job.label -%}
+{%         if printJob.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printJob.value and job.fileset is defined -%}
+### {{ host }} -> Backup '{{ job.fileset }}' (global) ###
+Job {
+  Name = "Backup{{ job.fileset|title }}-{{ host }}"
+  JobDefs = "DefAdmon"
+  Client = {{ host }}-fd
+  Fileset = "{{ job.fileset }}"
+  Pool = {{ host }}
+  Write Bootstrap = "/var/spool/bacula/{{ host }}.bsr"
+}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if baculaAdmonGroup is defined -%}
+{%  for jGroup in baculaAdmonGroup -%}
+{%   if host in groups[jGroup.group] -%}
+{%    for gJob in jGroup.backup -%}
+{%     set printJob = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     if baculaAdmonHost is defined -%}
+{%      for jHost in baculaAdmonHost -%}
+{%       if jHost.host==host -%}
+{%        for hJob in jHost.backup -%}
+{%         if hJob.label == gJob.label -%}
+{%          if printJob.update({'value': False}) -%}{% endif -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endfor %}
+{%     endif -%}
+{# Print label -#}
+{%     if printJob.value and gJob.fileset is defined -%}
+### {{ host }} -> Backup '{{ gJob.fileset }}' (group: '{{ jGroup.group }}') ###
+Job {
+  Name = "Backup{{ gJob.fileset|title }}-{{ host }}"
+  JobDefs = "DefAdmon"
+  Client = {{ host }}-fd
+  Fileset = "{{ gJob.fileset }}"
+  Pool = {{ host }}
+  Write Bootstrap = "/var/spool/bacula/{{ host }}.bsr"
+}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if baculaAdmonHost is defined -%}
+{%  for jHost in baculaAdmonHost -%}
+{%   if jHost.host==host -%}
+{%    for hJob in jHost.backup -%}
+{# Print label -#}
+{%     if hJob.fileset is defined -%}
+### {{ host }} -> Backup '{{ hJob.fileset }}' (host: '{{ jHost.host }}') ###
+Job {
+  Name = "Backup{{ hJob.fileset|title }}-{{ host }}"
+  JobDefs = "DefAdmon"
+  Client = {{ host }}-fd
+  Fileset = "{{ hJob.fileset }}"
+  Pool = {{ host }}
+  Write Bootstrap = "/var/spool/bacula/{{ host }}.bsr"
+}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}
+
+{% endfor %}
+
+
+
+############################################################
+#                   Restore Jobs (Admon)                   #
+############################################################
+
+{% for host in groups['all']|sort if host not in groups['nobaculaAdmon'] -%}
+{# Global block -#}
+{% if baculaAdmonGlobal is defined -%}
+{%  for job in baculaAdmonGlobal -%}
+{%   set printJob = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if baculaAdmonGroup is defined -%}
+{%    for jGroup in baculaAdmonGroup -%}
+{%     if host in groups[jGroup.group] -%}
+{%      for gJob in jGroup.backup -%}
+{%       if gJob.label == job.label -%}
+{%        if printJob.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printJob.value -%}
+{%    if baculaAdmonHost is defined -%}
+{%     for jHost in baculaAdmonHost -%}
+{%      if jHost.host==host -%}
+{%       for hJob in jHost.backup -%}
+{%        if hJob.label == job.label -%}
+{%         if printJob.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printJob.value and job.fileset is defined -%}
+### {{ host }} -> Restore '{{ job.fileset }}' (global) ###
+Job {
+  Name = "Restore{{ job.fileset|title }}-{{ host }}"
+  JobDefs = "DefRestoreAdmon"
+  Client = {{ host }}-fd
+  Fileset = "{{ job.fileset }}"
+  Pool = {{ host }}
+}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if baculaAdmonGroup is defined -%}
+{%  for jGroup in baculaAdmonGroup -%}
+{%   if host in groups[jGroup.group] -%}
+{%    for gJob in jGroup.backup -%}
+{%     set printJob = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     if baculaAdmonHost is defined -%}
+{%      for jHost in baculaAdmonHost -%}
+{%       if jHost.host==host -%}
+{%        for hJob in jHost.backup -%}
+{%         if hJob.label == gJob.label -%}
+{%          if printJob.update({'value': False}) -%}{% endif -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endfor %}
+{%     endif -%}
+{# Print label -#}
+{%     if printJob.value and gJob.fileset is defined -%}
+### {{ host }} -> Restore '{{ gJob.fileset }}' (group: '{{ jGroup.group }}') ###
+Job {
+  Name = "Restore{{ gJob.fileset|title }}-{{ host }}"
+  JobDefs = "DefRestoreAdmon"
+  Client = {{ host }}-fd
+  Fileset = "{{ gJob.fileset }}"
+  Pool = {{ host }}
+}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if baculaAdmonHost is defined -%}
+{%  for jHost in baculaAdmonHost -%}
+{%   if jHost.host==host -%}
+{%    for hJob in jHost.backup -%}
+{# Print label -#}
+{%     if hJob.fileset is defined -%}
+### {{ host }} -> Restore '{{ hJob.fileset }}' (host: '{{ jHost.host }}') ###
+Job {
+  Name = "Restore{{ hJob.fileset|title }}-{{ host }}"
+  JobDefs = "DefRestoreAdmon"
+  Client = {{ host }}-fd
+  Fileset = "{{ hJob.fileset }}"
+  Pool = {{ host }}
+}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}
+
+{% endfor %}
+
+
+
+############################################################
+#                     FileSets (Admon)                     #
+############################################################
+
+### Manual Filestes ###
+
+###  Auto Filesets  ###
+
+{% for fs in baculaAdmonFilesets -%}
+FileSet {
+  Name = "{{ fs.name }}"
+  Include {
+    Options {
+      Compression = {{ "%s" % fs.compression if fs.compression is defined else "GZIP" }}
+      signature = {{ "%s" % fs.signature if fs.signature is defined else "MD5" }}
+    }
+{%   for inc in fs.includes %}
+    File = "{{ inc }}"
+{%   endfor %}
+  }
+{%   if fs.excludes is defined %}
+  Exclude {
+{%     for exc in fs.excludes %}
+    File = "{{ exc }}"
+{%     endfor %}
+  }
+{%   endif %}
+}
+
+{% endfor -%}
+
+
+############################################################
+#                        Schedule                          #
+############################################################
+
+Schedule {
+  Name = "Admon"
+  Run = Full 1st sun at 04:30
+  Run = Differential 2nd-5th sun at 04:30
+  Run = Incremental mon-sat at 04:30
+}
+
+
+############################################################
+#                    Clients (Admon)                       #
+############################################################
+
+{% for host in groups['all']|sort if host not in groups['nobaculaAdmon'] -%}
+Client {
+  Name = {{ host }}-fd
+  Address = {{ host }}.{{ domain }}
+  FDPort = 9102
+  Catalog = MyCatalog
+  Password = "admin"          # password for FileDaemon
+  File Retention = 2 months
+  Job Retention = 2 months
+  AutoPrune = yes               # Prune expired Jobs/Files
+}
+
+{% endfor %}
+
+
+
+############################################################
+#                        Storages                          #
+############################################################
+
+Storage {
+  Name = FileAdmon
+  Address = {{ ansible_fqdn }} 
+  SDPort = 9103
+  Password = "admin"
+  Device = FileStorageAdmon
+  Media Type = File
+}
+
+
+############################################################
+#                         Catalog                          #
+############################################################
+
+# Generic catalog service
+Catalog {
+  Name = MyCatalog
+  dbname = bacula; DB Address = localhost; user = bacula; password = "admin"
+}
+
+
+############################################################
+#                        Messages                          #
+############################################################
+
+# Reasonable message delivery -- send most everything to email address
+#  and to the console
+Messages {
+  Name = Standard
+  operator = root@localhost = mount
+  #console = all, !skipped, !saved
+  console = all
+#
+# WARNING! the following will create a file that you must cycle from
+#          time to time as it will grow indefinitely. However, it will
+#          also keep all your messages if they scroll off the console.
+#
+  #append = "/var/spool/bacula/log" = all, !skipped
+  append = "/var/spool/bacula/log" = all
+}
+
+
+#
+# Message delivery for daemon messages (no job).
+Messages {
+  Name = Daemon
+  #mailcommand = "/usr/lib/bacula/bsmtp -h localhost -f \"\(Bacula\) %r\" -s \"Bacula daemon message\" %r"
+  #mail = root@localhost = all, !skipped
+  #console = all, !skipped, !saved
+  console = all
+  #append = "/var/spool/bacula/log" = all, !skipped
+  append = "/var/spool/bacula/log" = all
+}
+
+
+############################################################
+#                      Pools (Admon)                       #
+############################################################
+
+{% for host in groups['all']|sort if host not in groups['nobaculaAdmon'] -%}
+Pool {
+  Name = {{ host }}
+  Pool Type = Backup
+  Recycle = yes
+  Use Volume Once = yes
+  AutoPrune = yes
+  Volume Retention = 2 month
+  LabelFormat = "{{ host }}-"
+}
+
+{% endfor %}
+
+
+
+############################################################
+#   Restricted console to get the status of the director   #
+############################################################
+
+Console {
+  Name = {{ ansible_hostname }}-mon
+  Password = "admin"
+  CommandACL = status, .status
+}
+

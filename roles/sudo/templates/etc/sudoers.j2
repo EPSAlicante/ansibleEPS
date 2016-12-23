@@ -1,0 +1,344 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+# sudoers file.
+#
+# This file MUST be edited with the 'visudo' command as root.
+#
+# See the sudoers man page for the details on how to write a sudoers file.
+#
+
+
+# Defaults specification
+{% for option in sudoOptions -%}
+{{ option }}
+{% endfor %} 
+
+# Host alias specification
+
+# User alias specificatiun
+{# Global block -#}
+{% if sudoGlobal.users is defined -%}
+{%  for user in sudoGlobal.users -%}
+{%   set printUser = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   for ruleGroup in sudoGroup -%}
+{%    if ruleGroup.group in group_names -%}
+{%     for guser in ruleGroup.users -%}
+{%      if guser.name == user.name -%}
+{%       if printUser.update({'value': False}) -%}{% endif -%}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{# Looking for the same label in Host block -#}
+{%   if printUser.value -%}
+{%    for ruleHost in sudoHost -%}
+{%     if ruleHost.host==inventory_hostname -%}
+{%      for huser in ruleHost.users -%}
+{%       if huser.name == user.name -%}
+{%        if printUser.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Print label -#}
+{%   if printUser.value -%}
+User_Alias {{ user.name }} = {{ user.list|join(', ') }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% for ruleGroup in sudoGroup -%}
+{%  if ruleGroup.group in group_names -%}
+{%   if ruleGroup.users is defined -%}
+{%    for user in ruleGroup.users -%}
+{%     set printUser = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for ruleHost in sudoHost -%}
+{%      if ruleHost.host==inventory_hostname -%}
+{%       for huser in ruleHost.users -%}
+{%        if huser.name == user.name -%}
+{%         if printUser.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printUser.value -%}
+User_Alias {{ user.name }} = {{ user.list|join(', ') }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+{# Host block -#}
+{% for ruleHost in sudoHost -%}
+{%  if ruleHost.users is defined -%}
+{%   if ruleHost.host==inventory_hostname -%}
+{%    for user in ruleHost.users -%}
+{# Print label -#}
+User_Alias {{ user.name }} = {{ user.list|join(', ') }}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+
+# Cmnd alias specification
+{# Global block -#}
+{% if sudoGlobal.commands is defined -%}
+{%  for command in sudoGlobal.commands -%}
+{%   set printCommand = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   for ruleGroup in sudoGroup -%}
+{%    if ruleGroup.group in group_names -%}
+{%     for gcommand in ruleGroup.commands -%}
+{%      if gcommand.name == command.name -%}
+{%       if printCommand.update({'value': False}) -%}{% endif -%}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{# Looking for the same label in Host block -#}
+{%   if printCommand.value -%}
+{%    for ruleHost in sudoHost -%}
+{%     if ruleHost.host==inventory_hostname -%}
+{%      for hcommand in ruleHost.commands -%}
+{%       if hcommand.name == command.name -%}
+{%        if printCommand.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Print label -#}
+{%   if printCommand.value -%}
+Cmnd_Alias {{ command.name }} = 
+{%-   for item in command.list -%}
+{%     if loop.first %} {% endif %}
+{%     if item|wordcount > 1 -%}
+{%      set word = [] -%}
+{%      for itemList in item|list -%}
+{%       if word.append(itemList) -%}{% endif -%}
+{%       if itemList == ' ' or loop.last -%}
+{%        if word|join("") != word|join("")|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{%        elif word|join("") != word|join("")|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{%        else -%}
+{{ word|join("") -}}
+{%        endif -%}
+{%        set word = [] -%}
+{%       endif -%}
+{%      endfor -%}
+{%     else -%}
+{%      if item != item|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][item|replace('command.','',1)] -}}
+{%      elif item != item|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)] -}}
+{%      else -%}
+{{ item -}}
+{%      endif -%}
+{%     endif -%}
+{%     if not loop.last %}, {% endif %}
+{%    endfor %}
+
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% for ruleGroup in sudoGroup -%}
+{%  if ruleGroup.group in group_names -%}
+{%   if ruleGroup.commands is defined -%}
+{%    for command in ruleGroup.commands -%}
+{%     set printCommand = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for ruleHost in sudoHost -%}
+{%      if ruleHost.host==inventory_hostname -%}
+{%       for hcommand in ruleHost.commands -%}
+{%        if hcommand.name == command.name -%}
+{%         if printCommand.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printCommand.value -%}
+Cmnd_Alias {{ command.name }} = 
+{%-     for item in command.list -%}
+{%       if loop.first %} {% endif %}
+{%        if item|wordcount > 1 -%}
+{%         set word = [] -%}
+{%         for itemList in item|list -%}
+{%          if word.append(itemList) -%}{% endif -%}
+{%          if itemList == ' ' or loop.last -%}
+{%           if word|join("") != word|join("")|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{%           elif word|join("") != word|join("")|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{%           else -%}
+{{ word|join("") -}}
+{%           endif -%}
+{%           set word = [] -%}
+{%          endif -%}
+{%         endfor -%}
+{%        else -%}
+{%         if item != item|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][item|replace('command.','',1)] -}}
+{%         elif item != item|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)] -}}
+{%         else -%}
+{{ item -}}
+{%	   endif -%}
+{%        endif -%}
+{%       if not loop.last %}, {% endif %}
+{%      endfor %}
+
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+{# Host block -#}
+{% for ruleHost in sudoHost -%}
+{%  if ruleHost.host==inventory_hostname -%}
+{%   if ruleHost.commands is defined -%}
+{%    for command in ruleHost.commands -%}
+{# Print label -#}
+Cmnd_Alias {{ command.name }} =
+{%-    for item in command.list -%}
+{%      if loop.first %} {% endif %}
+{%       if item|wordcount > 1 -%}
+{%	  set word = [] -%}
+{%        for itemList in item|list -%}
+{%         if word.append(itemList) -%}{% endif -%}
+{%	   if itemList == ' ' or loop.last -%}
+{%          if word|join("") != word|join("")|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{%          elif word|join("") != word|join("")|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{%          else -%}
+{{ word|join("") -}}
+{%          endif -%}
+{%	    set word = [] -%}
+{%	   endif -%}
+{%        endfor -%}
+{%       else -%}
+{%        if item != item|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][item|replace('command.','',1)] -}}
+{%        elif item != item|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)] -}}
+{%        else -%}
+{{ item -}}
+{%	  endif -%}
+{%       endif -%}
+{%      if not loop.last %}, {% endif %}
+{%     endfor %}
+
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+
+# Runas alias specification
+{# Global block -#}
+{% if sudoGlobal.runas is defined -%}
+{%  for runas in sudoGlobal.runas -%}
+{%   set printRunas = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   for ruleGroup in sudoGroup -%}
+{%    if ruleGroup.group in group_names -%}
+{%     for grunas in ruleGroup.runas -%}
+{%      if grunas.name == runas.name -%}
+{%       if printRunas.update({'value': False}) -%}{% endif -%}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{# Looking for the same label in Host block -#}
+{%   if printRunas.value -%}
+{%    for ruleHost in sudoHost -%}
+{%     if ruleHost.host==inventory_hostname -%}
+{%      for hrunas in ruleHost.runas -%}
+{%       if hrunas.name == runas.name -%}
+{%        if printRunas.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Print label -#}
+{%   if printRunas.value -%}
+Runas_Alias {{ runas.name }} = {{ runas.list|join(', ') }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% for ruleGroup in sudoGroup -%}
+{%  if ruleGroup.group in group_names -%}
+{%   if ruleGroup.runas is defined -%}
+{%    for runas in ruleGroup.runas -%}
+{%     set printRunas = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for ruleHost in sudoHost -%}
+{%      if ruleHost.host==inventory_hostname -%}
+{%       for hrunas in ruleHost.runas -%}
+{%        if hrunas.name == runas.name -%}
+{%         if printRunas.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printRunas.value -%}
+Runas_Alias {{ runas.name }} = {{ runas.list|join(', ') }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+{# Host block -#}
+{% for ruleHost in sudoHost -%}
+{%  if ruleHost.host==inventory_hostname -%}
+{%   if ruleHost.runas is defined -%}
+{%    for runas in ruleHost.runas -%}
+{# Print label -#}
+Runas_Alias {{ runas.name }} = {{ runas.list|join(', ') }}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+
+# User privilege specification
+root    ALL=(ALL) ALL
+{% if sudoGlobal.privileges is defined -%}
+{%  for privilege in sudoGlobal.privileges -%}
+{{ privilege.user }} {{ inventory_hostname if privilege.host|lower=="hostname" else privilege.host }}={{ "(%s)" % privilege.runas if privilege.runas is defined else "" }} {{ "NOPASSWD:" if not privilege.password else "PASSWD:" }} {{ privilege.command }}
+{%  endfor %}
+{% endif -%}
+{% for ruleGroup in sudoGroup -%}
+{%  if ruleGroup.group in group_names -%}
+{%   if ruleGroup.privileges is defined -%}
+{%    for privilege in ruleGroup.privileges -%}
+{{ privilege.user }} {{ inventory_hostname if privilege.host|lower=="hostname" else privilege.host }}={{ "(%s)" % privilege.runas if privilege.runas is defined else "" }} {{ "NOPASSWD:" if not privilege.password else "PASSWD:" }} {{ privilege.command }}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+{% for ruleHost in sudoHost -%}
+{%  if ruleHost.host==inventory_hostname -%}
+{%   if ruleHost.privileges is defined -%}
+{%    for privilege in ruleHost.privileges -%}
+{{ privilege.user }} {{ inventory_hostname if privilege.host|lower=="hostname" else privilege.host }}={{ "(%s)" % privilege.runas if privilege.runas is defined else "" }} {{ "NOPASSWD:" if not privilege.password else "PASSWD:" }} {{ privilege.command }}
+{%    endfor -%}
+{%   endif -%}
+{%  endif -%}
+{% endfor %}
+

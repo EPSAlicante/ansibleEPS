@@ -1,0 +1,77 @@
+# PAM Access
+#
+# Variables to generate '/etc/security/access.conf' file (PAM Access)
+#
+# 'allow' permissions (global, group y host) will be defined before 'deny' permissions (global, group y host)
+#
+# pamAccessAllowGlobal: (List of global PAM Access rules)
+# ...
+#
+# pamAccessAllowGroup:
+# - group: value (group name)
+#   rules: (List of PAM Access rules by group)
+#   ...
+#
+# pamAccessAllowHost: 
+# - host: value (host name)
+#   rules: (List of PAM Access rules by host)
+#   ...
+#
+# pamAccessDenyGlobal: (List of global PAM Access rules)
+# ...
+#
+# pamAccessDenyGroup:
+# - group: value (group name)
+#   rules: (List of PAM Access rules by group)
+#   ...
+#
+# pamAccessDenyHost: 
+# - host: value (host name)
+#   rules: (List of PAM Access rules by host)
+#   ...
+#
+# Rules definition (syntax)
+# -------------------------
+# label: value --> name used as comment and used too as key to be called from other variables (required attribute)
+# users: value --> list of users (required attribute)
+# origins: value --> list of origins (required attribute)
+#
+
+pamAccessAllowGlobal:
+- label: Root access from LOCAL
+  users: root
+  origins: LOCAL
+- label: Root access from ansible_server 
+  users: root
+  origins: 172.20.1.10.
+- label: Manager access
+  users: manager
+  origins: LOCAL 172.20.40.
+- label: Admins access
+  users: admin
+  origins: LOCAL 172.20.40.
+
+pamAccessAllowGroup:
+- group: proxmox
+  rules:
+  - label: Rsync access from Bacula Server
+    users: rsync
+    origins: 127.0.0.1 172.20.3.30
+
+
+pamAccessAllowHost:
+- host: ansible_server 
+  rules:
+  - label: Manager access
+    users: manager
+    origins: 127.0.0.1 172.20.40.100
+  - label: Admins access
+    users: admin wwwadm
+    origins: 127.0.0.1 172.20.40.100
+
+
+pamAccessDenyGlobal:
+- label: Deny ALL
+  users: ALL
+  origins: ALL
+

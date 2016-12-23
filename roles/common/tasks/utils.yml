@@ -1,0 +1,33 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Utils installation 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Be sure utils are installed (Centos)
+  yum: pkg={{ item }} state=installed
+  with_items: "{{ utils }}"
+  when: ansible_pkg_mgr == "yum"
+
+- name: Be sure utils are installed (Debian and python >= 2.6)
+  apt: pkg={{ item }} state=installed force=yes
+  with_items: "{{ utils }}"
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6
+
+- name: Be sure utils are installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install {{ item }} 
+  shell: ((apt-cache pkgnames|grep "^{{ item }}$") >/dev/null && echo "No") || ((apt-get -y --force-yes install {{ item }}) && echo "Changed") executable="/bin/bash"
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  with_items: "{{ utils }}"
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6
+

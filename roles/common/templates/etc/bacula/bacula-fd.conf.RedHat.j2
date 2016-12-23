@@ -1,0 +1,56 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+#
+# Default  Bacula File Daemon Configuration file
+#
+
+#
+# List Directors who are permitted to contact this File daemon
+#
+{% for dir in baculaDirector -%}
+Director {
+  Name = {{ dir }}-dir
+  Password = "admin"
+}
+
+{% endfor %}
+#
+# Restricted Director, used by tray-monitor to get the
+#   status of the file daemon
+#
+{% for dir in baculaDirector -%}
+Director {
+  Name = {{ dir }}-mon
+  Password = "admin"
+  Monitor = yes
+}
+
+{% endfor %}
+#
+# "Global" File daemon configuration specifications
+#
+FileDaemon {
+  Name = {{ ansible_hostname }}-fd
+  FDport = 9102                  # where we listen for the director
+  WorkingDirectory = /var/spool/bacula
+  Pid Directory = /var/run
+  Maximum Concurrent Jobs = 20
+  # {{ "FDAddress = %s" % (ansible_default_ipv4.address) if ansible_default_ipv4 is defined else "" }} 
+}
+
+# Send all messages except skipped files back to Director
+{% for dir in baculaDirector -%}
+{% if loop.first -%}
+Messages {
+  Name = Standard
+  director = {{ dir }}-dir = all, !skipped, !restored
+}
+{% endif -%}
+{% endfor %}

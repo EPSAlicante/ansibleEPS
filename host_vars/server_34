@@ -1,0 +1,2 @@
+# Backup disk
+backupDisk: /dev/cciss/c0d1p1 

@@ -1,0 +1,87 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+# NRPE Commands configuration 
+
+{# Global block -#}
+{% if nrpeGlobal is defined -%}
+{%  for rule in nrpeGlobal -%}
+{%   set printRule = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if nrpeGroup is defined -%}
+{%    for rGroup in nrpeGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      for grule in rGroup.rules -%}
+{%       if grule.label == rule.label -%}
+{%        if printRule.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printRule.value -%}
+{%    if nrpeHost is defined -%}
+{%     for rHost in nrpeHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == rule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printRule.value and rule.command is defined -%}
+command[{{ rule.label }}]={{ rule.command }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if nrpeGroup is defined -%}
+{%  for rGroup in nrpeGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for grule in rGroup.rules -%}
+{%     set printRule = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     if nrpeHost is defined -%}
+{%      for rHost in nrpeHost -%}
+{%       if rHost.host==inventory_hostname -%}
+{%        for hrule in rHost.rules -%}
+{%         if hrule.label == grule.label -%}
+{%          if printRule.update({'value': False}) -%}{% endif -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endfor %}
+{%     endif -%}
+{# Print label -#}
+{%     if printRule.value and grule.command is defined -%}
+command[{{ grule.label }}]={{ grule.command }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if nrpeHost is defined -%}
+{%  for rHost in nrpeHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for hrule in rHost.rules -%}
+{# Print label -#}
+{%     if hrule.command is defined -%}
+command[{{ hrule.label }}]={{ hrule.command }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}
+

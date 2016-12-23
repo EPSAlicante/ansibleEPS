@@ -1,0 +1,60 @@
+*** PROXMOX PlayBook ***
+
+Proxmox playbook 'proxmox.yml' is able to manage Proxmox servers configuration, in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+
+Updates will be done using some variables to customize operations for every proxmox server.
+
+Variables will be defined mainly in 'group_vars/proxmox' global file, but could be overwritten in group files or host files, depending on features of every group or host. Furthermore, if variables depends on Distribution (Operating System), they will be defined on specific distribution and version files.
+
+
+Command-line execution: 'ansible-playbook proxmox.yml'
+
+Scope: Playbook will update all proxmox servers
+
+Variables:
+
+  * 'backupDisk' -> Disk name to save local backups (daily syncronization)
+
+  * 'backupServer' -> Backup servers List
+
+  * 'snapshotSpace' -> Space for changes on snapshot (K, M, G or T)
+
+
+Playbook will do the following tasks:
+
+  * Avoid subscription message (proxmox 3.X version)
+
+  * Modify Online migration script to duplicate syncronization step (to reduce suspending time)
+
+  * Check paramater 'State' of IPTables in '/etc/vz/vz.conf' file (add 'ipt_state' in IPTABLES variable)
+
+  * Load 'ipt_state' module if necessary (checking 'state' string in '/proc/bet/ip_tables_matches')
+
+  * Set '/var/lib/vz' directory permission to '0700'
+
+  * Create '/root/script' directory with '0750' permission
+
+  * Create '/backup' directory with '0755' permission
+
+  * Create '/foto' directory with '0755' permission
+
+  * Create '/var/log/rsync' directory with '0755' permission
+
+  * Link '/root/scripts/log' to '/var/log/rsync'
+
+  * Link '/root/scripts/backup' to '/backup' 
+
+  * Copy 'rsyncLocal.sh' template in '/root/scripts' directory. This template includes 'backupDisk' (to define disk partition to save backups of virtual machines) and 'snapshotSpace' variable (defining free space on snapshot for changes).
+
+  * Add 'backup' entry (mounted as XFS) to '/etc/fstab' file
+
+  * Mount (if necessary) backup disk in '/backup' directory
+
+  * Create '/backup/rsync' directory with '0700' permission
+
+  * Create 'rsync' user
+
+  * Obtain public keys of Backup servers (included in 'backupServers' variable) and copy them to 'authorized_keys' file of 'rsync' user
+
+  * Obtain Backup server IPs (included in 'backupServers' variable) and create required permissions for sshd in '/etc/hosts.allow' file
+

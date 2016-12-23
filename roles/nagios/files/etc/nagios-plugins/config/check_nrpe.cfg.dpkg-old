@@ -1,0 +1,18 @@
+# this command runs a program $ARG1$ with arguments $ARG2$
+define command {
+        command_name    check_nrpe_2arg
+        command_line    /usr/lib/nagios/plugins/check_nrpe -H $HOSTADDRESS$ -c $ARG1$ -a $ARG2$
+}
+
+# this command runs a program $ARG1$ with no arguments
+define command {
+        command_name    check_nrpe
+        command_line    /usr/lib/nagios/plugins/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
+}
+
+# this command runs a program $ARG1$ with double timeout (20 sec)
+define command {
+        command_name    check_nrpe_wait
+        command_line    /usr/lib/nagios/plugins/check_nrpe -H $HOSTADDRESS$ -c $ARG1$ -t 20
+}
+

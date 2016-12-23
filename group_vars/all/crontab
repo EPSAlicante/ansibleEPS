@@ -1,0 +1,63 @@
+# Crontab 
+#
+# Variables to configure users crontab
+#
+# crontabGlobal:
+# users: (List of crontab users)
+# - name: value --> username
+#   tasks: (List of global crontab tasks by user)
+#   ...
+#
+# crontabGroup:
+# - group: value (group name)
+#   users: (List of crontab users)
+#   - name: value --> username
+#     tasks: (List of crontab tasks by group and user)
+#     ...
+#
+# crontabHost: 
+# - host: value (host name)
+#   users: (List of crontab users)
+#   - name: value --> username
+#     tasks: (List of crontab tasks by host and user)
+#     ...
+#
+# Tasks definition (syntax)
+# -------------------------
+# label: value --> name used as key to be called from other variables (required attribute)
+# job: value --> command(s) to execute (required attribute)
+# minute: value --> minute (optional attribute, '*' by default)
+# hour: value --> hour (optional attribute, '*' by default)
+# day: value --> day (optional attribute, '*' by default)
+# month: value --> month (optional attribute, '*' by default)
+# weekday: value --> weekday (optional attribute, '*' by default)
+# comment: value --> comment (optional attribute, 'label value' by default)
+# disabled: value --> value: yes|no (optional attribute, 'no' by default)
+#
+
+crontabGlobal: [] 
+
+crontabGroup: 
+- group: proxmox
+  users:
+  - name: root
+    tasks:
+    - label: Backup rsyncLocal
+      job: '/root/scripts/rsyncLocal.sh todos'
+      minute: 0
+      hour: 0
+
+crontabHost:
+- host: hermes
+  users:
+  - name: root
+    tasks:
+    - label: 'Stats update mail.eps.ua.es'
+      job: '/root/scripts/actualizaEstadisticas.sh mail.eps.ua.es'
+      minute: 40
+      hour: 7
+    - label: 'Stats update hermes.eps.ua.es'
+      job: '/root/scripts/actualizaEstadisticas.sh hermes.eps.ua.es'
+      minute: 45
+      hour: 7
+

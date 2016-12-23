@@ -1,0 +1,89 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+# /etc/hosts configuration 
+
+{# Global block -#}
+{% if hostsFileGlobal is defined -%}
+{%  for rule in hostsFileGlobal -%}
+{%   set printRule = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if hostsFileGroup is defined -%}
+{%    for rGroup in hostsFileGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      for grule in rGroup.rules -%}
+{%       if grule.label == rule.label -%}
+{%        if printRule.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printRule.value -%}
+{%    if hostsFileHost is defined -%}
+{%     for rHost in hostsFileHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == rule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printRule.value and rule.host is defined -%}
+# {{ rule.label }}
+{{ "%s" % rule.IP if rule.IP is defined else hostIP.stdout }} {{ "%s" % rule.fqdn if rule.fqdn is defined else "%s" % hostFQDN.stdout if rule.host == "hostname" else "%s.%s" % (rule.host,domain) }} {{ "%s" % inventory_hostname if rule.host == "hostname" else rule.host }} {{ "%s" % rule.extra if rule.extra is defined else "" }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if hostsFileGroup is defined -%}
+{%  for rGroup in hostsFileGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for grule in rGroup.rules -%}
+{%     set printRule = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for rHost in hostsFileHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == grule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printRule.value and grule.host is defined -%}
+# {{ grule.label }}
+{{ "%s" % grule.IP if grule.IP is defined else hostIP.stdout }} {{ "%s" % grule.fqdn if grule.fqdn is defined else "%s" % hostFQDN.stdout if grule.host == "hostname" else "%s.%s" % (grule.host,domain) }} {{ "%s" % inventory_hostname if grule.host == "hostname" else grule.host }} {{ "%s" % grule.extra if grule.extra is defined else "" }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if hostsFileHost is defined -%}
+{%  for rHost in hostsFileHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for hrule in rHost.rules -%}
+{# Print label -#}
+{%     if hrule.host is defined -%}
+# {{ hrule.label }}
+{{ "%s" % hrule.IP if hrule.IP is defined else hostIP.stdout }} {{ "%s" % hrule.fqdn if hrule.fqdn is defined else "%s" % hostFQDN.stdout if hrule.host == "hostname" else "%s.%s" % (hrule.host,domain) }} {{ "%s" % inventory_hostname if hrule.host == "hostname" else hrule.host }} {{ "%s" % hrule.extra if hrule.extra is defined else "" }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}
+
+

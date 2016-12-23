@@ -1,0 +1,130 @@
+*** CRONTAB PlayBook ***
+
+HostsFile playbook 'hostsFile.yml' is able to manage crontab tasks for all server (except those belonging to 'nocrontab' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+
+Changes will be generated using some variables (through a template) to create crontab tasks for every server.
+
+Variables are defined by default in 'group_vars/all/crontab' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook crontab.yml'
+
+Scope: Playbook will update all server except those belonging to 'nocrontab' group.
+
+Templates: 'roles/crontab/templates/tmp/cronUsers.j2'
+           'roles/crontab/templates/var/spool/cron/user.j2
+
+Variables:
+
+    * 'crontabGlobal' -> crontab configuration for all servers
+
+      This variable is a list of users (with crontab tasks) with two attributes: name (user name) and tasks (a crontab tasks list). Every item in tasks list has nine attributes:
+
+         - label: This attribute play two roles, on the one side it will be a comment for entry (if attribute 'comment' is not defined), on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
+
+         - job: Command to execute (string format). 
+
+         - minute: 'Minute' field in crontab (0-59). Optional atributte. If not defined, value will set to '*'.
+
+	 - hour: 'Hour' field in crontab (0-23). Optional atributte. If not defined, value will set to '*'.
+
+	 - day: 'Day of month' field in crontab (1-31). Optional atributte. If not defined, value will set to '*'.
+
+	 - month: 'Month' field in crontab (1-12). Optional atributte. If not defined, value will set to '*'.
+
+	 - weekday: 'Day of week' field in crontab (0-6). Optional atributte. If not defined, value will set to '*'.
+
+         - comment: Comment of task (string format). Optional attribute. If not defined, 'label' attribute will be the comment of task. 
+
+	 - disabled: Task disabled or enabled (values: yes|no). This attribute disables task with 'yes' value (task will be commented, not deleted). This way we can reuse non-used tasks, just 'enabling' them.
+
+      'label' and 'job' attributes are required. If any of them are not defined, this task will be ignored.
+
+     
+      Example:
+
+	crontabGlobal:
+  	users:
+  	- name: root
+    	  tasks:
+    	  - label: Backup diario virtuales
+      	    job: '/root/scripts/backup.sh all'
+      	    minute: 30
+      	    hour: 2
+          - label: IP local
+            host: hostname
+
+
+    * 'crontabGroup' -> crontab configuration for a specific group. It has two attributes:
+
+      - group: Group name (in inventory)
+
+      - users: A list of users with crontab tasks
+
+      'users' list has two attributes: 'name' and 'tasks', the same attributes and meaning than 'crontabGlobal' variable. 'Tasks' attribute is a crontab tasks list with the same attributes than 'crontabGlobal'.
+
+      At this point, we can delete or overwrite global tasks, this way:
+
+        * Overwrite global tasks -> Defining label attribute with same string than global task, and the rest of attributes with values we want for this case
+
+        * Delete global tasks -> Defining label attribute with same string than global task, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of tasks defined (with different label than global tasks) will be added to crontab after global tasks.
+
+
+      Example:
+
+	crontabGroup:
+	- group: proxmox
+  	  users:
+  	  - name: root
+    	    tasks:
+    	    - label: Backup diario virtuales
+      	      job: '/root/scripts/backup.sh all'
+      	      minute: 30
+      	      hour: 3
+      	      comment: Backup diaro virtuales a las 03:30
+    	    - label: Backup semanal virtuales
+      	      job: '/root/scripts/backup.sh all'
+      	      minute: 30
+      	      hour: 3
+      	      weekday: 6
+
+
+    * 'cronHost' -> crontab configuration for a specific server. It has two attributes: 
+
+      - host: Server name (in inventory)
+
+      - users: A list of users with crontab tasks
+
+      'users' list has two attributes: 'name' and 'tasks', the same attributes and meaning than 'crontabGlobal' and 'crontabGroup' variables. 'Tasks' attribute is a crontab tasks list with the same attributes than 'crontabGlobal' and 'crontabGroup'.
+
+      At this point, we can delete or overwrite global or groups tasks, this way:
+
+        * Overwrite global or groups tasks -> Defining label attribute with same string than global or groups task, and the rest of attributes with values we want for this case
+
+        * Delete global or groups tasks -> Defining label attribute with same string than global or groups task, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of tasks defined (with label different than global and groups tasks) will be added to crontab after global and groups tasks.
+
+
+      Example:
+
+	crontabHost:
+	- host: srvABC
+  	  users:
+  	  - name: root
+    	    tasks:
+    	    - label: Backup diario virtuales
+      	      job: '/root/scripts/backup.sh all'
+      	      minute: 30
+      	      hour: 6
+      	      comment: Backup diaro virtuales a las 06:30
+    	    - label: Backup mensual virtuales
+      	      job: '/root/scripts/backup.sh all'
+      	      minute: 30
+      	      hour: 3
+      	      day: 1
+

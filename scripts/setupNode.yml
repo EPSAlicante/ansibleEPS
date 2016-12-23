@@ -1,0 +1,79 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+- hosts: newNode 
+  gather_facts: True
+  user: root
+  vars: 
+    ansibleUser: "{{ createUser }}"
+    uidUser: "{{ uidUserValue }}"
+    hostAnsible: "{{ hostAnsibleValue }}"
+    pathAnsible: "{{ pathAnsibleValue }}"
+    pathAnsibleLibrary: "{{ pathAnsibleLibraryValue }}"
+    ansible_ssh_user: "root"
+
+  tasks:
+
+  - name: Getting Paths
+    action: path_EPS
+    changed_when: False
+    ignore_errors: yes
+
+  - name: Get typeOS
+    shell: '{{ path.commands.uname }} -s 2>/dev/null'
+    register: typeOS
+    ignore_errors: yes
+
+  - name: Setup | Check public RSA key (local user) and create if not exists 
+    local_action: shell (find ~/.ssh/id_rsa.pub >/dev/null 2>/dev/null) || (ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa)
+    ignore_errors: yes
+
+  - name: Getting home directory
+    shell: ( [ "{{ typeOS.stdout }}" == "SunOS" ] && echo "/export/home" ) || echo "/home"
+    register: homeDirectory
+    ignore_errors: yes
+
+  - name: Setup | create user (default uid)
+    user: name={{ ansibleUser }} comment="Ansible user" home="{{ homeDirectory.stdout|default('/home') }}/{{ ansibleUser }}"
+    when: ansibleUser != "root"  and uidUser == "default"
+
+  - name: Setup | create user (specific uid)
+    user: name={{ ansibleUser }} comment="Ansible user" home="{{ homeDirectory.stdout|default('/home') }}/{{ ansibleUser }}" uid={{ uidUser }}
+    when: ansibleUser != "root" and uidUser != "default"
+ 
+  - name: Permission 0700 ansibleUser home
+    file: path="{{ homeDirectory.stdout|default('/home') }}/{{ ansibleUser }}" mode=0700 state=directory
+    when: ansibleUser != "root"
+
+  - name: Setup | authorized key upload
+    authorized_key: user={{ ansibleUser }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+ 
+  - name: Be sure sudo is installed (apt)
+    shell: DEBIAN_FRONTEND=noninteractive {{ path['apt-get'] }} -y --force-yes install {{ item }}
+    with_items:
+      - sudo
+    ignore_errors: yes
+    when: ansible_pkg_mgr|default("") == "apt"
+
+  - name: Be sure bash & sudo are installed (yum)
+    yum: pkg={{ item }} state=installed
+    with_items:
+      - bash
+      - sudo
+    ignore_errors: yes
+    when: ansible_pkg_mgr|default("") == "yum"
+
+  - name: Link /etc/sudoers
+    shell: ( [ -f /etc/sudoers ] || ( [ `{{ path.commands.find }} / -name 'sudoers'|wc -l` -gt 0 ] && ln -s `{{ path.commands.find }} /etc /usr/local / -name 'sudoers'|head -1` /etc/sudoers &&  echo "link" ) ) 2>/dev/null 
+    register: linkSudoers
+    changed_when: linkSudoers.stdout == "link"
+    ignore_errors: yes
+
+  - name: Sudoers | update sudoers file and validate
+    lineinfile: "dest=/etc/sudoers insertafter=EOF line='{{ ansibleUser }} ALL=NOPASSWD: ALL' regexp='{{ ansibleUser }} ALL=NOPASSWD: ALL' state=present"
+    when: ansibleUser != "root"

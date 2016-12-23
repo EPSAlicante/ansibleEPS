@@ -1,0 +1,9 @@
+# Backup disk
+backupDisk: /dev/sdb1
+
+# Backup Servers
+backupServers: 
+- baculaadmon1 
+
+# Snapshot Space (K, M, G or T)
+snapshotSpace: 10G

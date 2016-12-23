@@ -1,0 +1,102 @@
+* Ansible Implementation in EPS
+
+  Ansible will be used for automation of main (and time consuming) administration tasks. Could be automated all tasks, but specially all of them that implies changes in a group of servers. Ansible will reduce considerably administration time and make us to be sure that every chnge is made (every server stay in a correct state).
+
+  Ansible let us simplify hard tasks, setting several 'control' files in Ansible server and executing some scripts (called playbooks) that made appropiate updates to selected servers.
+
+  Ansible server saves all information about Ansible (control variables, communication and administration code) in '/etc/ansibleEPS' directory. Inside we'll find playbooks (yml extension files), 'eps' inventory file (with servers iforming into groups), 'group_vars' and 'hosts_vars' variables directories, and 'roles' directory with playbooks execution code, separated by roles depending on tasks to do.
+
+
+* Playbooks
+
+  Playbooks are the top level files, scripts called from command-line to execute some task on servers.
+
+  In playbooks we define:
+
+    hosts -> servers list to connect and execute code
+    roles -> every role is a group of related tasks to execute together
+
+  Executing a playbook from command-line (Ex. typing ansible-playbook fichero.yml), we'll call 'fichero.yml' playbook, and the will execute code defined in 'roles' section for servers defined in 'hosts' section, using variables of 'group_vars' and 'hosts_vars' directory, with values depending on the server and groups it belongs to (in inventory).
+
+
+* Servers Inventory
+
+  In inventory file '/etc/ansibleEPS/eps' we define servers to be managed by playbooks executions. A server not defined in inventory can't be managed by Ansible.
+
+  Inventory file is divided in three main parts defining different kind of groups (groups are written as a name between square brackets). Main target is grouping servers by 'type of service' (roles to execute), and location (different buildings, networks, areas, etc). But, of course, this definition of groups can be changed for any other.
+
+  Groups are very important because they let us:
+
+    * To limit the scope of playbooks executions
+
+    * To define values of variables used by roles code. These values could change depending on the servers group (or groups)
+
+
+  Three parts of inventory file:
+
+    * Servers by roles and location, defining groups as [P1-mysql] (Mysql servers located in P1 building) 
+
+    * Servers by roles, defining groups as [mysql:chidren] (all Mysql servers). 'children' means that is a 'group of groups', and we define inside groups of Mysql servers in any location, as: P1-mysql, P2-mysql, etc (all of them without square brackets)
+
+    * Servers by location, defining groups as [P1:children] (all servers located in P1 building). As with the previos case, we define inside groups of servers located in P1, as: P1-mysql, P1-apache, P1-DNS, etc.
+
+  There is a special part at the end of the file, to define extra groups. These kind of groups could be necessary to include or exclude servers for a playbook.
+
+    Ex. 'iptables.yml' playbook set iptables rules in servers. It will be executed in all servers except servers that belongs to 'noiptables' group ('hosts' definition of 'iptables' playbook). So, to exclude a server of IPtables setting, it has to belong to 'noiptables' group.
+  
+
+* Grouping by Operating System
+
+  Every playbook calls 'group_by.yml' file before roles execution. This 'extra' playbook groups servers (all servers included in original playbook) by their Operating System, distribution and Version.
+
+  This 'grouping' task is important for the results of playbook execution, because values of variables can change depending on these groups.
+
+  Ex. A variable about Apache service path could be '/etc/httpd' for a CentOS and '/etc/apache2' for a Debian.
+
+
+* Grouping by Network
+
+  The same 'extra' playbook 'group_by.yml' (after grouping by Operating System) groups server depending on network they belong, considering thier main network device (usually eth0).
+
+  This 'grouping' task is important for the results of playbook execution, because values of variables can change depending on these groups.
+
+  Ex. For a specific network could be necessary a special DNS, or IPTables rules, etc.
+
+
+* Variables
+
+  Variables is one of the most important features of playbooks. We use them inside roles to customize code for every server: commands paths, configuration files, scripts, etc.
+
+  Variables ared defined in 'host_vars' directory (inside servers files, for a specific server) and  'groups_vars' directory (inside group files, for a specific group, or general files, in 'all' directory, for all servers). 
+
+  We'll have variables at three levels: in a main file with default values (global variables for all servers), or in group files where we can (for that group) define new variables or overwrite global variables values, or even in host files we can (for that server) define new variables or overwrite global (or group) variables values.
+
+  These are the three levels of file declarations:
+
+    Global -> in directory 'group_vars/all/' we'll find files with all global variables for all servers. Main file is called 'all'. There are also a file for every playbook (sudo, wrappers, pamAccess, ipTables, crontab, etc.), this way variables are separated to simplify management. Defining variables at this level is important even if we overwrite their values at a lower level, because we always have 'default' values for every variable (this way we could avoid future errors).
+
+    By group -> 'group_vars/groupName' files ('groupName' will be the name of the group in inventory) have variables used for servers defined in 'groupName' group. We can define new variables just for that group of servers, or overwrite values of global variables.
+
+    IMPORTANT: We have to create 'gropName' file in 'group_vars' directory AND links to 'groupName' file from 'groupNames by location' as: 'P1-groupName', 'P2-groupName' (for all defined 'location-groupName' groups in inventory). Otherwise values of variables (at this level) could be ignored if server belongs to mora than a group.
+
+    By server -> 'host_vars/nameServer' files ('nameServer will be the name of the server in inventory) have variables used for 'nameServer' server. We can define new variables just for that server, or overwrite values of global (or group level) variables.
+
+
+* Roles
+
+  Code to execute on servers is grouped in roles, depending on the way of tasks to do. There is a role to set IPTables, other one to update Operating System, etc.
+
+  Inside of roles, there are a lof of different tasks defined, but all of them follow a common target defined at role level.
+
+  Roles are called inside playbooks. A playbook can call just a role or some of them.
+
+  Roles are defined in 'roles' directory, creting a subdir for each one. Inside of them there are four subdirs (or less if they are not necessary):
+
+    * 'tasks' subdir -> Inside we'll create 'yml' files with code to execute. There is usually a main file 'main.yml' to call the rest of files. 
+
+    * 'files' subdir -> If anyone of tasks have to copy a static file (with no variables inside, just text) to servers, these files will be placed in this directory, with a path well known by tasks to call it.
+
+    * 'templates' subdir -> Similar to 'files' subdir, but in this case files are not static, they will contain variables, and their values will change files for every server, so they are dynamic. These files have 'j2' extension (j2 means 'jinja2', the language used to define variables in files). 
+
+    * 'handlers' subdir -> Inside we'll create 'yml' files (usually just a file 'main.yml') with special tasks to manage services (stop, start or restart a service). These special tasks will be called from task files (in 'tasks' subir).
+

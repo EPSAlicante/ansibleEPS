@@ -1,0 +1,168 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+# PAM Access configuration 
+
+### Allow permissions ###
+# Ansible access
++:ansible:172.20.1.10.
+{# Global block -#}
+{% if pamAccessAllowGlobal is defined -%}
+{%  for rule in pamAccessAllowGlobal -%}
+{%   set printRule = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if pamAccessAllowGroup is defined -%}
+{%    for rGroup in pamAccessAllowGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      for grule in rGroup.rules -%}
+{%       if grule.label == rule.label -%}
+{%        if printRule.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printRule.value -%}
+{%    if pamAccessAllowHost is defined -%}
+{%     for rHost in pamAccessAllowHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == rule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printRule.value and rule.users is defined and rule.origins is defined -%}
+# {{ rule.label }}
++:{{ rule.users }}:{{ rule.origins }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if pamAccessAllowGroup is defined -%}
+{%  for rGroup in pamAccessAllowGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for grule in rGroup.rules -%}
+{%     set printRule = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for rHost in pamAccessAllowHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == grule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printRule.value and grule.users is defined and grule.origins is defined -%}
+# {{ grule.label }}
++:{{ grule.users }}:{{ grule.origins }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if pamAccessAllowHost is defined -%}
+{%  for rHost in pamAccessAllowHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for hrule in rHost.rules -%}
+{# Print label -#}
+{%     if hrule.users is defined and hrule.origins is defined -%}
+# {{ hrule.label }}
++:{{ hrule.users }}:{{ hrule.origins }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}
+
+### Deny permissions ###
+{# Global block -#}
+{% if pamAccessDenyGlobal is defined -%}
+{%  for rule in pamAccessDenyGlobal -%}
+{%   set printRule = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if pamAccessDenyGroup is defined -%}
+{%    for rGroup in pamAccessDenyGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      for grule in rGroup.rules -%}
+{%       if grule.label == rule.label -%}
+{%        if printRule.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printRule.value -%}
+{%    if pamAccessDenyHost is defined -%}
+{%     for rHost in pamAccessDenyHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == rule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printRule.value and rule.users is defined and rule.origins is defined -%}
+# {{ rule.label }}
+-:{{ rule.users }}:{{ rule.origins }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if pamAccessDenyGroup is defined -%}
+{%  for rGroup in pamAccessDenyGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for grule in rGroup.rules -%}
+{%     set printRule = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for rHost in pamAccessDenyHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hrule in rHost.rules -%}
+{%        if hrule.label == grule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printRule.value and grule.users is defined and grule.origins is defined -%}
+# {{ grule.label }}
+-:{{ grule.users }}:{{ grule.origins }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if pamAccessDenyHost is defined -%}
+{%  for rHost in pamAccessDenyHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for hrule in rHost.rules -%}
+{# Print label -#}
+{%     if hrule.users is defined and hrule.origins is defined -%}
+# {{ hrule.label }}
+-:{{ hrule.users }}:{{ hrule.origins }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}

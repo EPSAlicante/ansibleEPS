@@ -1,0 +1,24 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Adding user manager 
+
+- name: Be sure group manager exists
+  group: name=manager gid={{ managerGID }} state=present
+
+- name: Be sure user manager exists
+  user: name=manager uid={{ managerID }} group=manager state=present update_password=always password={{ managerPassword }} shell=/bin/bash
+
+- name: Add user manager to groups
+  shell: (((grep "^{{item}}:" /etc/group|grep -v "\(:\|,\)manager\(,\|$\)" >> /dev/null) && (sed -i "s@$(grep "^{{item}}:" /etc/group)@$(grep "^{{item}}:" /etc/group)$(grep "^{{item}}:" /etc/group|grep -v ":$" >>/dev/null && echo ",")manager@g" /etc/group)) && echo "Changed") || echo "No"  executable="/bin/bash"
+  register: managerAdd
+  changed_when: managerAdd.stdout == "Changed"
+  with_items: "{{ managerGroups }}"
+
+- name: Permisos del home de manager
+  file: path=/home/manager/ state=directory mode=0700

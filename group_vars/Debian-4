@@ -1,0 +1,87 @@
+# Operating System
+#SO: Debian
+
+
+# Version
+#vSO: Debian4
+
+
+# Password of manager user
+managerPassword: $2$cvwKRlCV$rj2U.QoPCov1wggVqOu2B0 
+
+
+# Groups with manager
+managerGroups: 
+- root
+- adm
+- dialout
+- cdrom
+- floppy
+- audio
+- www-data
+- video
+- plugdev
+
+
+# Debian Repositories
+reposDebian:
+- deb http://ftp.de.debian.org/debian/ etch main
+- deb-src http://ftp.de.debian.org/debian/ etch main
+- deb http://security.debian.org/ etch/updates main contrib
+- deb-src http://security.debian.org/ etch/updates main contrib
+
+
+# List of services to stop
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LC_ALL=es_ES.UTF-8"
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind9-host
+- lsof
+- traceroute
+- telnet
+- openssh-client
+- manpages
+
+
+# Syslog conf file
+syslogConf: /etc/syslog.conf
+
+
+# SSHd_Config
+sshdConfig:
+ permitRootLogin: "yes"
+ clientAliveInterval: 43200
+ clientAliveCountMax: 0
+ logLevel: INFO
+ subsystemSftp: "" 
+ matchGroup: Ignore
+ forceCommand: Ignore
+
+
+# Concurrency
+concurrency: none
+
+
+# Sudo Options
+sudoOptions:
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron/crontabs
+
+
+# Crontab Group file
+crontabGroupFile: crontab

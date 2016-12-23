@@ -1,0 +1,13 @@
+*** MUNIN PlayBook ***
+
+Munin playbook 'munin.yml' is able to manage munin-node list of munin service for all servers running munin service, in a centralized way. Playbook can update changes at once for all munin servers,  but It can also update just one with '--limit serverName' parameter.
+
+Playbook uses 'roles/munin/templates/etc/munin/conf.d/hosts.j2' template to generate clients (munin-node) list (all servers except those belonging to 'nomunin' group). If we want to add new munin clients, we'll create a file (in the same directory '/etc/munin/conf.d') with the new list (there's a created file named 'hosts-outsiders' fot this purpose).
+
+
+Command-line execution: 'ansible-playbook munin.yml'
+
+Scope: Playbook will update all server of 'munin' group (in inventory)
+
+Templates: 'roles/munin/templates/etc/munin/conf.d/hosts.j2'
+

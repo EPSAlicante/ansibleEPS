@@ -1,0 +1,104 @@
+# TCP Wrappers
+#
+# Variables to generate '/etc/hosts.allow' and '/etc/hosts.deny' files (TCP Wrappers)
+#
+# 'allow' permissions (global, group y host) will be defined before 'deny' permissions (global, group y host)
+#
+# hostsAllowGlobal: (List of global TCP Wrappers rules)
+# ...
+#
+# hostsAllowGroup: 
+# - group: value (group name)
+#   rules: (List of TCP Wrappers rules by group)
+#   ...
+#
+# hostsAllowHost: 
+# - host: value (host name)
+#   rules: (List of TCP Wrappers rules by host)
+#   ...
+#
+# hostsDenyGlobal: (List of global TCP Wrappers rules)
+# ...
+#
+# hostsDenyGroup:
+# - group: value (group name)
+#   rules: (List of TCP Wrappers rules by group)
+#   ...
+#
+# hostsDenyHost: 
+# - host: value (host name)
+#   rules: (List of TCP Wrappers rules by host)
+#   ...
+#
+# Rules definition (syntax)
+# -----------------------------------
+# label: value --> name used as comment and used too as key to be called from other variables (required attribute)
+# services: value --> list of services (required attribute)
+# origins: value --> list of origins (required attribute)
+#
+# On 'services' and 'origins' attributes, 'hostname' string will be replaced by hostname on every host
+#
+
+hostsAllowGlobal:
+- label: localhost and Admon subnet 172.20.40.0/24 (sshd access)
+  services: sshd
+  origins: 127.0.0.1 172.20.40.0/255.255.255.0
+- label: Bacula server and Admon subnet (hostname-fd access)
+  services: hostname-fd
+  origins: 127.0.0.1 172.20.40.0/255.255.255.0 172.20.3.30
+- label: Nagios servers (nrpe access)
+  services: nrpe
+  origins: 172.20.1.12 172.20.1.15
+
+hostsAllowGroup:
+- group: bacula
+  rules:
+  - label: Admon subnet (mysqld access)
+    services: mysqld
+    origins: 127.0.0.1 172.20.40.0/255.255.255.0
+  - label: Total (hostname-dir access)
+    services: hostname-dir
+    origins: ALL
+  - label: Total (hostname-sd access)
+    services: hostname-sd
+    origins: ALL
+
+- group: LDAP 
+  rules:
+  - label: Total (ldaps access)
+    services: ldaps
+    origins: ALL
+
+- group: nagios
+  rules:
+  - label: Total access from localhost
+    services: ALL
+    origins: 127.0.0.1
+
+- group: proxmox
+  rules:
+  - label: Bacula server (sshd access)
+    services: sshd
+    origins: 172.20.3.30
+
+hostsAllowHost:
+- host: ansible_server 
+  rules:
+  - label: localhost and Admon subnet 172.20.40.0/24 (sshd access)
+  - label: SysAdm access (172.20.40.100)
+    services: sshd
+    origins: 127.0.0.1 172.20.40.100
+
+
+hostsDenyGlobal:
+- label: Deny ALL
+  services: ALL
+  origins: ALL
+
+- host: hermes 
+  rules:
+  - label: Deny ALL
+  - label: Deny ALL except sshd
+    services: ALL EXCEPT sshd
+    origins: ALL
+

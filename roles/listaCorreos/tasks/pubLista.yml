@@ -1,0 +1,30 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Mail list publication 
+
+- name: get mail list (aliases included) 
+  shell: ((find /home -maxdepth 2 -type d -name 'Maildir'|sed 's/\/home\///'|sed 's/\/Maildir/@{{ domain }}/';grep -vl '/dev/null' /var/qmail/alias/.qmail-*|sed 's/\/var\/qmail\/alias\/.qmail-//'|tr ':' '.'|sed 's/$/@{{ domain }}/')|sort|uniq) 2>/dev/null executable='/bin/bash'
+  register: mailList 
+  changed_when: false
+
+- name: Copy /var/www/lista/lista.txt.j2 template to qmail Web Server (hermes)
+  template: src=var/www/lista/lista.txt.j2 dest=/var/www/lista/lista.txt owner=www-data group=www-data mode=0644 backup=yes
+
+- debug: msg="Email addresses List for CPD at https://hermes.eps.ua.es/lista/lista.txt"
+
+- name: get mail info
+  shell: (for correo in $(find /home -maxdepth 2 -type d -name 'Maildir'|sed 's/\/home\///'|sed 's/\/Maildir/@{{ domain }}/'|sort|uniq); do fecha=$(grep -l "^$correo" /var/www/estadisticas/awstats/estadisticas/awstats????????.mail.{{ domain }}.txt|rev|cut -d'/' -f1|rev|cut -d'.' -f1|sed 's/awstats//'|awk '{print substr($1,3,4) substr($1,1,2) substr($1,7,2)}'|sort|tail -1|awk '{print substr($1,7,2) "/" substr($1,5,2) "/" substr($1,1,4)}'); echo "$correo (local) Last access -> $fecha"; done; for correo in $(grep -vl "/dev/null" /var/qmail/alias/.qmail-*|sed 's/\/var\/qmail\/alias\/.qmail-//'|tr ':' '.'|sed 's/$/@{{ domain }}/'|sort|uniq); do fecha=$(grep -l "^$correo" /var/www/estadisticas/awstats/estadisticas/awstats????????.mail.{{ domain }}.txt|rev|cut -d'/' -f1|rev|cut -d'.' -f1|sed 's/awstats//'|awk '{print substr($1,3,4) substr($1,1,2) substr($1,7,2)}'|sort|tail -1|awk '{print substr($1,7,2) "/" substr($1,5,2) "/" substr($1,1,4)}'); echo "$correo (alias) Last access -> $fecha"; done) 2>/dev/null executable='/bin/bash'
+  register: mailInfo
+  changed_when: false
+
+- name: Copy /var/www/lista/infolista.txt.j2 template to qmail Web Server (hermes)
+  template: src=var/www/lista/infolista.txt.j2 dest=/var/www/lista/infolista.txt owner=www-data group=www-data mode=0644
+  changed_when: false
+
+- debug: msg="Information about email address at https://hermes.eps.ua.es/lista/infolista.txt"

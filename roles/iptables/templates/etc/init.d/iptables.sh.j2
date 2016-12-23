@@ -1,0 +1,283 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          iptables
+# Required-Start:    $all 
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start IPtables
+### END INIT INFO
+
+# Made by AnsibleEPS
+
+IPTABLES=/sbin/iptables
+
+{% if ansible_os_family == "Debian" -%}
+. /lib/lsb/init-functions
+{% endif -%}
+fileRules=/etc/init.d/.iptables.rules
+
+case "$1" in
+    start)
+	{% if ansible_os_family == "Debian" -%}
+        log_begin_msg "Starting iptables..."
+	{% else -%}
+	echo "Starting iptables..."
+	{% endif -%}
+
+        # Cleaning rules and counters 
+	{% for rule in ipTablesCleaning -%}
+	($IPTABLES {{ rule }}) || exit $? 
+	{% endfor %}
+
+        # Default policies 
+        {% for rule in ipTablesPolicy -%}
+        ($IPTABLES {{ rule }}) || exit $?
+        {% endfor %}
+
+	### Ansible access rule ###
+	($IPTABLES -A INPUT -p tcp --dport 22 -s {{ ansibleMaster }}/32 -j ACCEPT) || exit $? 
+	($IPTABLES -A OUTPUT -p tcp -d {{ ansibleMaster }}/32 --sport 22 -j ACCEPT) || exit $? 
+
+	### Global rules ###
+	{# Global block -#}
+	{% if ipTablesRulesGlobal is defined -%}
+	{%  for rule in ipTablesRulesGlobal -%}
+	{%   set printRule = {'value': True} -%}
+	{# Looking for the same label in Group block -#}
+	{%   if ipTablesRulesGroup is defined -%}
+	{%    for rGroup in ipTablesRulesGroup -%}
+	{%     if rGroup.group in group_names -%}
+	{%      for grule in rGroup.rules -%}
+	{%       if grule.label == rule.label -%}
+	{%        if printRule.update({'value': False}) -%}{% endif -%}
+	{%       endif -%}
+	{%      endfor -%}
+	{%     endif -%}
+	{%    endfor -%}
+	{%   endif -%}
+	{# Looking for the same label in Host block -#}
+	{%   if printRule.value -%}
+	{%    if ipTablesRulesHost is defined -%}
+	{%     for rHost in ipTablesRulesHost -%}
+	{%      if rHost.host==inventory_hostname -%}
+	{%       for hrule in rHost.rules -%}
+	{%        if hrule.label == rule.label -%}
+	{%         if printRule.update({'value': False}) -%}{% endif -%}
+	{%        endif -%}
+	{%       endfor -%}
+	{%      endif -%}
+	{%     endfor -%}
+	{%    endif -%}
+	{%   endif -%}
+	{# Print label -#}
+	{%   if printRule.value and (rule.chain is defined or rule.table is defined or rule.oper is defined or rule.protocol is defined or rule.interfaceIN is defined or rule.interfaceOUT is defined or rule.state is defined or rule.saddr is defined or rule.sport is defined or rule.daddr is defined or rule.dport is defined or rule.target is defined or rule.free is defined or rule.comment is defined) -%}
+
+	{# There's a comment? -#}
+	{%    if rule.comment is defined -%}
+	# {{ rule.comment }}
+	{%    endif -%}
+
+	{# There's a free rule? -#}
+	{%    if rule.free is defined -%}
+	($IPTABLES {{ rule.free }}) || exit $? 
+	{%    else -%}
+
+	{# Watching rules -#}
+	{%     for Rdaddr in rule.daddr|default([ "NULL" ]) -%}
+	{%      for Rdport in rule.dport|default([ "NULL" ]) -%}
+        {%       for Rsaddr in rule.saddr|default([ "NULL" ]) -%}
+        {%        for Rsport in rule.sport|default([ "NULL" ]) -%}
+	{%         for Rtarget in rule.target|default([ "ACCEPT" ]) -%}
+
+	{%          if rule.chain == "IO" or rule.chain is undefined -%}
+
+	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} INPUT {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-i %s" %rule.interfaceIN if rule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-o %s" %rule.interfaceOUT if rule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+	{% else -%}
+
+	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} {{ rule.chain }} {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-i %s" %rule.interfaceIN if rule.interfaceIN is defined else "" }} {{ "-o %s" %rule.interfaceOUT if rule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+	{%          endif -%}
+
+        {%         endfor -%}
+        {%        endfor -%}
+	{%       endfor -%}
+	{%      endfor -%}
+	{%     endfor %}
+
+	{%    endif -%}
+
+	{%   endif -%}	
+	{%  endfor -%}
+	{% endif -%}
+
+	{# Group block -#}
+	{% if ipTablesRulesGroup is defined -%}
+	{%  for rGroup in ipTablesRulesGroup -%}
+	{%   if rGroup.group in group_names -%}
+
+	### Group {{ rGroup.group }} rules ###
+        {%    for grule in rGroup.rules -%}
+        {%     set printRule = {'value': True} -%}
+        {# Looking for the same label in Host block -#}
+	{%     if ipTablesRulesHost is defined -%}
+	{%      for rHost in ipTablesRulesHost -%}
+	{%       if rHost.host==inventory_hostname -%}
+	{%        for hrule in rHost.rules -%}
+	{%         if hrule.label == grule.label -%}
+	{%          if printRule.update({'value': False}) -%}{% endif -%}
+	{%         endif -%}
+	{%        endfor -%}
+	{%       endif -%}
+	{%      endfor -%}
+	{%     endif -%}
+	{# Print label -#}
+	{%     if printRule.value and (grule.chain is defined or grule.table is defined or grule.oper is defined or grule.protocol is defined or grule.interfaceIN is defined or grule.interfaceOUT is defined or grule.state is defined or grule.saddr is defined or grule.sport is defined or grule.daddr is defined or grule.dport is defined or grule.target is defined or grule.free is defined or grule.comment is defined) -%}
+
+        {# There's a comment? -#}
+        {%      if grule.comment is defined -%}
+        # {{ grule.comment }}
+        {%      endif -%}
+
+        {# There's a free rule? -#}
+        {%      if grule.free is defined -%}
+        ($IPTABLES {{ grule.free }}) || exit $? 
+        {%      else -%}
+
+        {# Watching rules -#}
+        {%       for Rdaddr in grule.daddr|default([ "NULL" ]) -%}
+        {%        for Rdport in grule.dport|default([ "NULL" ]) -%}
+        {%         for Rsaddr in grule.saddr|default([ "NULL" ]) -%}
+        {%          for Rsport in grule.sport|default([ "NULL" ]) -%}
+        {%           for Rtarget in grule.target|default([ "ACCEPT" ]) -%}
+
+        {%            if grule.chain == "IO" or grule.chain is undefined -%}
+
+        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} INPUT {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-i %s" %grule.interfaceIN if grule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-o %s" %grule.interfaceOUT if grule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        {% else -%}
+
+        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} {{ grule.chain }} {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-i %s" %grule.interfaceIN if grule.interfaceIN is defined else "" }} {{ "-o %s" %grule.interfaceOUT if grule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        {%            endif -%}
+
+        {%           endfor -%}
+        {%          endfor -%}
+        {%         endfor -%}
+        {%        endfor -%}
+        {%       endfor -%}
+
+        {%      endif %}
+	
+	{%     endif -%}
+	{%    endfor -%}
+	{%   endif -%}
+
+	{%  endfor -%}
+	{% endif -%}
+
+	{# Host block -#}
+	{% if ipTablesRulesHost is defined -%}
+	{%  for rHost in ipTablesRulesHost -%}
+
+	{%   if rHost.host == inventory_hostname -%}
+
+	### Host {{ rHost.host }} rules ###
+        {%    for hrule in rHost.rules -%}
+	{# Print label -#}
+        {%     if hrule.chain is defined or hrule.table is defined or hrule.oper is defined or hrule.protocol is defined or hrule.interfaceIN is defined or hrule.interfaceOUT is defined or hrule.state is defined or hrule.saddr is defined or hrule.sport is defined or hrule.daddr is defined or hrule.dport is defined or hrule.target is defined or hrule.free is defined or hrule.comment is defined -%}
+
+        {# There's a comment? -#}
+        {%      if hrule.comment is defined -%}
+        # {{ hrule.comment }}
+        {%      endif -%}
+
+        {# There's a free rule? -#}
+        {%      if hrule.free is defined -%}
+        ($IPTABLES {{ hrule.free }}) || exit $? 
+        {%      else -%}
+
+        {# Watching rules -#}
+        {%       for Rdaddr in hrule.daddr|default([ "NULL" ]) -%}
+        {%        for Rdport in hrule.dport|default([ "NULL" ]) -%}
+        {%         for Rsaddr in hrule.saddr|default([ "NULL" ]) -%}
+        {%          for Rsport in hrule.sport|default([ "NULL" ]) -%}
+        {%           for Rtarget in hrule.target|default([ "ACCEPT" ]) -%}
+
+        {%            if hrule.chain == "IO" or hrule.chain is undefined -%}
+
+        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} INPUT {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-i %s" %hrule.interfaceIN if hrule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-o %s" %hrule.interfaceOUT if hrule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        {% else -%}
+
+        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} {{ hrule.chain }} {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-i %s" %hrule.interfaceIN if hrule.interfaceIN is defined else "" }} {{ "-o %s" %hrule.interfaceOUT if hrule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        {%            endif -%}
+
+        {%           endfor -%}
+        {%          endfor -%}
+        {%         endfor -%}
+        {%        endfor -%}
+        {%       endfor -%}
+
+        {%      endif -%}
+	{%     endif -%}
+
+        {%    endfor -%}
+	{%   endif -%}
+
+	{%  endfor %}
+	{%- endif %}
+
+        # Generating rules file
+        $IPTABLES -nL > $fileRules
+	/bin/chgrp nagios $fileRules
+	/bin/chmod 640 $fileRules	
+
+        ;;
+
+    stop)
+        {% if ansible_os_family == "Debian" -%}
+        log_begin_msg "Stopping iptables..." 
+        {% else -%}
+        echo "Stopping iptables..." 
+        {% endif -%}
+
+        # Deleting rules file
+        > $fileRules
+
+        # Cleaning rules and counters 
+        {% for rule in ipTablesCleaning -%}
+        ($IPTABLES {{ rule }}) || exit $? 
+        {% endfor %}
+
+        # Rules to accept everything 
+        ($IPTABLES -A OUTPUT -j ACCEPT) || exit $? 
+        ($IPTABLES -A INPUT  -j ACCEPT) || exit $? 
+
+        ;;
+    force-reload)
+        $0 restart
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        {% if ansible_os_family == "Debian" -%}
+	log_success_msg "Uso: /etc/init.d/iptables.sh {start|stop|force-reload|restart}"
+        {% else -%}
+        echo "Uso: /etc/init.d/iptables.sh {start|stop|force-reload|restart}" 
+        {% endif -%}
+        exit 1
+        ;;
+esac
+
+exit 0
+

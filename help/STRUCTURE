@@ -1,0 +1,388 @@
+######################################################
+                   Developer Guide 
+######################################################
+
+
+Directory Structure: '/etc/ansibleEPS'
+
+
+    Files:
+
+	
+	* 'ansible.cfg' -> Ansible configuration file
+
+	* 'configure.py' -> System configuration python script
+
+	* 'configExtra.py' -> Extra variables configuration python script
+
+	* 'eps' -> Inventory file
+
+	* 'help.py' -> Help menu python script
+
+	* 'hosts' -> Link to Inventory file
+
+	* 'menu.py' -> User menu python script
+
+	* 'production' -> Link to Inventory file
+
+
+    Playbook files:
+
+
+	* 'baculaAdmon.yml' -> To configure Bacula configuration files ('/etc/bacula/bacula-dir.conf' and '/etc/bacula/bacula-sd.conf' files) in Bacula servers. See BACULAADMON file to get details about Bacula module.
+	
+	* 'common.yml' -> To configure common features in nodes (hosts in inventory). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc. See COMMON file to get details about Common module. 
+
+	* 'cron.yml' -> To delete or add playbook entries in crontab to execute playbooks in background.
+
+	* 'crontab.yml' -> To configure Crontab in nodes (hosts in inventory). See CRONTAB file to get details about Crontab module.
+
+        * 'dhcp.yml' -> To configure DHCP configuration file ('/etc/dhcp3/dhcpd.conf' file) in DHCP servers. See DHCP file to get details about DHCP module.
+
+	* 'group_by.yml' -> Auxiliar file used by playbooks to get information about Operating System and Networks.
+
+	* 'hostsFile.yml' -> To configure '/etc/hosts' file in nodes (hosts in inventory). See HOSTFILE file to get details about HostFile module. 
+
+	* 'iptables.yml' -> To configure IPTables in nodes (hosts in inventory). See IPTABLES file to get details about IPtables module.
+
+	* 'listaCorreos.yml -> To generate a List of email adresses with extra info from Qmail Server, and publish info in its Web Service in Qmail server. See EMAILLIST file to get details about Email addresses List module.
+
+	* 'munin.yml' -> To configure Munin hosts configuration files (files in '/etc/munin/conf.d/') in Munin servers. See MUNIN file to get details about Munin module. 
+
+	* 'nagios.yml' -> To configure Nagios configuration files (files in '/etc/nagios3/conf.d' files) in Nagios servers. See NAGIOS file to get details about Nagios module. 
+
+	* 'nrpe.yml' -> To configure Nagios NRPE commands (files in '/etc/nagios/nrpe.d/') in nodes (hosts in inventory). See NRPE file to get details about NRPE module. 
+
+	* 'pamAccess.yml' -> To configure PAM Access ('/etc/security/access.conf' file) in nodes (hosts in inventory). See PAMACCESS file to get details about PAM Access module. 
+
+	* 'pathFacts.yml' -> Auxiliar file used by playbooks to get commands and daemons paths. 
+
+	* 'proxmox.yml' -> To configure some basic features in proxmox nodes (hosts in inventory with proxmox installed). See PROXMOX file to get details about Proxmox module. 
+ 
+	* 'site.yml' -> To execute the following playbooks: common.yml, hostsFile.yml, sudo.yml, wrappers.yml, pamAccess.yml, nrpe.yml, iptables.yml and proxmox.yml
+
+	* 'sudo.yml' -> To configure '/etc/sudoers' file in nodes (hosts in inventory). See SUDO file to get details about Sudoers module. 
+
+	* 'update.yml' -> to update nodes (hosts in inventory).
+
+	* 'wrappers.yml' -> To configure TCP Wrappers ('/etc/hosts.allow' and '/etc/hosts.deny' files) in nodes (hosts in inventory). See WRAPPERS file to get details about TCP Wrappers module.
+
+
+    Directories:
+
+
+	* 'config_files/' -> configuration files (variables by default)
+
+	    - 'main.conf' (default values of variables. Updated every configuration with values introduced)
+
+	    - 'extra.conf' (variables not required in configuration)
+
+
+	* 'group_vars/' -> group variables (required parameters in configuration) 
+
+	    - 'all' (Directory of files with global variables for every host)
+		
+		* 'all' (File with main global variables)
+
+		* 'baculaAdmon' (File with Bacula Server global variables)
+
+		* 'crontab' (File with Crontab file global variables)
+
+		* 'hostsFile' (File with /etc/hosts file global variables)
+
+		* 'ipTables' (File with IPTables global variables)
+
+		* 'nagiosServices' (File with Nagios Server global variables)
+
+		* 'nrpe' (File with NRPE global variables)
+
+		* 'pamAccess' (File with PAM Access global variables)
+		
+		* 'sudo' (File with sudoers global variables)
+
+		* 'wrappers' (File with TCP Wrappers global variables)
+
+	    - 'CentOS-6' (variables for CentOS-6 hosts, overwriting global variables)
+
+	    - 'Debian-6' (variables for Debian-6 hosts, overwriting global variables)
+
+	    - 'Debian-7' (variables for Debian-7 hosts, overwriting global variables)
+
+	    - 'Debian-8' (variables for Debian-8 hosts, overwriting global variables)
+
+	    - 'Ubuntu-14' (variables for Ubuntu-14 hosts, overwriting global variables)
+
+	    Every file with 'OS-Version' format, host name or group of hosts (from Inventory) will have the same function, overwriting global variables
+	
+
+	* 'help/' -> help files
+
+	    Documentation files
+
+
+	* 'host_vars/' -> host variables
+
+	    Every file with a host name will overwrite global variables 
+
+
+	* 'roles/' -> playbooks code by roles
+
+	    - 'baculaAdmon/' (Ansible code to configure Bacula Servers. Called by baculaAdmon.yml playbook)
+
+		+ 'handlers/' (Daemons' restarts called by tasks' files)
+
+		+ 'tasks/'
+		    
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'baculaDir.yml' (Configures bacula-dir.conf file)
+
+		    * 'baculaSD.yml' (Configures bacula-sd.conf file)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Bacula servers)
+
+
+	    - 'common/' (Ansible code to configure main features to nodes. Called by common.yml playbook)
+
+		+ 'files/' (files called by tasks' files to copy to nodes)
+
+		+ 'handlers/' (Daemons' restarts called by tasks' files)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'locales.yml' (Configures locales)
+
+                    * 'manager.yml' (Adds manager user)
+
+                    * 'group.yml' (Configures users and groups)
+
+                    * 'repos.yml' (Configures repositories)
+
+                    * 'dselect.yml' (Installs dselect package)
+
+                    * 'concurrency.yml' (Configure concurrency variable)
+
+                    * 'services.yml' (Stops and unables services)
+
+                    * 'resolv.yml' (Configures /etc/resolv.conf file)
+
+		    * 'bacula-fd.yml' (Installs and configures bacula-fd)
+
+		    * 'munin-node.yml' (Installs and configures munin-node)
+
+		    * 'nrpe.yml' (Installs and configures Nagios NRPE)
+
+		    * 'nscd.yml' (Installs and configures NSCD)
+
+		    * 'ntp.yml' (Installs and configures NTP client)
+
+		    * 'nvi.yml' (Install nvi package)
+
+		    * 'ossec.yml' (Installs and configures OSSEC)
+
+		    * 'pam-ldap.yml' (Installs and configures Ldap for PAM)
+
+		    * 'profile.yml' (Configures /etc/profile file)
+
+		    * 'securetty.yml' (Configures /etc/securetty file)
+
+		    * 'sshd.yml' (Configures SSH server)
+
+		    * 'syslog.yml' (Configures /etc/syslog.conf file)
+
+		    * 'utils.yml' (Installs a list of util software)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	    - 'cron/' (Ansible code to add or delete entries to crontab. Called by cron.yml playbook)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files) 
+
+		    * 'cronStart.yml' (Adds entries to crontab with all the playbooks) 
+
+		    * 'cronStop.yml' (Deletes all entries about plaubooks from crontab) 
+
+
+            - 'crontab/' (Ansible code to configure crontab tasks to nodes. Called by crontab.yml playbook)
+
+                + 'tasks/'
+
+                    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+                    * 'crontab.yml' (Configures crontab tasks to nodes)
+
+                + 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	    - 'dhcp/' (Ansible code to configure DHCP servers. Called by dhcp.yml playbook)
+
+		+ 'files/' (files called by tasks' files to copy to DHCP servers)
+
+		+ 'handlers/' (Daemons' restarts called by tasks' files)
+		
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files) 
+
+		    * 'dhcpElec.yml' (Configures DHCP for Elec location)
+
+		    * 'dhcpP1.yml' (Configures DHCP for P1 location)
+
+                    * 'dhcpP2.yml' (Configures DHCP for P2 location)
+
+                    * 'dhcpP4.yml' (Configures DHCP for P4 location)
+
+                    * 'dhcpTV.yml' (Configures DHCP for TV location)
+
+
+	    - 'hostsFile/' (Ansible code to configure /etc/hosts file to nodes. Called by hostsFile.yml playbook)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'hostsFile.yml' (Configures /etc/hosts file to nodes)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	    - 'iptables/' (Ansible code to configure IPTables to nodes. Called by iptables.yml playbook)
+
+		+ 'handlers/' (Daemons' restarts called by tasks' files)
+		
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'iptables.yml' (Configure IPTables to nodes)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	    - 'listaCorreos/' (Ansible code to show List about email addreses from Qmail server. Called by listaCorreos.yml playbook)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'pubLista.yml' (Gets info about emails and show List in HTTP server)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and get List from Qmail server)
+
+
+	    - 'munin/' (Ansible code to create hosts file to Munin servers. Called by munin.yml playbook)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'hosts.yml' (Creates hosts file to copy to Munin servers)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy Munin servers)
+
+
+	    - 'nagios/' (Ansible code to create nagios controls to Nagios servers)
+
+		+ 'files/' (files called by tasks' files to copy to Nagios servers)
+
+		+ 'handlers/' (Daemons' restarts called by tasks' files)
+
+		+ 'tasks/'
+
+		    * 'nagiosTmp.yml' (Creates tmp files with nagios controls)
+
+		    * 'nagiosRsync.yml' (Sincronizes tmp files to Nagios servers files)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Nagios servers)
+		
+
+	    - 'nrpe/' (Ansible code to configure Nagios NRPE to nodes)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'nrpe.yml' (Configures Nagios NRPE controls file)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	    - 'pamAccess/' (Ansible code to configure /etc/security/access.conf file. Called by pamAccess.yml playbook)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'pamAccess.yml' (Configures /etc/security/access.conf file)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	    - 'proxmox/' (Ansible code to configure Proxmox servers. Called by proxmox.yml playbook)
+
+		+ 'files/' (files called by tasks' files to copy to Proxmox servers)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'proxmox.yml' (Configures proxmox)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Proxmox servers)
+
+
+	    - 'sudo/' (Ansible code to configure /etc/sudoers file to nodes. Called by sudo.yml playbook)
+
+                + 'files/' (files called by tasks' files to copy to Proxmox servers)
+
+                + 'handlers/' (Daemons' restarts called by tasks' files)
+
+		+ 'tasks/'
+
+		    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+		    * 'sudo.yml' (Configures /etc/sudoers file)
+
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+            - 'update/' (Ansible code to update nodes. Called by update.yml playbook)
+
+                + 'tasks/'
+
+                    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+                    * 'updateCentos.yml' (Updates nodes based on RedHat family)
+
+		    * 'updateDebian.yml' (Updates nodes based on Debian family)
+
+
+            - 'wrappers/' (Ansible code to configure /etc/hosts.allow and /etc/hosts.deny files to nodes. Called by wrappers.yml playbook)
+
+                + 'tasks/'
+
+                    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+                    * 'wrappers.yml' (Configures /etc/hosts.allow and /etc/hosts.deny files)
+
+                + 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+	* 'scripts/' -> scripts needed by playbooks
+
+	    - 'path_facts.py' (Python script to get information about commands and daemons paths on node connnected)
+
+            - 'setupLocal.yml' (Yaml script to make python scripts 'path_facts.py' able to be called from playbooks)
+
+            - 'setupNode.py' (Python script to transform a host in a 'node'. It's called with two parameters: hostname or IP address of host and 'remote user' to permit access. It has to connect to host as 'root' user and call 'setupNode.yml' to make the transformation. Finally will check the connection to host as 'remote user' to validate host as a 'node')
+
+            - 'setupNode.yml' (Yaml script to prepare a host to be a 'node', permitting ansible access from 'Ansible server' with 'remote user' and without password. It creates 'remote user', permits access with no password from 'Ansible server' using authorized_key, and installs and configures sudo to able 'remote user' executing everything)
+
+
+
+######################################################

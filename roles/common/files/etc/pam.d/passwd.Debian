@@ -1,0 +1,3 @@
+# Made by AnsibleEPS
+
+password   sufficient pam_unix.so nullok obscure min=4 max=8 md5

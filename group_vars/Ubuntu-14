@@ -1,0 +1,98 @@
+# Operating System
+#SO: Ubuntu 
+
+
+# Version
+#vSO: Ubuntu14 
+
+
+# Password of manager user
+managerPassword: $6$ILAKqKT3$R3qBndgJVtiC3L/b0i8XuQmbs1M5BsBXWidOs1P6ADejauXpBRrIwM0GBPAH5bOrJr94jsqCiBmwxZQs4nFwszlS/ 
+
+
+# Groups with manager
+managerGroups: 
+- root
+- adm
+- cdrom
+- floppy
+- audio
+- dip
+- www-data
+- video
+- plugdev
+
+
+# Debian Repositories
+reposDebian:
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty main restricted
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty main restricted
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates main restricted
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-updates main restricted
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty universe
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty universe
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates universe
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-updates universe
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty multiverse
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty multiverse
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates multiverse
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-updates multiverse
+- deb http://us.archive.ubuntu.com/ubuntu/ trusty-backports main restricted universe multiverse
+- deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-backports main restricted universe multiverse
+- deb http://security.ubuntu.com/ubuntu trusty-security main restricted
+- deb-src http://security.ubuntu.com/ubuntu trusty-security main restricted
+- deb http://security.ubuntu.com/ubuntu trusty-security universe
+- deb-src http://security.ubuntu.com/ubuntu trusty-security universe
+- deb http://security.ubuntu.com/ubuntu trusty-security multiverse
+- deb-src http://security.ubuntu.com/ubuntu trusty-security multiverse
+
+
+# Proxmox Repositories
+reposProxmox:
+- deb http://download.proxmox.com/debian wheezy pve-no-subscription
+
+
+# Concurrency
+concurrency: none
+
+
+# List of services to stop 
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LC_ALL=es_ES.UTF-8"
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind9-host
+- lsof
+- traceroute
+- telnet
+- openssh-client
+- manpages
+
+
+# Syslog conf file 
+syslogConf: /etc/rsyslog.conf
+
+
+sudoOptions:
+- Defaults !visiblepw
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+- Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron/crontabs
+
+
+# Crontab Group file
+crontabGroupFile: crontab

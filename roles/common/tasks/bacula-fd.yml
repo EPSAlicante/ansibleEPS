@@ -1,0 +1,64 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# bacula-fd configuration 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Be sure bacula-client is installed (Centos)
+  yum: pkg=bacula-client state=present
+  when: ansible_pkg_mgr == "yum"
+
+- name: Be sure bacula-fd is installed (Debian and python >= 2.6)
+  apt: pkg=bacula-fd state=present
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6
+
+- name: Be sure bacula-fd is installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install bacula-fd
+  shell: ((apt-cache pkgnames|grep "^bacula-fd$") >/dev/null && echo "No") || ((apt-get -y --force-yes install bacula-fd) && echo "Changed") executable="/bin/bash"
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6
+
+- name: Configure /etc/bacula/bacula-fd.conf file
+  template: src=etc/bacula/bacula-fd.conf.{{ ansible_os_family }}.j2 dest=/etc/bacula/bacula-fd.conf
+  register: baculafdConf
+  
+- name: Getting Paths (to get bacula-fd daemon)
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when:  checkService.stdout == "True" and path.daemons['bacula-fd']|default("") == ""
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons['bacula-fd'] }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when:  checkService.stdout == "True" and path.daemons['bacula-fd']|default("") != ""
+
+- name: Stop bacula-fd service
+  service: name={{ serviceName.stdout }} state=stopped enabled=true
+  when: checkService.stdout == "True" and baculafdConf|changed
+
+- name: Start bacula-fd service
+  service: name={{ serviceName.stdout }} state=started enabled=true
+  when: checkService.stdout == "True" and baculafdConf|changed
+
+- name: Restart bacula-fd daemon
+  shell: "{{ path.daemons['bacula-fd'] }} restart executable='/bin/bash'"
+  when: checkService.stdout != "True" and baculafdConf|changed
+

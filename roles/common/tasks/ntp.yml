@@ -1,0 +1,77 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# ntp configuration 
+
+- name: OpenVZ?
+  shell: ([ "{{ ansible_virtualization_role|default('') }}" == "guest" ] && [ "{{ ansible_virtualization_type|default('') }}" == "openvz" ] && echo "True") || echo "False" executable="/bin/bash" 
+  register: openVZ
+  changed_when: False
+  
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+  when: openVZ.stdout == "False" 
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+  when: openVZ.stdout == "False" 
+
+- name: Be sure ntp is installed (Centos)
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - ntp 
+    - ntpdate 
+  when: openVZ.stdout == "False" and ansible_pkg_mgr == "yum"
+
+- name: Be sure ntp is installed (Debian and python >= 2.6)
+  apt: pkg={{ item }} state=installed force=yes
+  with_items:
+    - ntp 
+    - ntpdate 
+  when: openVZ.stdout == "False" and ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6
+
+- name: Be sure ntp is installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install {{ item }}
+  shell: ((apt-cache pkgnames|grep "^{{ item }}$") >/dev/null && echo "No") || ((apt-get -y --force-yes install {{ item }}) && echo "Changed") executable="/bin/bash"
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  with_items:
+    - ntp 
+    - ntpdate 
+  when: openVZ.stdout == "False" and ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6
+
+- name: Configure /etc/ntp.conf file
+  template: src=etc/ntp.conf.{{ ansible_os_family }}.j2 dest=/etc/ntp.conf owner=root group=root mode=0640
+  register: ntpConf
+  when: openVZ.stdout == "False" 
+
+- name: Getting Paths (to get ntp daemon)
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: openVZ.stdout == "False" and checkService.stdout == "True" and path.daemons.ntp|default("") == ""
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons.ntp }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: openVZ.stdout == "False" and checkService.stdout == "True" and path.daemons.ntp|default("") != ""
+
+- name: Restart ntp service
+  service: name={{ serviceName.stdout }} state=restarted enabled=true
+  when: openVZ.stdout == "False" and checkService.stdout == "True" and serviceName.stdout|default("") != "" and ntpConf|changed
+
+- name: Restart ntp daemon
+  shell: '{{ path.daemons.ntp }} restart executable="/bin/bash"'
+  when: openVZ.stdout == "False" and checkService.stdout != "True" and ntpConf|changed
+

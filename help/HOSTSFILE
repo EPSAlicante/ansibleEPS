@@ -1,0 +1,108 @@
+*** HOSTSFILE PlayBook ***
+
+HostsFile playbook 'hostsFile.yml' is able to manage '/etc/hosts' file for all server (except those belonging to 'nohostsFile' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+
+Changes will be generated using some variables (through a template) to create '/etc/hosts' file for every server.
+
+Variables are defined by default in 'group_vars/all/hostsFile' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook hostsFile.yml'
+
+Scope: Playbook will update all server except those belonging to 'nohostsFile' group.
+
+Templates: 'roles/hostsFile/templates/etc/hosts.j2'
+
+Variables:
+
+    * 'hostsFileGlobal' -> '/etc/hosts' file configuration for all servers
+
+      This variable is a list of items to define entries in file, with IP, server full name (FQDN) and aliases. Every item has three attributes:
+
+         - label: This attribute play two roles, on the one side it will be a comment for entry, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
+
+         - host: Static server name (string format). There's an exception to the rule: if value is set to 'hostname' string, playbook will update entry with server name ('inventory_hostname' ansible variable).
+
+         - IP: IP address (string format). Optional atributte. If not defined, value will set to the result of execute 'host' command to server name ('inventory_hostname' ansible variable).
+
+         - fqdn: Server fullname (string format). Optional attribute. if not defined, value will be set to attribute 'host adding DNS domain ('domain' global variable). As in case of 'host' attribute, if value is set to 'hostname' string, playbook will update entry with server name ('inventory_hostname' ansible variable). 
+
+         - extra: Aliases list (string format). Optional attribute.
+
+      'label' and 'host' attributes are required. If any of them are not defined, this item will be ignored.
+
+     
+      Example:
+
+        hostsFileGlobal:
+        - label: Localhost
+          host: localhost
+          fqdn: localhost.locadomain
+          IP: 127.0.0.1
+        - label: IP local
+          host: hostname
+
+
+    * 'hostsFileGroup' -> '/etc/hosts' file configuration for a specific group. It has two attributes:
+
+      - group: Group name (in inventory)
+
+      - rules: A list of entries in '/etc/hosts' file, with the same attributes and meaning than 'hostsFileGlobal' variable (label, host, IP, fqdn and extra)
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global items) will be added to config file after global items.
+
+
+      Example:
+
+        hostsFileGroup:
+        - group: proxmox
+          rules:
+          - label: server_14 (cluster)
+            host: server_14
+            IP: 172.20.1.14
+          - label: server_24 (cluster)
+            host: server_24
+            IP: 172.20.2.24
+          - label: server_34 (cluster)
+            host: server_34
+            IP: 172.20.3.34
+
+        - group: proxmox
+          rules:
+          - label: IP local
+            host: hostname
+            extra: pvelocalhost
+
+
+    * 'hostsFileHost' -> '/etc/hosts' file configuration for a specific server. It has two attributes: 
+
+      - host: Server name (in inventory)
+
+      - rules:  A list of entries in '/etc/hosts' file, with the same attributes and meaning than 'hostsFileGlobal' variable (label, host, IP, fqdn and extra) 
+
+      At this point, we can delete or overwrite global or groups items, this way:
+
+        * Overwrite global or groups items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global and groups items) will be added to config file after global and groups items.
+
+
+      Example:
+
+        hostsFileHost:
+        - host: server_13 
+          rules:
+          - label: Ldap alias
+            host: ldap
+            IP: 172.20.1.13
+

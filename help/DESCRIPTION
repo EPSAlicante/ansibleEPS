@@ -1,0 +1,176 @@
+######################################################
+                     Description 
+######################################################
+
+
+What's ansibleEPS?
+
+  AnsibleEPS is a collection of ansible playbooks (little ansible programs) to manage Linux/Unix hosts of your network.
+
+  Management permits automatically: 
+
+  * Manage software (install, update, delete)
+
+  * Manage services (start, stop, restart)
+  
+  * Manage users (add, modify, delete)
+
+  * Configure services
+
+  * Manage security
+
+  And much more.
+
+
+What can I do with AnsibleEPS?
+
+Especifically, ansibleEPS does the following tasks:
+
+  (1) Common management (installation, configuration and checking) of: 
+
+      * Locales
+
+      * Groups and users
+ 
+      * Repositories
+
+      * Concurrency
+
+      * Services to disable
+
+      * /etc/resolv.conf file
+
+      * Nscd service
+
+      * Securetty
+
+      * Global profile variables
+
+      * Nvi editor
+
+      * Utilities (list of extra software)
+
+      * Munin-node client
+
+      * Nrpe client
+
+      * Ldap Authentication with PAM
+
+      * Syslog service
+
+      * Sshd service
+
+      * Ntp service
+
+      * Bacula client
+ 
+      * Ossec client
+
+  (2) Hosts file (/etc/hosts) management (configuration and checking) with three level configuration:
+
+      * Global, to apply on all hosts
+
+      * Group, to apply to all hosts belonging to group selected
+
+      * Host, to apply to host selected
+
+  (3) Sudo file (/etc/sudoers) management (installation, configuration and checking) with three level configuration
+
+  (4) TCP Wrappers (/etc/hosts.allow & /etc/hosts.deny files) management (configuration and checking) with three level configuration
+
+  (5) PAM Access (/etc/security/access.conf file) management (installation, configuration and checking) with three level configuration
+
+  (6) NRPE management (installation, configuration and checking) with three level configuration
+
+  (7) IPTables management (configuration and checking) with three level configuration
+
+  (8) Crontab management (configuration and checking) with three level configuration
+
+  (9) Proxmox management (configuration and checking)
+
+  (10) Bacula servers management (configuration and checking)
+
+  (11) DHCP servers management (configuration and checking)
+
+  (12) Munin servers management (configuration and checking)
+
+  (13) Nagios servers management (configuration and checking)
+
+  (14) Email addresses list of QMail server
+
+
+How it works?
+
+  Management can be done in two ways:
+
+  (A) Directly, using the Admin Menu, and selecting preferred option and arguments as: host to be managed, group of hosts to be managed, or any other argument required.
+
+      This way, we can manage anything for a host, a group or all hosts, just selecting option and arguments
+
+  (B) In background, we can setup a time (usually at night) to execute all managements for all hosts. This way we'll be sure that next morning every feature of every hosts will be correctly configured.
+
+      All changes made or errors produced will be saved in log files to be watched next morning.
+
+
+Configuration
+
+  We have to prepare system to be ready for management. There are some step to do:
+
+  (1) First of all, we have to convert a host in a node. What's a node? 
+
+      A node is a host directly SSH accesed by Ansible server (this host) with a predefined user, whitout password.
+
+      By default, user predefined to connect to nodes is 'ansible', but we can change it modifying variable 'ansible_ssh_user' in '/etc/ansibleEPS/group_vars/all' main config file. 
+
+      To convert a host as node, simply choice 'add node' option in admin menu. Select 'user to connect' and hostname or IP. Script will try to connect by SSH to host as 'root' (we have to put its password), then will create 'user to connect' and create 'authotized_keys' with 'Ansible server' public key, also will install 'sudo' package and configure 'sudoers' file to permit execute everything to 'user to connect'.
+
+
+  (2) Second step: add nodes in inventory
+
+      Inventory file is '/etc/ansibleEPS/eps'. Nodes are introduced in inventory into groups.
+
+      Ansible Documentation at: http://docs.ansible.com/ansible/intro_inventory.html#inventory 
+
+
+  (3) Modify Admin variables. Every data we need to manage nodes are located at:
+
+      * /etc/ansibleEPS/group_vars/all/ directory, with global data to manage nodes
+ 
+      * /etc/ansibleEPS/group_vars/ directory, with group-level data to manage nodes
+
+      * /etc/ansibleEPS/host_vars/ directory, with host-level data to manage nodes
+
+      Example: In 'all' directory exists a variable 'nameserver' with IPs of DNS servers for all nodes. May be for a group of hosts (a group called 'remote', defined at inventory, with nodes inside) DNS server has to be different, so we'll create a file '/etc/ansibleEPS/group_vars/remote' and will define 'nameserver' variable inside with other values. The same way, DNS servers could be different for a specific node (called 'special'), so we'll create a file '/etc/ansibleEPS/host_var
+s/special' and will define 'nameserver' variable inside with other values.
+
+
+  (4) Execute playbooks from Admin menu '/etc/ansibleEPS/menu.py'
+      
+
+Does it works for all Operating System?
+
+Most of playbook need to install specific software in nodes. By default playbooks works with 'yum' and 'apt' package managers. To add new package managers, its necessary to modify playbooks code.
+
+System is ready to work with next Operating System (all of them with 'yum' or 'apt' package manager):
+
+  * CentOS 6
+
+  * Debian 4
+
+  * Debian 6
+  
+  * Debian 7
+
+  * Debian 8
+
+  * Ubuntu 14
+
+These files includes specific variables for a version of a Operating System. For example: specific users, repositories, specific software, specific config files, etc.
+
+Adding a new Operating System and Version (based on 'yum' or 'apt' package manager) is very simple: just create a new file in '/etc/ansibleEPS/group_vars/' directory with name 'OperatingSystem-Version' and fill file with variables and specific values (easier copying other similar file and modify valiues that change from a file to other).
+
+  Example: To prepare system for RedHat 7 nodes, we can copy 'CentOS-6' file (the most similar) to 'RedHat-7', verifying values and changing if necessary.
+
+
+
+######################################################

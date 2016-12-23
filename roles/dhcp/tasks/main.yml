@@ -1,0 +1,22 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# DHCP service 
+
+- include: dhcpP1.yml 
+  tags: [ dhcp, P1 ]
+  when: inventory_hostname in groups.P1
+- include: dhcpP4.yml 
+  tags: [ dhcp, P4 ]
+  when: inventory_hostname in groups.P4
+- include: dhcpElec.yml 
+  tags: [ dhcp, Elec ]
+  when: inventory_hostname in groups.Elec
+- include: dhcpTV.yml 
+  tags: [ dhcp, TV ]
+  when: inventory_hostname in groups.TV

@@ -1,0 +1,119 @@
+label: unknown
+
+# Ansible Path
+pathAnsible: /etc/ansibleEPS
+
+# Default ssh user
+ansible_ssh_user: ansible
+
+# Crontab values
+minutesCron: 15 
+hoursCron: 1 
+dayCron: '*'
+weekdayCron: '*'
+monthCron: '*'
+
+# Location (building)
+location: P1
+
+# SubNets 
+subnets:
+- 172.20.1.0
+- 172.20.2.0
+- 172.20.3.0
+- 172.20.44.0
+
+# DNS
+domain: eps.ua.es
+search: eps.ua.es
+nameservers:
+- 172.20.1.11
+- 172.20.2.21
+- 8.8.8.8
+nameservers25:
+- 172.20.3.31
+- 8.8.8.8 
+
+# NTP
+ntp:
+- es.pool.ntp.org
+- pool.ntp.org
+
+# Update Repositories
+reposUpdate: y
+
+# Rsyslog
+syslog: 
+- search: "\\*.\\* @server_12.eps.ua.es"
+  replace: "*.* @server_12.eps.ua.es"
+- search: "\\*.\\* @server_22.eps.ua.es"
+  replace: "*.* @server_22.eps.ua.es"
+- search: "\\*.\\* @server_32.eps.ua.es"
+  replace: "*.* @server_32.eps.ua.es"
+
+# SSHd_Config
+# If matchGroup is equal to 'Ignore', line won't be changed. If it's equal to 'Delete', line will be deleted
+# If forceCommand is equal to 'Ignore', line won't be changed. If it's equal to 'Delete', line will be deleted
+sshdConfig:
+ permitRootLogin: "yes"
+ clientAliveInterval: 43200
+ clientAliveCountMax: 0
+ logLevel: INFO
+ subsystemSftp: -l VERBOSE
+ matchGroup: Ignore
+ forceCommand: Ignore
+
+# PAM-LDAP
+ldapA: server_13.eps.ua.es
+ldapB: server_23.eps.ua.es
+ldapC: server_33.eps.ua.es
+pamGroupdn: cn=admin,ou=Groups,ou=eps,o=ua,c=es
+
+# ID user manager
+managerID: 1111 
+
+# GID user manager
+managerGID: 1111 
+
+# groupRoot
+groupRoot: 
+- admin
+- wwwadm
+
+# groupAdmin
+groupAdmin: 
+- manager
+- admin
+- wwwadm
+
+# /etc/profile
+profileEtc:
+- "export LC_ALL=es_ES.UTF-8"
+- "export LANG=es_ES.UTF-8"
+
+# Bacula Directors
+baculaDirector:
+- baculaAdmon1
+
+# Bacula Master
+baculaMaster:
+- 172.20.3.30
+
+# Munin Master
+muninMaster:
+- 172.20.2.22
+
+# Nagios Master
+nagiosMaster:
+- 172.20.1.12
+- 172.20.1.15
+
+# Ossec Master
+ossecMaster: 172.20.1.12 
+
+# Ansible Master
+ansibleMaster: 172.20.1.10
+
+# Securetty (list)
+securetty: ''
+

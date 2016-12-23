@@ -1,0 +1,59 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Repositories configuration 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+  when: reposUpdate == "y"
+
+- name: Listing Repos files (Centos)
+  shell: ls -1 /etc/yum.repos.d/ 
+  register: listReposCentos
+  changed_when: False
+  when: reposUpdate == "y" and ansible_pkg_mgr == "yum"
+
+- debug: msg="{{ listReposCentos }}"
+
+- name: Remove Repos not permitted (Centos)
+  file: path=/etc/yum.repos.d/{{ item }} state=absent
+  with_items: "{{ listReposCentos.stdout_lines|default('') }}"
+  when: reposUpdate == "y" and ansible_pkg_mgr == "yum" and item not in reposCentos|default("")
+
+- name: Add EPS Repos (Centos)
+  copy: src=etc/yum.repos.d/{{ item }} dest=/etc/yum.repos.d/ owner=root group=root mode=0644
+  register: newRepos
+  with_items: "{{ reposCentos|default('') }}"
+  when: reposUpdate == "y" and ansible_pkg_mgr == "yum"
+
+- name: Import EPEL key (Centos)
+  shell: rpm --import http://centos.eps.ua.es/eps-epel/RPM-GPG-KEY-EPEL-6
+  when: reposUpdate == "y" and ansible_pkg_mgr == "yum" and newRepos|changed 
+
+- name: Import Rpmforge key (Centos)
+  shell: rpm --import http://centos.eps.ua.es/eps-rpmforge/RPM-GPG-KEY.dag.txt
+  when: reposUpdate == "y" and ansible_pkg_mgr == "yum" and newRepos|changed
+
+- name: Exclude packages to update (Centos)
+  lineinfile: name=/etc/yum.conf state=present regexp="^exclude" line='exclude={{ excludeUpdate|join(",") }}'
+  when: reposUpdate == "y" and ansible_pkg_mgr == "yum"
+
+- name: Add EPS Repos (Debian)
+  template: src=etc/apt/sources.list.j2 dest=/etc/apt/sources.list owner=root group=root mode=0644
+  register: addReposDebian
+  when: reposUpdate == "y" and ansible_pkg_mgr == "apt"
+
+- name: Debian update (Debian and python >= 2.6)
+  apt: update_cache=yes
+  when: reposUpdate == "y" and ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6 and addReposDebian|changed
+
+- name: Debian update (Debian and python < 2.6)
+  shell: apt-get update 
+  when: reposUpdate == "y" and ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6 and addReposDebian|changed

@@ -1,0 +1,82 @@
+# Operating System
+#SO: Debian
+
+
+# Version
+#vSO: Debian8
+
+
+# Password of manager user
+managerPassword: $6$ILAKqKT3$R3qBndgJVtiC3L/b0i8XuQmbs1M5BsBXWidOs1P6ADejauXpBRrIwM0GBPAH5bOrJr94jsqCiBmwxZQs4nFwszlS/ 
+
+
+# Groups with manager
+managerGroups: 
+- root
+- adm
+- cdrom
+- floppy
+- audio
+- dip
+- www-data
+- video
+- plugdev
+
+
+# Debian Repositories
+reposDebian:
+- deb http://ftp.de.debian.org/debian/ jeesie main
+- deb-src http://ftp.de.debian.org/debian/ jeesie main
+- deb http://security.debian.org/ jeesie/updates main contrib
+- deb-src http://security.debian.org/ jessie/updates main contrib
+
+
+# Proxmox Repositories
+reposProxmox:
+- deb http://download.proxmox.com/debian jessie pve-no-subscription
+
+
+# Concurrency
+concurrency: none
+
+
+# List of services to stop 
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LC_ALL=es_ES.UTF-8"
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind9-host
+- lsof
+- traceroute
+- telnet
+- openssh-client
+- manpages
+
+
+# Syslog conf file 
+syslogConf: /etc/rsyslog.conf
+
+
+sudoOptions:
+- Defaults !visiblepw
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+- Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron/crontabs
+
+
+# Crontab Group file
+crontabGroupFile: crontab

@@ -1,0 +1,18 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Configuracion del resolv
+
+- name: Network of 172.25.40.64
+  shell: "((({{ path.commands.route }} -n|grep 172.25.40.64|grep -v UG) || ({{ path.commands.route }} -n|grep 172.25.40.0|grep 255.255.255.0|grep -v UG)) >/dev/null && echo 'True') || echo 'False' executable='/bin/bash'"
+  register: net25
+  changed_when: False
+
+- name: Configure resolv.conf file
+  template: src=etc/resolv.conf.j2 dest=/etc/resolv.conf
+

@@ -1,0 +1,128 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# PAM-Ldap configuration
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Be sure pam-ldap is installed (Centos)
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - pam_ldap
+    - nss-pam-ldapd
+  when: ansible_pkg_mgr == "yum"
+
+- name: Be sure pam-ldap is installed (Debian and python >= 2.6)
+  apt: pkg={{ item }} state=installed force=yes
+  with_items:
+    - libpam-ldap
+    - libnss-ldap
+    - libpam-tmpdir
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6
+
+- name: Be sure pam-ldap is installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install {{ item }} 
+  shell: ((apt-cache pkgnames|grep "^{{ item }}$") >/dev/null && echo "No") || ((apt-get -y --force-yes install {{ item }}) && echo "Changed") executable="/bin/bash"
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  with_items:
+    - libpam-ldap
+    - libnss-ldap
+    - libpam-tmpdir
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6
+
+- name: Configure pam_ldap.conf file (not Ubuntu)
+  template: src=etc/pam_ldap.conf.{{ ansible_os_family }}.j2 dest=/etc/pam_ldap.conf owner=root group=root mode=0640
+  register: pamldapConf
+  when: ansible_distribution != "Ubuntu" 
+
+- name: Configure ldap.conf file (Ubuntu)
+  template: src=etc/ldap.conf.{{ ansible_distribution }}.j2 dest=/etc/ldap.conf owner=root group=root mode=0640
+  register: ldapConf
+  when: ansible_distribution == "Ubuntu"
+
+- name: Configure nslcd.conf file (Centos)
+  template: src=etc/nslcd.conf.j2 dest=/etc/nslcd.conf owner=root group=root mode=0600
+  register: nslcdConf
+  notify: restart nslcd
+  when: ansible_os_family == "RedHat"
+
+- name: Configure libnss-ldap.conf file (Debian but not Ubuntu)
+  template: src=etc/libnss-ldap.conf.j2 dest=/etc/libnss-ldap.conf owner=root group=root mode=0640
+  register: libnssConf
+  when: ansible_os_family == "Debian" and ansible_distribution != "Ubuntu"
+
+- name: Configure nsswitch.conf file
+  copy: src=etc/nsswitch.conf.{{ ansible_os_family }} dest=/etc/nsswitch.conf owner=root group=root mode=0644
+
+- name: Configure system-auth & password-auth file (Centos)
+  copy: src=etc/pam.d/{{ item }}.{{ ansible_os_family }} dest=/etc/pam.d/{{ item }} owner=root group=root mode=0644
+  with_items: 
+    - system-auth
+    - password-auth
+  when: ansible_os_family == "RedHat"
+
+- name: Configure login (pam) file
+  copy: src=etc/pam.d/login.{{ ansible_os_family }} dest=/etc/pam.d/login owner=root group=root mode=0644
+
+- name: Configure passwd (pam) file
+  copy: src=etc/pam.d/passwd.{{ ansible_os_family }} dest=/etc/pam.d/passwd owner=root group=root mode=0644
+
+- name: Configure su (pam) file
+  copy: src=etc/pam.d/su.{{ ansible_os_family }} dest=/etc/pam.d/su owner=root group=root mode=0644
+
+- name: Get /etc/pam.d/ssh name
+  shell: find /etc/pam.d/ -name "ssh*"|sort|head -1 executable="/bin/bash"
+  register: sshPam 
+  changed_when: False
+
+- name: Configure ssh (pam) file
+  copy: src=etc/pam.d/ssh.{{ ansible_os_family }} dest={{ sshPam.stdout }} owner=root group=root mode=0644
+  when: sshPam.stdout|default("") != ""
+
+- name: Getting Paths (to get nslcd daemon)
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.nslcd|default("") == ""
+
+- name: Getting Service Name Nslcd
+  shell: ( echo "{{ path.daemons.nslcd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceNslcd
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.nslcd|default("") != ""
+
+- name: Be sure nslcd is running and enabled (Centos)
+  service: name={{ serviceNslcd.stdout }} state=started enabled=true
+  changed_when: False
+  when: ansible_os_family == "RedHat"
+
+- name: Getting Service Name Nscd
+  shell: ( echo "{{ path.daemons.nscd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceNscd
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.nscd|default("") != ""
+
+- name: Restart nscd service
+  service: name={{ serviceNscd.stdout }} state=restarted enabled=true
+  when: checkService.stdout == "True" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed)
+
+- name: Restart nscd daemon
+  shell: "{{ path.daemons.nscd }} restart executable='/bin/bash'"
+  when: checkService.stdout != "True" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed) 
+

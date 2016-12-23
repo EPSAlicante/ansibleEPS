@@ -1,0 +1,27 @@
+# Localtion (building)
+location: P1
+
+# Subredes 
+subnets:
+- 172.20.1.0
+
+# DNS
+domain: eps.ua.es
+search: eps.ua.es
+nameservers:
+- 172.20.1.11
+- 172.20.2.21
+- 8.8.8.8 
+nameservers25:
+- 8.8.8.8 
+
+# NTP
+ntp: 
+- espool.ntp.org
+- pool.ntp.org
+
+# PAM-LDAP
+ldapA: server_11.eps.ua.es
+ldapB: server_22.eps.ua.es
+ldapC: server_33.eps.ua.es
+

@@ -1,0 +1,26 @@
+# groupRoot
+groupRoot:
+- admin
+- wwwadm
+
+# groupAdmin
+groupAdmin:
+- manager
+- admin
+- wwwadm
+
+# /etc/shadow
+managerPassword: $6$UT.NbWts$vSNbXpTNEJSUnXWa1qOLMPJC4sgQtBAnjC6QkbxyYTJVeplT/SkImubgjnX8FozcbkibxVXeWXR32i.Ll5PwM. 
+
+# SSHd_Config
+# If matchGroup is equal to 'Ignore', line won't be changed. If it's equal to 'Delete', line will be deleted
+# If forceCommand is equal to 'Ignore', line won't be changed. If it's equal to 'Delete', line will be delete
+sshdConfig:
+ permitRootLogin: "yes"
+ clientAliveInterval: 7200
+ clientAliveCountMax: 0
+ logLevel: INFO
+ subsystemSftp: -l VERBOSE
+ matchGroup: Ignore
+ forceCommand: Ignore
+

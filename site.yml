@@ -1,0 +1,19 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# All Modules 
+- include: common.yml
+- include: hostsFile.yml
+- include: sudo.yml
+- include: wrappers.yml
+- include: pamAccess.yml
+- include: nrpe.yml
+- include: iptables.yml
+- include: crontab.yml
+- include: proxmox.yml
+

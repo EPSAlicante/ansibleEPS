@@ -1,0 +1,119 @@
+# NRPE Commands
+#
+# Variables to generate NRPE commands on '/etc/nagios/nrpe.d/nrpeBase.cfg' file
+#
+# nrpeGlobal: (List of global NRPE rules)
+# ...
+#
+# nrpeGroup:
+# - group: value (group name)
+#   rules: (List of NRPE rules by group)
+#   ...
+#
+# nrpeHost: 
+# - host: value (host name)
+#   rules: (List of NRPE rules by host)
+#   ...
+#
+# NRPE rules definition (syntax)
+# ------------------------------
+# label: value --> name used as key to be called from other variables (required attribute)
+# command: value --> Check command (required attribute)
+#
+
+nrpeGlobal:
+- label: check_load
+  command: /usr/lib/nagios/plugins/check_load -w 15,10,5 -c 30,25,20
+- label: check_memory
+  command: /usr/lib/nagios/plugins/check_mem.sh -w 90 -c 95
+- label: check_diskRoot
+  command: /usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /
+- label: check_diskRootRW
+  command: /usr/lib/nagios/plugins/check_file_content -f /proc/mounts -i ' / ' -i 'rw'
+- label: check_ntp
+  command: /usr/lib/nagios/plugins/check_ntp -H es.pool.ntp.org -w 5 -c 10
+- label: restart-ntp
+  command: sudo /etc/init.d/ntp stop > /dev/null 2> /dev/null;sudo /usr/sbin/ntpdate -b es.pool.ntp.org > /dev/null 2> /dev/null;sudo /etc/init.d/ntp start
+- label: check_nscd
+  command: "/usr/lib/nagios/plugins/check_procs -c 1: -a 'nscd'"
+- label: restart-nscd
+  command: sudo /etc/init.d/nscd stop > /dev/null 2> /dev/null;sudo /etc/init.d/nscd start
+- label: check_baculaFD
+  command: "/usr/lib/nagios/plugins/check_procs -c 1: -a 'bacula-fd' -u root"
+- label: restart-baculaFD
+  command: sudo /etc/init.d/bacula-fd stop > /dev/null 2> /dev/null;sudo /etc/init.d/bacula-fd start
+- label: check_ossecAgent
+  command: "/usr/lib/nagios/plugins/check_procs -c 1: -a 'ossec-agentd' -u ossec"
+- label: restart-ossecAgent
+  command: sudo /etc/init.d/ossec stop > /dev/null 2> /dev/null;sudo /etc/init.d/ossec start
+- label: check_iptables
+  command: /usr/lib/nagios/plugins/check_iptables.sh
+
+nrpeGroup:
+- group: bacula
+  rules:
+  - label: check_diskOpt
+    command: /usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /opt
+  - label: restart-mysql
+    command: sudo /etc/init.d/mysqld stop > /dev/null 2> /dev/null;sudo /etc/init.d/mysqld start
+
+- group: DHCP
+  rules:
+  - label: check_dhcp
+    command: "/usr/lib/nagios/plugins/check_procs -w 1: -c 1: -a 'dhcpd' -u dhcpd"
+  - label: restart-dhcp
+    command: sudo /etc/init.d/isc-dhcp-server stop > /dev/null 2> /dev/null;sudo /etc/init.d/isc-dhcp-server start
+
+- group: DNS
+  rules:
+  - label: check_dns
+    command: /usr/lib/nagios/plugins/check_dns -H server_11 -s 127.0.0.1 -a 172.20.1.11 -t 5
+  - label: restart-dns
+    command: sudo /etc/init.d/named stop > /dev/null 2> /dev/null;sudo /etc/init.d/named start
+
+- group: LDAP
+  rules:
+  - label: check_ldapConn
+    command: /usr/lib/nagios/plugins/check_netstat -p '<8365,<8365' -c '<1,>400'
+  - label: restart-ldap
+    command: sudo /etc/init.d/dirsrv stop > /dev/null 2> /dev/null;sudo /etc/init.d/dirsrv start
+
+- group: mysql
+  rules:
+  - label: restart-mysql
+    command: sudo /etc/init.d/mysqld stop > /dev/null 2> /dev/null;sudo /etc/init.d/mysqld start
+
+- group: proxmox
+  rules:
+  - label: check_diskVM
+    command: /usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /dev/mapper/pve-data
+  - label: check_diskConfVM
+    command: /usr/lib/nagios/plugins/check_file_content -f /proc/mounts -i '/dev/fuse /etc/pve fuse rw,nosuid,nodev,relatime,user_id=0,group_id=0,default_permissions,allow_other 0 0'
+  - label: check_diskBackup
+    command: /usr/lib/nagios/plugins/check_disk -u GB -w 20 -c 10 -p /backup
+  - label: check_errorBackup
+    command: /usr/lib/nagios/plugins/check_file_age2.pl -n 1 -c 86400 -w 259200 -f /var/log/rsync/error.log
+
+- group: qmail
+  rules:
+  - label: check_smtp
+    command: /usr/lib/nagios/plugins/check_smtp -H localhost
+  - label: restart-qmail
+    command: sudo /etc/init.d/qmail stop > /dev/null 2> /dev/null;sudo /etc/init.d/qmail start
+  - label: restart-qmail-smtp-auth
+    command: sudo /etc/init.d/qmail-smtp-auth stop > /dev/null 2> /dev/null;sudo /etc/init.d/qmail-smtp-auth start
+  - label: check_imap
+    command: /usr/lib/nagios/plugins/check_imap -H localhost
+  - label: restart-imap
+    command: sudo /etc/init.d/dovecot stop > /dev/null 2> /dev/null;sudo /etc/init.d/dovecot start
+  - label: check_simap
+    command: /usr/lib/nagios/plugins/check_simap -H localhost
+  - label: restart-imaps
+    command: sudo /etc/init.d/dovecot stop > /dev/null 2> /dev/null;sudo /etc/init.d/dovecot start
+  - label: check_mailq
+    command: /usr/lib/nagios/plugins/check_mailq -w 800 -c 1000 -M qmail
+  - label: restart-http
+    command: sudo /etc/init.d/apache2 stop > /dev/null 2> /dev/null;sudo /etc/init.d/apache2 start
+
+nrpeHost:
+

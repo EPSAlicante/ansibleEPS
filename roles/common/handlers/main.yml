@@ -1,0 +1,19 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Reinicio de servicios
+
+- name: restart nslcd
+  service: name=nslcd state=restarted enabled=yes
+
+- name: restart munin-node 
+  service: name=munin-node state=restarted enabled=yes
+
+- name: restart nrpe 
+  service: name=nrpe state=restarted enabled=yes
+

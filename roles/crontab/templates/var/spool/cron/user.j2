@@ -1,0 +1,112 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+{# Global block -#}
+{% if crontabGlobal.users is defined -%}
+{%  for user in crontabGlobal.users -%}
+{%   if user.name == item -%}
+{%    for task in user.tasks -%}
+{%     set printTask = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%     if crontabGroup is defined -%}
+{%      for rGroup in crontabGroup -%}
+{%       if rGroup.group in group_names -%}
+{%        for guser in rGroup.users -%}
+{%         if guser.name == item -%}
+{%          for gtask in guser.tasks -%}
+{%           if gtask.label == task.label -%}
+{%            if printTask.update({'value': False}) -%}{% endif -%}
+{%           endif -%}
+{%          endfor -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endfor %}
+{%     endif -%}
+{# Looking for the same label in Host block -#}
+{%     if printTask.value -%}
+{%      if crontabHost is defined -%}
+{%       for rHost in crontabHost -%}
+{%        if rHost.host==inventory_hostname -%}
+{%         for huser in rHost.users -%}
+{%          if huser.name == item -%}
+{%           for htask in huser.tasks -%}
+{%            if htask.label == task.label -%}
+{%             if printTask.update({'value': False}) -%}{% endif -%}
+{%            endif -%}
+{%           endfor -%}
+{%          endif -%}
+{%         endfor -%}
+{%        endif -%}
+{%       endfor %}
+{%      endif -%}
+{%     endif -%}
+{# Print task -#}
+{%     if printTask.value and task.job is defined -%}
+# {{ "%s" % task.comment if task.comment is defined else task.label }}
+{{ "%s" % "# " if task.disabled is defined and task.disabled else "" }}{{ "%s" % task.minute if task.minute is defined else "*" }} {{ "%s" % task.hour if task.hour is defined else "*" }} {{ "%s" % task.day if task.day is defined else "*" }} {{ "%s" % task.month if task.month is defined else "*" }} {{ "%s" % task.weekday if task.weekday is defined else "*" }} {{ task.job }}
+
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if crontabGroup is defined -%}
+{%  for rGroup in crontabGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for guser in rGroup.users -%}
+{%     if guser.name == item -%}
+{%      for gtask in guser.tasks -%}
+{%       set printTask = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%       for rHost in crontabHost -%}
+{%        if rHost.host==inventory_hostname -%}
+{%         for huser in rHost.users -%}
+{%          if huser.name == item -%}
+{%           for htask in huser.tasks -%}
+{%            if htask.label == gtask.label -%}
+{%             if printTask.update({'value': False}) -%}{% endif -%}
+{%            endif -%}
+{%           endfor -%}
+{%          endif -%}
+{%         endfor -%}
+{%        endif -%}
+{%       endfor %}
+{# Print task -#}
+{%       if printTask.value and gtask.job is defined -%}
+# {{ "%s" % gtask.comment if gtask.comment is defined else gtask.label }}
+{{ "%s" % "# " if gtask.disabled is defined and gtask.disabled else "" }}{{ "%s" % gtask.minute if gtask.minute is defined else "*" }} {{ "%s" % gtask.hour if gtask.hour is defined else "*" }} {{ "%s" % gtask.day if gtask.day is defined else "*" }} {{ "%s" % gtask.month if gtask.month is defined else "*" }} {{ "%s" % gtask.weekday if gtask.weekday is defined else "*" }} {{ gtask.job }}
+
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if crontabHost is defined -%}
+{%  for rHost in crontabHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for huser in rHost.users -%}
+{%     if huser.name == item -%}
+{%      for htask in huser.tasks -%}
+{# Print task -#}
+{%       if htask.job is defined -%}
+# {{ "%s" % htask.comment if htask.comment is defined else htask.label }}
+{{ "%s" % "# " if htask.disabled is defined and htask.disabled else "" }}{{ "%s" % htask.minute if htask.minute is defined else "*" }} {{ "%s" % htask.hour if htask.hour is defined else "*" }} {{ "%s" % htask.day if htask.day is defined else "*" }} {{ "%s" % htask.month if htask.month is defined else "*" }} {{ "%s" % htask.weekday if htask.weekday is defined else "*" }} {{ htask.job }}
+
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}

@@ -1,0 +1,98 @@
+# Bacula Configuration
+#
+# Variables to generate Bacula filesets (more complex cases has to be created directly on template)
+#
+# Bacula FileSets definition (syntax)
+# -----------------------------------
+# baculaAdmonFilesets:
+# - name: backup or restore jobs name, used as key to be called from other variables (required attribute)
+#   compression: compression type (optional attribute, 'GZIP' by default)
+#   signature: signature type (optional attribute, 'MD5' by default)
+#   includes: [ directories or files list to backup ] (required attribute)
+#   excludes: [ directories or files list to exclude ] (required attribute)
+#
+
+baculaAdmonFilesets:
+- name: "dns"
+  includes: [ "/var/named" ]
+- name: "etc"
+  includes: [ "/etc" ]
+- name: "home"
+  includes: [ "/home" ]
+- name: "nagios3.logs"
+  includes: [ "/var/log/nagios3", "/var/lib/nagios3" ]
+- name: "pve"
+  includes: [ "/etc/pve" ]
+- name: "root.scripts"
+  includes: [ "/root/scripts" ]
+- name: "var.www"
+  includes: [ "/var/www" ]
+
+#
+# Variables to generate Bacula 'backup' and 'restore' jobs, 'client' and 'pool'
+#
+# baculaAdmonGlobal: (List of global Bacula backups)
+# ...
+#
+# baculaAdmonGroup:
+# - group: value (group name)
+#   rules: (List of Bacula backups by group)
+#   ...
+#
+# baculaAdmonHost:
+# - host: value (host name)
+#   rules: (List of Bacula backups by host)
+#   ...
+#
+# Backups definition (syntax)
+# ---------------------------
+# label: value --> name used as key to be called from other variables (required attribute)
+# fileset: value --> fileset name (required attribute)
+#
+
+baculaAdmonGlobal:
+- label: "etc"
+  fileset: "etc"
+
+baculaAdmonGroup:
+- group: DNS
+  backup:
+  - label: "dns"
+    fileset: "dns"
+
+- group: mysql
+  backup:
+  - label: "root.scripts"
+    fileset: "root.scripts"
+
+- group: nagios
+  backup:
+  - label: "nagios3.logs"
+    fileset: "nagios3.logs"
+  - label: "root.scripts"
+    fileset: "root.scripts"
+
+- group: proxmox
+  backup:
+  - label: "pve"
+    fileset: "pve"
+  - label: "root.scripts"
+    fileset: "root.scripts"
+
+- group: qmail
+  backup:
+  - label: "root.scripts"
+    fileset: "root.scripts"
+
+- group: wordpress
+  backup:
+  - label: "var.www"
+    fileset: "var.www"
+
+
+baculaAdmonHost:
+- host: hermes
+  backup:
+  - label: "home"
+    fileset: "home"
+

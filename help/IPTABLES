@@ -1,0 +1,159 @@
+*** IPTABLES PlayBook ***
+
+IPtables playbook 'iptables.yml' is able to manage IPtables configuration for all servers (except those belongig to 'noiptables' group), in a centralized way.  Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks syntax before updating file. In case of syntax error, it undoes updates.
+
+Changes will be generated using some variables (through a template) to create '/etc/init.d/iptables.sh' (configuration and start file) for every server.
+
+Variables are defined by default in 'group_vars/all/iptables' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook iptables.yml'
+
+Scope: Playbook will update all server except those belonging to 'noiptables' group.
+
+Templates: 'roles/iptables/templates/etc/init.d/iptables.sh.j2'
+
+Variables:
+
+    * 'ipTablesCleaning' -> Cleaning rules
+
+      List with iptables parameters to clean rules and restart. It's executed at the beginning of the script.
+
+      Example:
+
+        ipTablesCleaning:
+        - "-F"
+        - "-X"
+        - "-Z"
+
+
+    * 'ipTablesPolicy' -> Policy by default 
+
+      List with iptables parameters to assign policy by default.
+
+      Example:
+
+        ipTablesPolicy:
+        - "-P OUTPUT DROP"
+        - "-P INPUT DROP"
+        - "-P FORWARD DROP"
+
+
+    * 'ipTablesRulesGlobal' -> IPtables rules for all servers 
+
+      Rules List with attributes for every iptables required parameter:
+        
+        - label: item key. If we want to reference a rule (item List) to delete or overwrite, we'll do using this attribute. This is a required attribute.
+
+        - chain: Values -> INPUT, OUTPUT, FORWARD, ... IO (IO creates two rules INPUT+OUTPUT). By default -> IO
+
+        - table: Values -> filter, mangle, nat
+
+        - oper: Values -> A, I, D, R ... By default -> A
+
+        - protocol: Values -> tcp, udp, icmp, all ...
+ 
+        - interfaceIN: Values -> ethX, lo ... 
+
+        - interfaceOUT: Values -> ethX, lo ...
+
+        - state: [ Val1, ... , ValN ] Values -> NEW, ESTABLISHED ...
+
+        - saddr: [ Val1, ... , ValN ] Values -> X.X.X.X/netmask
+ 
+        - sport: [ Val1, ... , ValN ] Values -> <port>
+
+        - daddr: [ Val1, ... , ValN ] Values -> X.X.X.X/netmask
+
+        - dport: [ Val1, ... , ValN ] Values -> <port>
+
+        - target: [ Val1, ... , ValN ] Values -> ACCEPT, DROP, LOG ... By default -> ACCEPT
+
+        - free: Value -> Full iptables rule, with no need of other attributes, just the comment
+
+        - comment: Value -> Rule comment
+  
+
+        Example:
+
+          ipTablesRulesGlobal:
+          - label: Admon subnet SSH Access
+            chain: IO
+            table: filter
+            oper: I
+            protocol: tcp
+            interfaceIN: eth0
+            interfaceOUT: eth0
+            state: [ NEW, ESTABLISHED ]
+            saddr: [ 172.20.40.0/24 ]
+            sport: [ 1:1024 ]
+            daddr: [ 0.0.0.0/32 ]
+            dport: [ 22 ]
+            target: [ ACCEPT ]
+            comment: "SSH Access from Admon subnet"
+          - ...
+
+
+    * 'ipTablesRulesGroup' -> IPTables rules for a specific group. They will be added after global IPTables rules. It has two attributes:
+
+      - group: Group name (in inventory) 
+
+      - rules: A list of IPTables rules, with the same attributes and meaning than 'ipTablesRulesGlobal' variable. 
+
+      At this point, we can delete or overwrite global rules, this way:
+
+        * Overwrite global rules -> Defining label attribute with same string than global rule, and the rest of attributes with values we want for this case
+
+        * Delete global rules -> Defining label attribute with same string than global rule, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of rules defined (with label different than global rules) will be added after global rules.
+
+
+      Example:
+
+        ipTablesRulesGroup:
+        - group: DNS
+          rules:
+          - label: TCP DNS Internet Access
+            chain: IO
+            protocol: tcp
+            dport: [ 53 ]
+            comment: TCP DNS (53) Access from Internet
+          - label: UDP DNS Internet Access
+            chain: IO
+            protocol: udp
+            dport: [ 53 ]
+            comment: UDP DNS (53) Access from Internet
+          - ...
+
+
+    * 'iptablesRulesHost' -> IPTables rules for a specific server. They will be added after global and groups IpTables rules. It has row attibutes:
+
+      - host: Server name (in inventory)
+
+      - rules: A list of IPTables rules, with the same attributes and meaning than 'ipTablesRulesGlobal' variable.
+
+      At this point, we can delete or overwrite global or groups rules, this way:
+
+        * Overwrite global or groups rules -> Defining label attribute with same string than global or groups rules, and the rest of attributes with values we want for this case
+
+        * Delete global or groups rules -> Defining label attribute with same string than global or groups rules, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of rules defined (with label different than global and groups rules) will be added after global and groups rules.
+
+
+      Example:
+
+        ipTablesRulesHost:
+        - host: server_12
+          rules:
+          - label: External repositories Access
+            chain: IO
+            protocol: tcp
+            saddr: [ 150.214.5.134, 150.214.40.67, 178.33.193.139, 185.4.94.24, 193.50.27.70 ]
+            sport: [ 80 ]
+            comment: External repositories Access
+        - ...
+

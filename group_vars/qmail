@@ -1,0 +1,2 @@
+# PAM-LDAP
+pamGroupdn: cn=mail,ou=Groups,ou=eps,o=ua,c=es

@@ -1,0 +1,44 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Stopping and disabling services 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Check if services exist
+  shell: ((service {{ item }} status || /etc/init.d/{{ item }} status) >/dev/null 2>/dev/null && echo "{{ item }}") || echo "No" executable="/bin/bash"
+  register: existService
+  with_items: "{{ stopServices }}"
+  changed_when: False
+
+- name: Be sure services are stopped and unabled
+  service: name={{ item.stdout }} state=stopped enabled=false 
+  with_items: "{{ existService.results }}"
+  when: checkService.stdout == "True" and item.stdout != "No"
+
+- name: Stop daemon and unable (Debian)
+  shell: ([ -f /etc/init.d/{{ item }} ] && /etc/init.d/{{ item }} status >/dev/null && /etc/init.d/{{ item }} stop && update-rc.d -f {{ item }} remove) 2>/dev/null || echo "No" executable="/bin/bash"
+  register: stopDaemonDebian
+  with_items: "{{ stopServices }}"
+  changed_when: stopDaemonDebian.stdout != "No" 
+  when: ansible_os_family == "Debian" and checkService.stdout != "True"
+
+- name: Stop daemon and unable (Centos)
+  shell: ([ -f /etc/init.d/{{ item }} ] && /etc/init.d/{{ item }} status >/dev/null && /etc/init.d/{{ item }} stop && chkconfig {{ item }} off) 2>/dev/null || echo "No" executable="/bin/bash"
+  register: stopDaemonCentos
+  changed_when: stopDaemonCentos.stdout != "No"
+  with_items: "{{ stopServices }}"
+  when: ansible_os_family == "RedHat" and checkService.stdout != "True"

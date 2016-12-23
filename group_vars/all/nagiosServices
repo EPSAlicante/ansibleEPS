@@ -1,0 +1,235 @@
+# Nagios Configuration
+#
+# Variables to generate Nagios services
+#
+# Nagios services definition (syntax)
+# -----------------------------------
+# nagiosServices:
+# - name: service name on Nagios (required attribute)
+#   command: check_command value (required attribute)
+#   handler: task to do in case of failure (optional attribute)
+#   use: template to use (optional attribute, 'generic-service' by default)
+#
+# 'hostname' string in 'command' attribute will be changed by 'fqdn' on every host
+#
+
+nagiosServices:
+- name: "AnsibleEPS changes"
+  command: "check_nrpe!check_changesAnsibleEPS"
+- name: "AnsibleEPS errors"
+  command: "check_nrpe!check_errorsAnsibleEPS"
+- name: "backupVirtuales"
+  command: "check_nrpe!check_errorBackup"
+- name: "Bacula Client"
+  command: "check_nrpe!check_baculaFD"
+  handler: "restart-baculaFD"
+- name: "Bacula Director"
+  command: "check_tcp!9101"
+- name: "Bacula Storage"
+  command: "check_tcp!9103"
+- name: "Dhcp"
+  command: "check_nrpe!check_dhcp"
+  handler: "restart-dhcp"
+- name: "Disk Backup"
+  command: "check_nrpe!check_diskBackup"
+- name: "Disk Backup Mount"
+  command: "check_nrpe!check_diskBackupMount"
+- name: "Disk ConfVM"
+  command: "check_nrpe!check_diskConfVM"
+- name: "Disk Datos"
+  command: "check_nrpe!check_diskDatos"
+- name: "Disk Datos RW"
+  command: "check_nrpe!check_diskDatosRW"
+- name: "Disk Opt"
+  command: "check_nrpe!check_diskOpt"
+- name: "Disk Root"
+  command: "check_nrpe!check_diskRoot"
+- name: "Disk Root RW"
+  command: "check_nrpe!check_diskRootRW"
+- name: "Disk Server"
+  command: "check_nrpe!check_diskServer"
+- name: "Disk VM"
+  command: "check_nrpe!check_diskVM"
+- name: "Disk WWW"
+  command: "check_nrpe!check_diskWWW"
+- name: "Dns"
+  command: "check_nrpe!check_dns"
+  handler: "restart-dns"
+  command: "check_nrpe!check_errorBackup"
+- name: "HTTP"
+  command: "check_http!hostname"
+  handler: "restart-http"
+- name: "HTTPS"
+  command: "check_https!hostname"
+  handler: "restart-http"
+- name: "IMAP"
+  command: "check_nrpe!check_imap"
+  handler: "restart-imap"
+- name: "IMAPS"
+  command: "check_nrpe!check_simap"
+  handler: "restart-imaps"
+- name: "Iptables rules"
+  command: "check_nrpe!check_iptables"
+- name: "Ldap"
+  command: "check_ldap"
+  handler: "restart-ldap"
+- name: "LdapConn"
+  command: "check_nrpe!check_ldapConn"
+  handler: "restart-ldap"
+- name: "Load"
+  command: "check_nrpe!check_load"
+- name: "Memory"
+  command: "check_nrpe!check_memory"
+- name: "Mysql"
+  command: "check_mysql_cmdlinecred!repcontrol!admin"
+  handler: "restart-mysql"
+- name: "MysqlConn"
+  command: "check_mysqlConn!repcontrol!admin!75!100"
+- name: "Nrpe"
+  command: "check_nrpe_test"
+- name: "Nscd"
+  command: "check_nrpe!check_nscd"
+  handler: "restart-nscd"
+- name: "Ntp"
+  command: "check_nrpe_wait!check_ntp"
+- name: "Ossec Agent"
+  command: "check_nrpe!check_ossecAgent"
+  handler: "restart-ossecAgent"
+- name: "Proxmox"
+  command: "check_proxmoxWeb"
+- name: "Qmail queue"
+  command: "check_nrpe!check_mailq"
+- name: "SMTP"
+  command: "check_nrpe!check_smtp"
+  handler: "restart-qmail"
+- name: "SMTP-AUTH"
+  command: "check_tcp!587"
+  handler: "restart-qmail-smtp-auth"
+- name: "Warnings en el Backup"
+  command: "check_nrpe!check_warnBackup"
+
+#
+# Variables to generate hosts and services checks
+#
+# nagiosGlobal: (list of global Nagios checks)
+# ...
+#
+# nagiosGroup:
+# - group: group name (inventory)
+#   useHost: host template to use (optional attribute, 'generic-host' by default)
+#   checkHost: host check (optional attribute, 'check_host-alive' by default)
+#   checks: (list of Nagios checks by grou)
+#   ...
+#
+# nagiosHost:
+# - host: host name (inventory)
+#   useHost: host template to use (optional attribute, 'generic-host' by default)
+#   checkHost: host check (optional attribute, 'check_host-alive' by default)
+#   checks: (list of Nagios chacks by host)
+#   ...
+#
+# Nagios checks definition (syntax)
+# ---------------------------------
+# label: name used as key to be called from other variables (required attribute)
+# service: service name to check (nagiosServices 'name' attribute) (required attribute)
+# command: check to make (optional attribute, replacing nagiosService 'command' attribute)
+# handler: task to do in case of failure (optional attribute, replacing nagiosService 'handler' attribute)
+# use: template to use (optional attribute, replacing nagiosService 'use' attribute)
+#
+
+nagiosGlobal:
+- label: "Bacula Client"
+  service: "Bacula Client"
+- label: "Disk Root"
+  service: "Disk Root"
+- label: "Disk Root RW"
+  service: "Disk Root RW"
+- label: "Iptables rules"
+  service: "Iptables rules"
+- label: "Load"
+  service: "Load"
+- label: "Memory"
+  service: "Memory"
+- label: "Nrpe"
+  service: "Nrpe"
+- label: "Nscd"
+  service: "Nscd"
+- label: "Ossec Agent"
+  service: "Ossec Agent"
+
+
+nagiosGroup:
+- group: bacula
+  checks:
+  - label: "Bacula Director"
+    service: "Bacula Director"
+  - label: "Bacula Storage"
+    service: "Bacula Storage"
+  - label: "Disk Opt"
+    service: "Disk Opt"
+  - label: "Mysql"
+    service: "Mysql"
+  - label: "MysqlConn"
+    service: "MysqlConn"
+
+- group: DHCP
+  checks:
+  - label: "Dhcp"
+    service: "Dhcp"
+
+- group: DNS
+  checks:
+  - label: "Dns"
+    service: "Dns"
+
+- group: LDAP 
+  checks:
+  - label: "Ldap"
+    service: "Ldap"
+  - label: "LdapConn"
+    service: "LdapConn"
+
+- group: mysql
+  checks:
+  - label: "Mysql"
+    service: "Mysql"
+  - label: "MysqlConn"
+    service: "MysqlConn"
+
+- group: proxmox
+  checks:
+  - label: "backupVirtuales"
+    service: "backupVirtuales"
+  - label: "Disk Backup"
+    service: "Disk Backup"
+  - label: "Disk ConfVM"
+    service: "Disk ConfVM"
+  - label: "Disk VM"
+    service: "Disk VM"
+  - label: "Ntp"
+    service: "Ntp"
+  - label: "Proxmox"
+    service: "Proxmox"
+
+- group: qmail
+  checks:
+  - label: "IMAP"
+    service: "IMAP"
+  - label: "IMAPS"
+    service: "IMAPS"
+  - label: "Qmail queue"
+    service: "Qmail queue"
+  - label: "SMTP"
+    service: "SMTP"
+  - label: "SMTP-AUTH"
+    service: "SMTP-AUTH"
+
+
+nagiosHost:
+- host: ansible
+  checks:
+  - label: "AnsibleEPS changes"
+    service: "AnsibleEPS changes"
+  - label: "AnsibleEPS errors"
+    service: "AnsibleEPS errors"
+

@@ -1,0 +1,51 @@
+*** EMAILLIST PlayBook ***
+
+EmailList playbook 'listacorreos.yml' is able to generate a list with all email addresses (local accounts and aliases in Qmail server) and publish it on the Web of Qmail server (URL https://hermes.eps.ua.es/lista/lista.txt) to let UA Mail server know which addresses are OK and which are not, and delete email to addresses not belonging to list.
+
+Format of file published:
+
+## BEGIN ##
+dir1@eps.ua.es
+dir2@eps.ua.es
+...
+dirN@eps.ua.es
+## END ##
+
+Qmail server will connect every hour to update list. So this playbook will execute a quarter to, every hour. This execution is included in 'cron' playbook to set crontab.
+
+Email addreses are obtained from: 
+
+  * local users with a Maildir directory created in their home
+ 
+  * aliases, obtained from '.qmail-*' files in '/var/qmail/alias' directory, except files with '/dev/null' redirection inside
+
+A file 'lista.txt' will be generated with email addresses list, and publish on the Web using 'roles/listaCorreos/templates/var/www/lista/lista.txt.j2' template.
+
+Furthermore, a file 'infolista.txt' with more detailed info will be generated. Extra info as:
+
+  * Local account or alias
+
+  * Date of last email receipt or send (to manage addresses with no use)
+
+This file will be published on https://hermes.eps.ua.es/lista/infolista.txt with format:
+
+dirLocal1@eps.ua.es (local) Last access -> dd/mm/YYYY
+dirLocal2@eps.ua.es (local) Last access -> dd/mm/YYYY
+...
+dirLocalN@eps.ua.es (local) Last access -> 'dd/mm/YYYY'
+dirAlias1@eps.ua.es (alias) Last access -> 'dd/mm/YYYY'
+dirAlias2@eps.ua.es (alias) Last access -> 'dd/mm/YYYY'
+...
+dirAliasN@eps.ua.es (alias) Last access -> 'dd/mm/YYYY'
+
+
+Command-line execution: 'ansible-playbook listaCorreos.yml'
+
+Scope: Playbook will generate email addresses list on Web of Qmail server
+
+Templates: 
+
+  * 'roles/listaCorreos/templates/var/www/lista/lista.txt.j2'
+
+  * 'roles/listaCorreos/templates/var/www/lista/infolista.txt.j2'
+

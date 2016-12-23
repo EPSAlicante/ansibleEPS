@@ -1,0 +1,66 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# munin-node configuration 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Be sure munin-node is installed (Centos)
+  yum: pkg=munin-node state=installed
+  when: ansible_pkg_mgr == "yum"
+
+- name: Be sure munin-node is installed (Debian and python >= 2.6)
+  apt: pkg=munin-node state=installed 
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6
+
+- name: Be sure munin-node is installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install munin-node 
+  shell: ((apt-cache pkgnames|grep "^munin-node$") >/dev/null && echo "No") || ((apt-get -y --force-yes install munin-node) && echo "Changed") executable="/bin/bash"
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6
+
+- name: Configure /etc/munin/munin-node.conf file with 'host_name localhost.localdomain'
+  lineinfile: name=/etc/munin/munin-node.conf state=present regexp="^#?host_name localhost.localdomain" line='host_name localhost.localdomain'
+  register: muninNodeConfHostname
+
+- name: Configure /etc/munin/munin-node.conf file with allow
+  lineinfile: name=/etc/munin/munin-node.conf state=present regexp="^allow .{{ item|replace(".","..") }}.$" line='allow ^{{ item|replace(".","\.") }}$'
+  #shell: echo 'Item {{ item.stdout }}' executable='/bin/bash'
+  with_items: "{{ muninMaster }}"
+  register: muninNodeConfAllow 
+
+- name: Getting Paths (to get munin-node daemon)
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons['munin-node']|default("") == ""
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons['munin-node'] }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons['munin-node']|default("") != ""
+
+- name: Restart munin-node service
+  service: name={{ serviceName.stdout }} state=restarted enabled=true
+  when: checkService.stdout == "True" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed)
+
+- name: Restart munin-node daemon
+  shell: "{{ path.daemons['munin-node'] }} restart executable='/bin/bash'"
+  when: checkService.stdout != "True" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed)
+

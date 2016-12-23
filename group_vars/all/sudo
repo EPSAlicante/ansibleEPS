@@ -1,0 +1,264 @@
+# SUDO
+#
+# Variables to generate '/etc/sudoers' file (sudo permissions)
+#
+# sudoGlobal: 
+# users: (List of global users)
+# ...
+# commands: (List of global commands)
+# ...   
+# runas: (List of global runas)
+#
+# privileges: (List of global privileges)
+# ...
+#
+# sudoGroup:
+# - group: value (group name)
+#   users: (List of users by group)
+#   ...
+#   commands: (List of commands by group)
+#   ...
+#   runas: (List of runas by group)
+#   ...
+#   privileges: (List of privileges by group)
+#   ...
+#
+# sudoHost:
+# - host: value (host name)
+#   users: (List of users by host)
+#   ...
+#   commands: (List of commands by host)
+#   ...
+#   runas: (List of runas by host)
+#   ...
+#   privileges: (List of privileges by host)
+#   ...
+#
+# Users definition (syntax)
+# -------------------------
+# name: value --> User alias name and label used as key to be called from other variables (required attribute)
+# list: value --> list of users (required attribute, but could be an empty list '[]')
+#
+# Commands definition (syntax)
+# ----------------------------
+# name: value --> Command alias name and label used as key to be called from other variables (required attribute)
+# list: value --> list of commands (required attribute, but could be an empty list '[]')
+#
+# Runas definition (syntax)
+# -------------------------
+# name: value --> Runas alias name and label used as key to be called from other variables (required attribute)
+# list: value --> list of runas (required attribute, but could be an empty list '[]')
+#
+# Privileges definition (syntax)
+# ------------------------------
+# user: value --> User Alias name and label used as key to be called from other variables (required attribute)
+# host: value --> list of hosts (required attribute)
+# command: value --> Command Alias name (required attribute)
+# password: value --> Yes|No (required attribute)
+#
+# On 'privileges' attribute, 'hostname' string will be replaced by hostname on every host
+# On 'privileges' attribute, privileges with password ('password: Yes') will be defined before privileges with no password ('password: No') because sudo overwrite command privileges
+#
+
+sudoGlobal:
+  users:
+  - name: ROOT
+    list: [ admin, wwwadm ]
+
+  - name: ADMIN
+    list: [ manager, admin, wwwadm ]
+
+  - name: NAGIOS
+    list: [ nagios ]
+
+  commands:
+  - name: ADMIN
+    list: [ command.shutdown, daemon.sshd, daemon.network, daemon.bacula-fd, daemon.syslog, daemon.nrpe, daemon.nscd, daemon.munin-node, daemon.ossec ]
+
+  - name: NAGIOS
+    list: [ daemon.bacula-fd, daemon.nscd, daemon.munin-node, daemon.ossec, command.iptables -nL ]
+
+  privileges:
+  - user: ROOT
+    host: hostname
+    command: ALL
+    password: Yes
+
+  - user: ADMIN
+    host: hostname
+    command: ADMIN
+    password: No
+
+  - user: NAGIOS
+    host: hostname
+    command: NAGIOS
+    password: No
+
+  - user: ansible
+    host: hostname
+    command: ALL
+    password: No
+
+
+sudoGroup:
+- group: bacula
+  users: []
+
+  commands:
+  - name: GROUP_ADMIN_BACULA
+    list: [ daemon.bacula-dir, daemon.bacula-sd, command.bconsole, daemon.mysql ]
+
+  - name: GROUP_NAGIOS_BACULA
+    list: [ daemon.mysql ]
+
+  privileges:
+  - user: ADMIN
+    host: hostname
+    command: GROUP_ADMIN_BACULA
+    password: No
+
+  - user: NAGIOS
+    host: hostname
+    command: GROUP_NAGIOS_BACULA
+    password: No
+
+- group: DHCP
+  users: []
+
+  commands:
+  - name: GROUP_DHCP
+    list: [ daemon.dhcp ]
+
+  privileges:
+  - user: ADMIN, NAGIOS
+    host: hostname
+    command: GROUP_DHCP
+    password: No
+
+- group: DNS
+  users: []
+
+  commands:
+  - name: GROUP_DNS
+    list: [ daemon.bind ]
+
+  privileges:
+  - user: ADMIN, NAGIOS
+    host: hostname
+    command: GROUP_DNS
+    password: No
+
+- group: LDAP 
+  users: []
+
+  commands:
+  - name: GROUP_LDAP
+    list: [ daemon.ldap, daemon.ldap-admin ]
+
+  privileges:
+  - user: ADMIN, NAGIOS
+    host: hostname
+    command: GROUP_LDAP
+    password: No
+
+- group: mysql
+  users: []
+
+  commands:
+  - name: GROUP_MYSQL
+    list: [ daemon.mysql ]
+
+  privileges:
+  - user: ADMIN, NAGIOS
+    host: hostname
+    command: GROUP_MYSQL
+    password: No
+
+- group: nagios
+  users: []
+
+  commands:
+  - name: GROUP_ADMIN_NAGIOS
+    list: [ daemon.apache, daemon.nagios ]
+
+  - name: GROUP_NAGIOS_NAGIOS
+    list: [ daemon.apache ]
+
+  privileges:
+  - user: ADMIN
+    host: hostname
+    command: GROUP_ADMIN_NAGIOS
+    password: No
+
+  - user: NAGIOS
+    host: hostname
+    command: GROUP_NAGIOS_NAGIOS
+    password: No
+
+- group: proxmox
+  users:
+  - name: GROUP_RSYNC
+    list: [ rsync ]
+
+  commands:
+  - name: GROUP_RSYNC
+    list: [ command.rsync, command.vzlist, command.qm list, command.ls /backup/rsync ]
+
+  - name: GROUP_PROXMOX
+    list: [ daemon.ntp, command.ntpdate ]
+
+  privileges:
+  - user: GROUP_RSYNC
+    host: hostname
+    command: GROUP_RSYNC
+    password: No
+
+  - user: ADMIN, NAGIOS
+    host: hostname
+    command: GROUP_PROXMOX
+    password: No
+
+- group: qmail
+  users:
+  - name: GROUP_WWW_QMAIL
+    list: [ www-data ]
+
+  commands:
+  - name: GROUP_ADMIN_QMAIL
+    list: [ daemon.apache, daemon.qmail, daemon.qmail-smtp-auth, daemon.dovecot, command.qmail-qstat ]
+
+  - name: GROUP_WWW_QMAIL
+    list: [ command.quota -v * ]
+
+  privileges:
+  - user: ADMIN, NAGIOS
+    host: hostname
+    command: GROUP_ADMIN_QMAIL
+    password: No
+
+  - user: GROUP_WWW_QMAIL
+    host: hostname
+    command: GROUP_WWW_QMAIL
+    password: No
+
+
+sudoHost:
+- host: ansible_server 
+  users:
+  # ADMIN overwrited global value
+  - name: ADMIN
+    list: [ manager, admin, wwwadm ]
+
+  - name: HOST_DHCP
+    list: [ manager, admin, wwwadm ]
+
+  commands:
+  - name: HOST_DHCP
+    list: [ 'command.ansible-playbook -i /etc/ansibleEPS/eps /etc/ansibleEPS/dhcp.yml -t ??', command.joe /etc/ansibleEPS/roles/dhcp/files/etc/dhcp/dhcpd-??.conf' ]
+
+  privileges:
+  - user: HOST_DHCP
+    host: hostname
+    command: HOST_DHCP
+    password: No
+

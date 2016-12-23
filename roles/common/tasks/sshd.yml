@@ -1,0 +1,70 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# sshd configuration 
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Configure /etc/ssh/sshd_config con PermitRootLogin
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?PermitRootLogin\\s*' insertafter=EOF line='PermitRootLogin {{ sshdConfig.permitRootLogin }}'"
+  register: sshdPermitRootLogin 
+
+- name: Configure /etc/ssh/sshd_config con ClientAliveInterval 
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?ClientAliveInterval\\s*' insertafter=EOF line='ClientAliveInterval {{ sshdConfig.clientAliveInterval }}'"
+  register: sshdClientAliveInterval
+
+- name: Configure /etc/ssh/sshd_config con ClientAliveCountMax
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?ClientAliveCountMax\\s*' insertafter=EOF line='ClientAliveCountMax {{ sshdConfig.clientAliveCountMax }}'"
+  register: sshdClientAliveCountMax
+
+- name: Configure /etc/ssh/sshd_config con LogLevel 
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?LogLevel\\s*' insertafter=EOF line='LogLevel {{ sshdConfig.logLevel }}'"
+  register: sshdLogLevel
+
+- name: Configure /etc/ssh/sshd_config con Subsystem sftp 
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?Subsystem\\s*sftp\\s*' insertafter=EOF line='Subsystem sftp {{ path.commands.opensshSftpServer }} {{ sshdConfig.subsystemSftp }}'"
+  register: sshdSubsystemSftp
+
+- name: Configure /etc/ssh/sshd_config con MatchGroup
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?Match\\s*Group\\s*' insertafter=EOF line='Match Group {{ sshdConfig.matchGroup }}'"
+  register: sshdMatchGroup
+  when: sshdConfig.matchGroup != "Ignore" and sshdConfig.matchGroup != "Delete"
+
+- name: Configure borrado en /etc/ssh/sshd_config con MatchGroup
+  lineinfile: "name=/etc/ssh/sshd_config regexp='^#?Match\\s*Group\\s*' state=absent"
+  register: sshdBorradoMatchGroup
+  when: sshdConfig.matchGroup == "Delete"
+
+- name: Configure /etc/ssh/sshd_config con ForceCommand
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?ForceCommand\\s*' insertafter=EOF line='ForceCommand {{ sshdConfig.forceCommand }}'"
+  register: sshdForceCommand
+  when: sshdConfig.forceCommand != "Ignore" and sshdConfig.forceCommand != "Delete"
+
+- name: Configure borrado en /etc/ssh/sshd_config con ForceCommand
+  lineinfile: "name=/etc/ssh/sshd_config regexp='^#?ForceCommand\\s*' state=absent"
+  register: sshdBorradoForceCommand
+  when: sshdConfig.forceCommand == "Delete"
+
+- name: Getting ssh Service Name
+  shell: ( echo "{{ path.daemons.sshd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.sshd|default("") != ""
+
+- name: Restart ssh service
+  service: name={{ serviceName.stdout }} state=restarted enabled=true
+  when: checkService.stdout == "True" and serviceName.stdout|default("") != "" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed)
+
+- name: Restart ssh daemon
+  shell: '{{ path.daemons.sshd }} restart executable="/bin/bash"'
+  when: checkService.stdout != "True" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed) 
+

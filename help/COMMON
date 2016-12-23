@@ -1,0 +1,329 @@
+*** COMMON PlayBook ***
+
+Common playbook 'common.yml' is able to manage basic configuration for all servers (except those belonging to 'nocommon' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+
+Basic configuration includes the following tasks lists:
+
+    * manager.yml -> User 'manager' management
+
+    * group.yml -> Local groups management
+
+    * repos.yml -> Repositories management 
+
+    * dselect.yml -> 'dselect' package installation 
+
+    * concurrency.yml -> 'concurrency' definition 
+
+    * services.yml -> Stopping services not required
+
+    * resolv.yml -> '/etc/resolv.conf' DNS client management 
+
+    * nscd.yml -> NSCD service, installation and configuration 
+
+    * securetty.yml -> '/etc/securetty' permissions management 
+
+    * locales.yml -> Locales management
+
+    * profile.yml -> '/etc/profile' global profile management 
+
+    * nvi.yml -> 'nvi' package installation and configuration by default as 'vi'
+
+    * utils.yml -> Additional packages installation
+
+    * pam-ldap.yml -> LDAP installation and configuration for PAM
+
+    * syslog.yml -> Remote servers logs sending configuration
+
+    * sshd.yml -> SSHD service configuration 
+
+    * ntp.yml -> NTP service installation and configuration
+
+    * munin-node.yml -> Munin-node client installation and configuration
+
+    * nrpe.yml -> Nagios-NRPE client installation and configuration 
+
+    * bacula-fd.yml -> Bacula-FD client installation and configuration
+
+    * ossec.yml -> OSSEC client installation and configuration
+
+
+Changes will be generated with some variables (usually through templates) used by corresponding tasks list.
+
+Variables are defined by default in 'group_vars/all' global file, but could be overwritten in group files or host files, depending on features of every group or host. Furthermore, if variables depends on Distribution (Operating System), they will be defined on specific distribution and version files.
+
+
+Command-line execution: 'ansible-playbook common.yml'
+
+Scope: Playbook will update all server except those belonging to 'nocommon' group
+
+Labels: There are labels for every tasks list: manager, group, repos, dselect, concurrency, services, resolv, wrappers, nscd, securetty, locales, profile, nvi, utils, pam-ldap, syslog, ntp, munin-node, nrpe, bacula-fd, ossec. Selecting a label, only that tasks will be executed. 
+
+Variables: Every tasks list has a set of variables to configure task to perform.
+
+
+  * manager.yml tasks list -> User 'manager' management
+
+    It performs the following tasks:
+
+    - Check if 'manager' user is defined with a specific UID ('managerID variable) and a specific password ('managerPassword' variable).
+
+    - Check if 'manager' group is defined with a specific GID ('managerGID' variable).
+
+    - Add 'manager' user to a list of specific groups ('managerGroups' variable). This task don't delete 'manager' user in the rest og groups, it just tries to be sure that 'manager' belongs to assigned groups.
+
+    - Set 700 permission to '/home/manager' directory.
+
+
+  * group.yml tasks list -> Local groups management
+
+    It performs the following tasks:
+
+    - Add 'administradores' group with GID 600
+
+    - Add 'tecnicos' group with GID 606 
+
+    - Add users defined in 'groupRoot' variable (it's a users list) to 'root' group and 'wheel' group.
+
+    - Add users defined in 'groupAdmin' variable (it's a users list) to 'manager' group and to 'adm', 'www-data' and 'apache' (if they are defined). This task don't delete the rest of users in groups, it just tries to be sure that specific users of 'groupAdmin' variable belong to that groups.
+
+
+  * repos.yml tasks list -> Repositories management
+
+    It performs the following tasks (ONLY IF 'reposUpdate' variable has 'y' value): 
+
+    - In 'yum' package manager distributions, repositories by default will be deleted and replaced. Content of these new files could be modified in 'roles/common/files/etc/yum.repos.d/' directory.
+
+    - In 'yum' package manager distributions, 'etc/yum.conf' config file will be modified to exclude packages of 'excludeUpdate' variable (it's a packages list).
+
+    - In 'yum' package manager distributions, EPEL and rpmforge packages keys will be imported, to avoid key errors during installation) 
+
+    - In 'apt' package manager distributions, '/etc/apt/sources.list' config file will be modified through 'roles/common/templates/etc/apt/sources.list.j2' template. This template will assign new repositories depending on:
+
+      * If server location is TV or Elec, repositories will come from 'reposDebianExt' variable (repositories list)
+
+      * In other case, repositories will come from 'reposDebianEPS' variable (repositories list)
+
+      * If server belongs to 'proxmox' group (in inventory), proxmox repositories will be added: with 'reposProxmoxExt' variable (if server location is TV or Elec) or with 'reposProxmoxEPS' variable in other case.
+
+
+  * dselect.yml tasks list -> 'dselect' package installation
+
+    This task install 'dselect' package for 'apt' package manager distributions (no variables)
+
+
+  * concurrency.yml tasks list -> 'concurrency' definition
+
+    This task will modify 'CONCURRENCY=XXXX' line of '/etc/init.d/rc' file for 'apt' package manager distributions. Value assigned to 'CONCURRENCY' could be changed with 'concurrency' variable ('NONE' by default).  
+
+
+  * services.yml tasks list -> Stopping services not required
+
+    This task stops and delete from boot services not required. This services will be defined with 'stopServices' variable (services list).
+
+
+  * resolv.yml tasks list -> '/etc/resolv.conf' DNS client management
+
+    This task will modify '/etc/resolv.conf' through 'roles/common/templates/etc/resolv.conf.j2' template.
+
+    This template uses the following variables to config file:
+
+    - 'domain' variable for local domain name
+
+    - 'search' variable for search list for host-name lookup
+
+    - 'nameserver25' variable (DNS servers list) for name servers IP address (only if server belongs to 172.25.40.64/26 network)
+    - 'namaserver' variable (DNS servers list) for name servers IP address (in other case)
+
+
+  * nscd.yml tasks list -> NSCD service, installation and configuration
+
+    It performs the following tasks:
+
+    - Install 'nscd' package.
+
+    - Configure 'etc/nscd.conf' file throgh static files (whitout variables) located in 'roles/common/files/etc' directory. with names 'nscd.conf.XX' (there are a diferent file for every 'XX' distribution)
+
+
+  * securetty.yml tasks list -> '/etc/securetty' permissions management
+
+    This task configures '/etc/securetty' file through static file (without variables) 'roles/common/files/etc/securetty' (empty file by default to avoid tty access to root user).
+
+
+  * locales.yml task list -> Locales management
+
+    It performs the following tasks:
+
+    - Configure '/etc/sysconfig/i18n' file for 'yum' package manager distributions, through static file (whitout variables) 'roles/common/files/etc/sysconfig/i18n'.
+
+    - Configure '/etc/locale.gen' file for 'apt' package manager distributions, through static file (whitout variables) 'roles/common/files/etc/locale.gen'.
+
+    - Generate locales (for 'apt' package manager distributions), executing 'locale-gen'.
+
+    - Set time configuring '/etc/localtime' through Madrid time file '/usr/share/zoneinfo/Europe/Madrid'.
+
+
+  * profile.yml task list -> '/etc/profile' global profile management 
+
+    This task configures '/etc/profile' file adding lines depending on 'profileEtc' variable (list of profile lines). 
+
+    Task don't delete the rest of lines, it just tries to be sure that lines of 'profileEtc' variable exist on file. 
+
+
+  * nvi.yml task list -> 'nvi' package installation and configuration by default as 'vi'
+
+    This task installs 'nvi' package for 'apt' package manager distributions. Once installed, it links 'vi' to new 'nvi', to be the default vi editor.
+
+
+  * utils.yml task list -> Additional packages installation
+
+    This task installs packages depending on 'utils' variable (list of required software). This variable usually varies depending on distribution.
+
+
+  * pam-ldap.yml tasks list -> LDAP installation and configuration for PAM
+
+    It performs the following tasks:    
+
+    - Install 'pam-ldap' and 'nss-pam-ldapd' packages for 'yum' package manager distributions, or 'libnss-ldap' and 'libpam-tmpdir' for 'apt' package manager distributions.
+
+    - Configure '/etc/pam_ldap.conf' file through templates located in 'roles/common/templates/etc' directory (there's a 'pam_ldap.conf.XX.j2' template for every 'XX' distribution: Debian, CentOS or Ubuntu).
+    
+    - Configure '/etc/nslcd.conf' file through 'roles/common/templates/etc/nslcd.conf.j2' template for 'yum' package manager distributions.
+
+    - Configure '/etc/libnss-ldap.conf' file through 'roles/common/templates/etc/libnss-ldap.conf.j2' template for 'apt' package manager distributions.
+
+    - Templates of lasti three tasks (LDAP files configuration), use the same variables:
+
+      * ldapA -> First LDAP server to connect (required value). It depends of server location (will be different depending on building)
+
+      * ldapB -> Second LDAP server to connect (in case of connection failure to 'ldapA'). Not required value (could be empty). It depends of server location too.
+
+      * ldapC -> Third LDAP server to connect. As 'ldapB', could be empty and depends of server location.
+
+      Example:
+      
+      # PAM-LDAP
+      ldapA: server_13.eps.ua.es
+      ldapB: 172.20.2.23
+      ldapC: 
+
+      * pamGroupdn -> LDAP users group able to access to server. 
+
+       Example:
+
+       # PAM-LDAP
+       pamGroupdn: cn=mail,ou=Groups,ou=eps,o=ua,c=es
+
+    - Configure '/etc/nsswitch.conf' file through static file (without variables) 'roles/common/files/etc/nsswitch.conf'.
+
+    - Configure PAM files (in /etc/pam.d directory): 'system-auth' and 'password-auth' for 'yum' package manager distributions, 'login', 'passwd', 'su' and 'ssh', through static files (without variables) of 'roles/common/files/etc/pam.d' directory (there's a different file per distribution)
+
+
+  * syslog.yml tasks list -> Remote servers logs sending configuration
+
+    This task configures syslog configuration file (this file could change depending on distribution, so we'll use 'syslogConf' variable), adding lines depending on 'syslog' variable (list of syslog lines). 
+
+    Task don't delete the rest of lines, it just tries to be sure that lines of 'syslog' variable exist on file.
+
+    'syslog' variable is mainly used to add lines with remote servers to send logs. 'Lineinfile' module of Ansible uses 'regexp' to check if line exists (inserting if not). In these line could appear some characters to escape (Ex asterisk), then could be different string to seach (with escaped astirisks) and string to insert (without escaped characters).
+
+    This way, 'syslog' variable will be a list of items with two attributes:
+
+    * search -> String to seach line in file (could have scaped characters)
+
+    * replace -> String to insert line if not exist in file (no scaped characters)
+
+    Example:
+
+      # Rsyslog
+      syslog:
+      - search: "\\*.\\* @server_12.eps.ua.es"
+        replace: "*.* @server_12.eps.ua.es"
+      - search: "\\*.\\* @server_22.eps.ua.es"
+        replace: "*.* @server_22.eps.ua.es"
+      - search: "\\*.\\* @server_32.eps.ua.es"
+        replace: "*.* @server_32.eps.ua.es"
+
+
+  * sshd.yml tasks list -> SSHD service configuration
+
+    This task configures '/etc/ssh/sshd_config' SSH configuration file, modifying config parameters in file through 'sshdConfig' variables and its attributes: 'permitRootLogin', 'clientAliveinterval', 'clientAliveCountMax', 'logLevel' and 'subsystemSftp'. Using 'sshdConfig' we'll assign sshd file parameters to attributes values.
+
+    It checks config file syntax before restart service with updates. In case of syntax error, In case of syntax error it show error and stop task execution (don't restart service).
+
+    Example:
+
+      # SSHd_Config
+      sshdConfig:
+       permitRootLogin: "yes"
+       clientAliveInterval: 43200
+       clientAliveCountMax: 0
+       logLevel: INFO
+       subsystemSftp: -l VERBOSE
+
+
+  * ntp.yml tasks list -> NTP service installation and configuration 
+
+    It will perform required tasks only if server is not an OpenVZ virtual (it checks if server is an OpenVZ virtual). In this case server don't need NTP, takes time from host. In other case, it performs the following tasks:
+
+    - 'ntp' and 'ntpdate' packages installation
+
+    - Configure '/etc/ntp.conf' NTP configuration file through 'roles/common/templates/etc/ntp.conf.XX.j2' template (there's a 'ntp.conf.XX.j2' template for every 'XX' distribution). Template will assign server to file using 'ntp25' variable (if server belongs to '172.25.40.64/26' network or 'ntp' variable in other case.
+
+
+  * munin-node.yml tasks list -> Munin-node client installation and configuration 
+
+    It performs the following tasks:
+
+    - 'munin-node' package installation
+
+    - Configure '/etc/munin/munin-node.conf' file, uncomments 'host_name localhost.localdomain' line
+
+    - Configure '/etc/munin/munin-node.conf' file, adding lines with access permission to Munin masters. 'Allow' permission will be added depending on 'muninMaster' variable (list of Munin masters IPs) 
+
+
+  * nrpe.yml tasks list -> Nagios-NRPE client installation and configuration 
+
+    It performs the following tasks:
+
+    - 'nagios-nrpe' package installation and all required plugins for 'yum' package manager distributions, or 'nagios-nrpe-server' package installation for 'apt' package manager distributions.
+
+    - Link '/usr/lib/nagios' to '/usr/lib64/nagios' if server is 64 bits architecture. This way all plugins will stay always in '/usr/lib/nagios/plugins'.
+
+    - Configure '/etc/hosts.allow' file, adding lines with permission to access 'nrpe' service from Nagios masters, using 'nagiosMaster' variable (list of Nagios masters IPs) to add 'nrpe: IP' lines.
+
+    - Copy 'check_file_content.pl', 'check_mem.sh', 'check_file_age2.pl', 'check_iptables.sh' and 'check_ups_nut' plugins to '/usr/lib/nagios/plugins' directory. They are static files (without variables) in 'roles/common/files/usr/lib/nagios/plugins' directory.
+
+    - Configure '/etc/nagios/nrpe.cfg' NRPE configuration file, adding line with access permission from Nagios masters, using 'nagiosMaster' variable (list of Nagios masters IPs) to add 'aloowed_hosts: IPs' line.
+
+
+  * bacula-fd.yml tasks list -> Bacula-FD client installation and configuration
+
+    It performs the following tasks:
+
+    - 'bacula-client' package installation for 'yum' package manager distributions, or 'bacula-fd' package installation for 'apt' package manager distributions.
+
+    - Configure '/etc/bacula/bacula.conf' configuration file through 'roles/common/templates/etc/bacula/bacula.conf.XX.j2' template (there's a different template for every 'XX' distribution). Template will assign values to 'Directors' using 'baculaDirector' variable (list of Bacula directors), and value to 'FileDaemon' with its hostname.
+ 
+    - Configure '/etc/hosts.allow' file, adding lines with permission to access 'bacula-fd' service from Bacula masters, using 'baculaMaster' variable (list of Bacula masters IPs) to add 'bacula-fd: IPs' line.
+
+
+  * ossec.yml tasks list -> OSSEC client installation and configuration
+
+    It performs the following tasks:
+
+    - Install reuiqred packages to compile OSSEC, 'gcc' and 'make'.
+
+    - OSSEC package doesn' belong to CentOS or Debian repositories, so we'll copy a 'ossec.tgz' file for every server.
+
+    - Decompress tgz file.
+
+    - Install OSSEC software (this task compile and install software). Installation needs OSSEC Master IP, it will get from 'ossecMaster' variable. 
+
+    - Uninstall 'gcc' package, because it was required just for installation, and it's a dangerous software for secutiry.
+
+    - Configure '/var/ossec/etc/ossec.conf' OSSEC configuration file through 'roles/common/templates/var/ossec/etc/ossec.conf.XX.j2' template (there's a different template for every 'XX' distribution). Template will assign OSSEC Master using 'ossecMaster' variable.
+
+    - Copy '/etc/init.d/ossec' script for 'apt' package manager distributions.
+
+    - Generate new certificate in OSSEC master (using 'ossecMaster' variable), and install new certificate in OSSEC client.
+

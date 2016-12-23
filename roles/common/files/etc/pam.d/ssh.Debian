@@ -1,0 +1,14 @@
+# Made by AnsibleEPS
+
+auth    sufficient      pam_unix.so debug likeauth nullok shadow
+auth    sufficient      pam_ldap.so use_first_pass
+auth    required        pam_deny.so
+password sufficient     pam_unix.so use_authtok nullok md5 shadow
+password sufficient     pam_ldap.so use_authtok
+password required pam_deny.so
+account    sufficient   pam_access.so
+account    sufficient   pam_ldap.so
+account         required        pam_deny.so
+session optional        pam_mkhomedir.so skel=/etc/skel umask=0077
+session    required   pam_unix.so
+session    optional pam_ldap.so

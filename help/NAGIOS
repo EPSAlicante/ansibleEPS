@@ -1,0 +1,144 @@
+*** NAGIOS PlayBook ***/
+
+Nagios playbook 'nagios.yml' is able to manage Nagios service configuration (monitoring hosts and services) for all servers running Nagiios service, in a centralized way.  Playbook can update changes at once for all Nagios servers, but It can also update just one with '--limit serverName' parameter. It checks config files syntax before restart service with updates. In case of syntax error it show it but doesn't undo updates, beacuse there are a lot of config files (on per host monitored).
+
+Update are copied to servers using static files (without variables) and dynamic files (with variables):
+
+  * Dynamic files are generated through 'roles/nagios/templates/etc/nagios3/conf.d/host.cfg.j2' template. This template creates 'host.cfg' (host will be the hostname for every host) for all servers in inventory except servers belonging to 'nonagios' group. To generate checks , template uses some variables: 'nagiosServices', 'nagiosGlobal', 'nagiosGroup' and 'nagiosHost'. 
+
+  * For servers in group 'nonagios' or servers in inventory (but we want to check with Nagios), we can generate check files with static files in 'roles/nagios/files/etc/nagios3/conf.d' directory as 'hostname_nagios2.cfg'.
+
+Furthermore, playbook update all nagios3 global configuration files. In 'roles/nagios/files' directory there are trhee directory:
+
+  * 'etc/nagios3' with global Nagios configurarion. Inside there is a directory 'conf.d' with checks for servers in group 'nonagios' or not in inventory.
+
+  * 'etc/nagios-plugins' with 'command' definitions for checks.
+
+  * 'usr/share/nagios3/plugins/eventhandlers' with 'restarts' definitions for checks.
+
+
+Command-line execution: 'ansible-playbook nagios.yml'
+
+Scope: Playbook will update all server of 'nagios' group (in inventory)
+
+Files:
+
+  * 'roles/nagios/files/usr/share/nagios3/plugins/eventhandlers'
+  * 'roles/nagios/files/etc/nagios-plugins/config/*'
+  * 'roles/nagios/files/etc/nagios3/*'
+
+Templates: 'roles/nagios/templates/etc/nagios3/conf.d/host.cfg.j2'
+
+Variables:
+
+    * 'nagiosServices' -> Services Nagios configuration for all servers. This variable is a list with the following atributes:
+
+      - name: Service name (string format) used by Nagios to show checks information. Changing name, Nagios will loose historic checks information and begin new historic with the new name. It's a required attribute.
+
+      - command: 'check_command' used by Nagios to check services. If we include 'hostname' string, playbook will change by server FQDN. It's a required attribute.
+
+      - handler: 'event_handler' used by Nagios to do something (usually service restart) in case of checked service error.
+
+      - use: Service template used to get prefedined values of service main features. Optional attribute, 'generic-service' by default.
+
+
+      Example:
+
+        nagiosServices:
+        - name: "Ldap"
+          command: "check_ldap"
+          handler: "restart-ldap"
+        - name: "Load"
+          command: "check_nrpe!check_load"
+
+
+    * 'nagiosGlobal' -> Checks Nagios configuration for all servers. A file with host definition and service checks will be generated for every host. This variable is a list with the following atributes:
+
+      - label: This is the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute. Required attribute.
+
+      - service: Service name to check (string format). It has to be defined in 'nagiosService' variable. It's an optional attribute, if not defined, service won't be checked.
+
+      - command: Check command to do (string format). Optional attribute. If defined, it will overwrite 'command' attribute of 'nagiosService' variable.
+
+      - handler: Event handler to use in case of error. Optional attribute. If defined, it will overwrite 'handler' attribute of 'nagiosService' variable.
+
+      - use: Service template to use (string format). If defined, it will overwrite 'use' attribute of 'nagiosService' variable.
+
+
+      Example:
+
+        nagiosGlobal:
+        - label: "Load"
+          service: "Load"
+        - label: "Memory"
+          service: "Memory"
+
+
+    * 'nagiosGroup' -> Checks Nagios configuration for a specific group. It has four attributes:
+
+      - group: Group name (in inventory)
+
+      - useHost: Host template used to get prefedined values of host main features. Optional attribute, 'generic-host' by default.
+
+      - checkHost: Check host type. Optional attribute, 'check-host-alive' (ping check) by default.
+
+      - checks: List of checks, with the same attributes and meaning than 'nagiosGlobal' variable (label, service, command, handler and use)
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global items) will be added to config file after global items.
+
+
+      Example:
+
+        nagiosGroup:
+	- group: LDAP
+	  checks:
+	  - label: "Ldap"
+	    service: "Ldap"
+	  - label: "LdapConn"
+	    service: "LdapConn"
+
+        - group: mysql 
+          checks:
+          - label: "Mysql"
+            service: "Mysql"
+          - label: "MysqlConn"
+            service: "MysqlConn" 
+
+
+    * 'nagiosHost' -> Checks Nagios configuration for a specific server. It has four attributes:
+
+      - host: Server name (in inventory)
+
+      - useHost: Host template used to get prefedined values of host main features. Optional attribute, 'generic-host' by default.
+
+      - checkHost: Check host type. Optional attribute, 'check-host-alive' (ping check) by default.
+
+      - checks: List of checks, with the same attributes and meaning than 'nagiosGlobal' variable (label, service, command, handler and use)
+
+      At this point, we can delete or overwrite global or groups items, this way:
+
+        * Overwrite global or groups items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than globaland groups items) will be added to config file after global items.
+
+
+      Example:
+
+	nagiosHost:
+	- host: ansible
+	  checks:
+	  - label: "AnsibleEPS changes"
+	    service: "AnsibleEPS changes"
+	  - label: "AnsibleEPS errors"
+	    service: "AnsibleEPS errors"
+

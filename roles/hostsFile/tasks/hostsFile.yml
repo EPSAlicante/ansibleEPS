@@ -1,0 +1,23 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# /etc/hosts configuration 
+
+- name: Get hostname IP
+  shell: host {{ inventory_hostname }}|cut -d' ' -f4
+  register: hostIP
+  changed_when: False
+
+- name: Get hostname FQDN
+  shell: host {{ inventory_hostname }}|cut -d' ' -f1
+  register: hostFQDN
+  changed_when: False
+
+- name: Configure /etc/hosts
+  template: src=etc/hosts.j2 dest=/etc/hosts owner=root group=root mode=0644
+

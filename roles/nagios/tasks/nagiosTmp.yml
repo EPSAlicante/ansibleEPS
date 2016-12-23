@@ -1,0 +1,24 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Nagios3 configuration
+
+- name: Create /tmp/nagios3-conf.d directory
+  shell: (rm -rf /tmp/nagios3-conf.d; mkdir /tmp/nagios3-conf.d && chown www-data.nagios /tmp/nagios3-conf.d && chmod 755 /tmp/nagios3-conf.d) 2>/dev/null 
+  changed_when: false
+
+- name: Copy of static files to /tmp/nagios3-conf.d directory
+  shell: cp -af {{ pathAnsible }}/roles/nagios/files/etc/nagios3/conf.d/*_nagios2.cfg /tmp/nagios3-conf.d 
+  changed_when: false
+
+- name: Generate hosts and services checks in /tmp/nagios3-conf.d
+  template: src=roles/nagios/templates/etc/nagios3/conf.d/host.cfg.j2 dest=/tmp/nagios3-conf.d/{{ item }}.cfg owner=www-data group=nagios mode=0644
+  with_items: "{{ groups.all|sort }}"
+  changed_when: false
+  when: item not in groups.nonagios
+

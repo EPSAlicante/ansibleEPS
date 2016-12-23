@@ -1,0 +1,183 @@
+######################################################
+                  Admin Menu Guide 
+######################################################
+
+
+Execute the Admin Menu '/etc/ansibleEPS/menu.py'
+
+
+Admin Menu's options:
+
+
+ 1. Common module (nodes config)                    
+ 
+    To configure common features in nodes (hosts in inventory). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc.  
+    
+    See COMMON file to get details about Common module. 
+
+
+ 2. Host File module (nodes config) 
+
+    To configure '/etc/hosts' file in nodes (hosts in inventory). 
+
+    See HOSTFILE file to get details about HostFile module. 
+
+
+ 3. Sudoers module (nodes config)                       
+
+    To configure '/etc/sudoers' file in nodes (hosts in inventory).
+
+    See SUDO file to get details about Sudoers module.
+
+
+ 4. TCP Wrappers module (nodes config)
+
+    To configure TCP Wrappers ('/etc/hosts.allow' and '/etc/hosts.deny' files) in nodes (hosts in inventory).
+
+    See WRAPPERS file to get details about TCP Wrappers module.
+
+
+ 5. PAM Access module (nodes config)
+
+    To configure PAM Access ('/etc/security/access.conf' file) in nodes (hosts in inventory).
+
+    See PAMACCESS file to get details about PAM Access module.
+
+
+ 6. NRPE module (nodes config)
+
+    To configure Nagios NRPE commands (files in '/etc/nagios/nrpe.d/') in nodes (hosts in inventory).
+
+    See NRPE file to get details about NRPE module.
+
+
+ 7. IPTables module (nodes config)
+
+    To configure IPTables in nodes (hosts in inventory).
+
+    See IPTABLES file to get details about IPtables module.
+
+
+ 8. Crontab module (nodes config)
+
+    To configure crontab in nodes (hosts in inventory).
+
+    See CRONTAB file to get details about Crontab module.
+
+
+ 9. Proxmox module (nodes config)
+
+    To configure some basic features in proxmox nodes (hosts in inventory with proxmox installed).
+
+    See PROXMOX file to get details about Proxmox module.
+
+
+10. All modules (nodes config)
+
+    To configure every module (Menu 1 to 8) in nodes (hosts in inventory).
+
+
+ b. Bacula Servers (bacula config)
+
+    To configure Bacula configuration files ('/etc/bacula/bacula-dir.conf' and '/etc/bacula/bacula-sd.conf' files) in Bacula servers.
+
+    See BACULAADMON file to get details about Bacula module.
+
+
+ d. DHCP Servers (DHCP config)
+
+    To configure DHCP configuration file ('/etc/dhcp3/dhcpd.conf' file) in DHCP servers.
+
+    See DHCP file to get details about DHCP module.
+
+
+ m. Munin Servers (munin config)
+
+    To configure Munin hosts configuration files (files in '/etc/munin/conf.d/') in Munin servers.
+
+    See MUNIN file to get details about Munin module.
+
+
+ n. Nagios Servers (nagios config)
+
+    To configure Nagios configuration files (files in '/etc/nagios3/conf.d' files) in Nagios servers.
+
+    See NAGIOS file to get details about Nagios module.
+
+
+ i. Email addresses List (getting data)
+
+    To generate a List of email adresses with extra info from Qmail Server, and publish info in its Web Service in Qmail server.
+
+    See EMAILLIST file to get details about Email addresses List module.
+
+
+ a. Add Node(s)
+
+    To configure Linux/Unix hosts as nodes (hosts accessed by Ansible Host).
+
+    First 'remote user' is asked (user to access hosts and execute commands).
+
+    Then 'Hostname or IP' is asked (host to become a node)
+
+    Finally will be tried a SSH connection to host as 'root'. If connection is done, the 'remote user' selected will be created, Ansible Host will be able to access with 'remote user' without password (using authorized_keys) and sudo will be installed and configured to permit 'remote user' to execute every command with sudo.
+
+    After configuration the conection with 'remote user' will be tested, showing an 'OK' or error message.
+
+    ** Remember that 'node' has to be introduced manually in inventory file **
+
+
+ s. Stop/Start/Restart System                             
+
+    Stop System deleting crontab entries -> This way no new operations will be started in background (but operations started are still runnnig)
+
+    Start System adding crontab entries -> This way operations will be started on a predefined frequency (by variables) 
+
+    Restart System deleting crontab entries and adding crontab entries again
+
+
+ l. Check System Logs (Errors and Changes)               
+
+    Any error connecting to nodes (Linux/Unix or Windows) or trying to configure, will create a file in Ansible Host showing detailed problems in '/var/log/ansibleEPS/errors.log'. This option will check it.
+
+    Any change in hosts management (any configuration changed) will create a /var/log/ansibleEPS/changes.log', checked by this option too.
+
+    First script ask to choice 'view errors or changes' :
+
+    	* View summary or details. 'summary' will show just lines where errors were produced, and 'details' will show the whole file.
+
+
+ c. Clean System Logs                
+
+    If errors and changes files have been checked, this option permit delete both files.
+ 
+
+ x. View Executions List         
+
+    This option show a list of executions finished.
+
+
+ r. Log Running Executions (Crt+C to Exit)           
+
+    Temporal logs of running executions are created in '/var/log/ansibleEPS' directory with 'tmp' extension and a name describing operation.
+
+    Show running executions (as previous option) with an index number to choice, and wait for a number to list (with 'tail' command) the log file choiced.
+
+
+ u. Update (servers update)
+
+    Operating System updates of nodes (hosts in inventory). Script ask for a hostname, a group of hostname o All.
+
+    Then we can choice between update Centos family hosts, Debian family hosts or All.     
+
+ v. Inventory List
+
+    Show the hosts list (Inventory)
+
+ q. Quit Menu                               
+ 
+    Exit
+
+
+
+######################################################

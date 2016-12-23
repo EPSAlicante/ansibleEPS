@@ -1,0 +1,64 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# IPtables configuration
+
+- name: Systemctl check
+  shell: (systemctl > /dev/null && echo "Yes") 2>/dev/null || echo "No"
+  register: systemctl
+  changed_when: False
+
+- name: Copy iptables.sh file to servers in /etc/init.d/.iptables.sh.check 
+  template: src=etc/init.d/iptables.sh.j2 dest=/etc/init.d/.iptables.sh.check owner=root group=root mode=0750 backup=yes
+  register: checkFile
+
+- name: Check if original iptables.sh exists
+  stat: path=/etc/init.d/iptables.sh
+  register: scriptFile
+  changed_when: False
+  when: checkFile|changed
+
+- name: Execute /etc/init.d/.iptables.sh.check to check syntax (skipping systemctl)
+  environment: 
+    _SYSTEMCTL_SKIP_REDIRECT: 1
+  shell: /etc/init.d/.iptables.sh.check start
+  register: checkResult
+  ignore_errors: True
+  when: checkFile|changed
+
+- name: If execution OK -> Copy iptables.sh file to servers
+  template: src=etc/init.d/iptables.sh.j2 dest=/etc/init.d/iptables.sh owner=root group=root mode=0750
+  notify: restart iptables
+  when: checkFile|changed and checkResult|success
+
+- name: If execution fails and original iptables.sh exists -> Start original iptables.sh
+  shell: /etc/init.d/iptables.sh start
+  when: checkFile|changed and checkResult|failed and scriptFile.stat.exists
+
+- name: If execution fails -> move .iptables.sh.check as .iptables.sh.error 
+  shell: mv -f /etc/init.d/.iptables.sh.check /etc/init.d/.iptables.sh.error 
+  when: checkFile|changed and checkResult|failed
+
+- name: Execute chkconfig on in Centos
+  shell: chkconfig iptables.sh on
+  when: ansible_pkg_mgr == "yum" and checkFile|changed
+
+- name: Execute update-rc.d defaults in Debian
+  shell: update-rc.d iptables.sh defaults
+  when: ansible_pkg_mgr == "apt" and checkFile|changed
+
+- name: Be sure iptables is running and enabled (service)
+  service: name=iptables.sh state=started enabled=yes
+  when: systemctl.stdout == "No" and checkFile|changed
+
+- name: Be sure iptables is running and enabled (systemd)
+  environment:
+    _SYSTEMCTL_SKIP_REDIRECT: 1
+  shell: /etc/init.d/iptables.sh start
+  when: systemctl.stdout == "Yes" and checkFile|changed
+

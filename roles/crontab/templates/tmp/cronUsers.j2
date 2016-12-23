@@ -1,0 +1,78 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+{# Global block -#}
+{% if crontabGlobal.users is defined -%}
+{%  for user in crontabGlobal.users -%}
+{%   set printUser = {'value': True} -%}
+{# Looking for the same name in Group block -#}
+{%   if crontabGroup is defined -%}
+{%    for rGroup in crontabGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      for guser in rGroup.users -%}
+{%       if guser.name == user.name -%}
+{%        if printUser.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same user in Host block -#}
+{%   if printUser.value -%}
+{%    if crontabHost is defined -%}
+{%     for rHost in crontabHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for huser in rHost.users -%}
+{%        if huser.name == user.name -%}
+{%         if printUser.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print User -#}
+{%   if printUser.value -%}
+{{ user.name }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if crontabGroup is defined -%}
+{%  for rGroup in crontabGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for guser in rGroup.users -%}
+{%     set printUser = {'value': True} -%}
+{# Looking for the same name in Host block -#}
+{%     for rHost in crontabHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for huser in rHost.users -%}
+{%        if huser.name == guser.name -%}
+{%         if printUser.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print User -#}
+{%     if printUser.value -%}
+{{ guser.name }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if crontabHost is defined -%}
+{%  for rHost in crontabHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for huser in rHost.users -%}
+{# Print User -#}
+{{ huser.name }}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}

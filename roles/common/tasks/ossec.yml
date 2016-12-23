@@ -1,0 +1,172 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Ossec client configuration 
+
+- name: Show name
+  debug: msg="{{ group_names }}"
+  when: "'ossim' not in group_names"
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+  when: "'ossim' not in group_names" 
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+  when: "'ossim' not in group_names" 
+
+- name: Ossec installed?
+  shell: "(((( path.daemons.ossec != '') && ({{ path.daemons.ossec }} >/dev/null)) || [ -r /var/ossec/etc/ossec.conf ]) && echo 'Yes') || echo 'No'  executable='/bin/bash'"
+  register: ossecInstalled
+  changed_when: False
+  when: "'ossim' not in group_names"
+
+- name: gcc installed?
+  shell: (gcc -v >/dev/null && echo "Yes") || echo "No"
+  register: gccInstalled
+  changed_when: False
+  when: "'ossim' not in group_names"
+
+- name: Be sure gcc & make are installed (Centos)
+  yum: pkg={{ item }} state=present
+  with_items:
+    - gcc
+    - make
+  when: "'ossim' not in group_names and ansible_pkg_mgr == 'yum' and ossecInstalled.stdout != 'Yes'"
+
+- name: Be sure gcc & make are installed (Debian and python >= 2.6)
+  apt: pkg={{ item }} state=installed force=yes
+  with_items: 
+    - gcc
+    - make 
+  when: "'ossim' not in group_names and ansible_pkg_mgr == 'apt' and pythonVersion.stdout|float >= 2.6 and ossecInstalled.stdout != 'Yes'"
+
+- name: Be sure gcc & make is installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install {{ item }} 
+  shell: ((apt-cache pkgnames|grep "^{{ item }}$") >/dev/null && echo "No") || ((apt-get -y --force-yes install {{ item }}) && echo "Changed") executable="/bin/bash"
+  with_items:
+    - gcc
+    - make
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  when: "'ossim' not in group_names and ansible_pkg_mgr == 'apt' and pythonVersion.stdout|float < 2.6 and ossecInstalled.stdout != 'Yes'"
+
+- name: Create ossec directory
+  file: path=/root/ossec owner=root group=root mode=0750 state=directory
+  when: "'ossim' not in group_names and ossecInstalled.stdout != 'Yes'" 
+
+- name: Copy ossec (tgz) 
+  copy: src=root/ossec/ossec-hids-2.5.1.tgz dest=/root/ossec/ossec-hids-2.5.1.tgz owner=root group=root mode=0640 
+  when: "'ossim' not in group_names and ossecInstalled.stdout != 'Yes'"
+
+- name: Decompress ossec (tgz)
+  shell: ([ -r /root/ossec/ossec-hids-2.5.1/install.sh ] && echo "Found") || tar xvpzf /root/ossec/ossec-hids-2.5.1.tgz -C /root/ossec
+  when: "'ossim' not in group_names and ossecInstalled.stdout != 'Yes'"
+
+- name: Install ossec (tgz)
+  shell: echo -e "es\n\nagente\n/var/ossec\n{{ ossecMaster }}\ns\ns\nn" | /root/ossec/ossec-hids-2.5.1/install.sh executable="/bin/bash"
+  when: "'ossim' not in group_names and ossecInstalled.stdout != 'Yes'"
+
+- name: Be sure gcc is uninstalled (Centos)
+  yum: pkg={{ item }} state=absent
+  with_items:
+    - gcc
+  when: "'ossim' not in group_names and ansible_pkg_mgr == 'yum' and ossecInstalled.stdout != 'Yes' and gccInstalled.stdout != 'Yes'"
+
+- name: Be sure gcc is uninstalled (Debian and python >= 2.6)
+  apt: pkg={{ item }} state=absent force=yes
+  with_items:
+    - gcc
+  when: "'ossim' not in group_names and ansible_pkg_mgr == 'apt' and pythonVersion.stdout|float >= 2.6 and ossecInstalled.stdout != 'Yes' and gccInstalled.stdout != 'Yes'"
+
+- name: Be sure gcc is uninstalled (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install {{ item }}
+  shell: ((apt-cache pkgnames|grep "^{{ item }}$") >/dev/null && echo "No") || ((apt-get remove --purge {{ item }}) && echo "Changed") executable="/bin/bash"
+  with_items:
+    - gcc
+  register: removeDebian
+  changed_when: removeDebian.stdout == "Changed"
+  when: "'ossim' not in group_names and ansible_pkg_mgr == 'apt' and pythonVersion.stdout|float < 2.6 and ossecInstalled.stdout != 'Yes' and gccInstalled.stdout != 'Yes'"
+
+- name: Configure /var/ossec/etc/ossec.conf file
+  template: src=var/ossec/etc/ossec.conf.{{ ansible_os_family }}.j2 dest=/var/ossec/etc/ossec.conf owner=root group=root mode=0440
+  register: ossecConf
+  when: "'ossim' not in group_names"
+  
+- name: Configure /etc/init.d/ossec file (Debian)
+  copy: src=etc/init.d/ossec.{{ ansible_os_family }} dest=/etc/init.d/ossec owner=root group=root mode=0755
+  register: ossecConf
+  when: "'ossim' not in group_names and ansible_os_family == 'Debian'"
+
+- name: New certificate? (in client)
+  shell:  cat /var/ossec/etc/client.keys 2>/dev/null || echo "Not found" executable="/bin/bash"
+  register: clientCertificate 
+  changed_when: False
+  when: "'ossim' not in group_names"
+
+- name: New certificate? (in ossecMaster)
+  shell: grep ' {{ inventory_hostname }} ' /var/ossec/etc/client.keys || echo "Not found" executable="/bin/bash"
+  delegate_to: "{{ ossecMaster }}"
+  register: serverCertificate
+  changed_when: False
+  when: "'ossim' not in group_names"
+
+- name: Certificate installed correctly in client and server
+  debug: msg="Certificate installed correctly in client and server"
+  when: "'ossim' not in group_names and serverCertificate.stdout != 'Not found' and clientCertificate.stdout != 'Not found' and clientCertificate.stdout == serverCertificate.stdout"
+
+- name: Install server certificate (Get IP in client)
+  shell: host {{ inventory_hostname }}| cut -d ' ' -f4 executable="/bin/bash"
+  register: IPClient
+  when: "'ossim' not in group_names and serverCertificate.stdout == 'Not found'"
+
+- name: Install server certificate (Add in ossecMaster)
+  shell: (echo -e "A\n{{ inventory_hostname }}\n{{ IPClient.stdout }}\n\ny\nQ\n"|/var/ossec/bin/manage_agents) >/dev/null && grep ' {{ inventory_hostname }} ' /var/ossec/etc/client.keys executable="/bin/bash"
+  delegate_to: "{{ ossecMaster }}"
+  register: newCertificate
+  when: "'ossim' not in group_names and serverCertificate.stdout == 'Not found'"
+
+- name: Install client certificate (new server certificate)
+  shell: echo "{{ newCertificate.stdout }}" > /var/ossec/etc/client.keys && chown root.ossec /var/ossec/etc/client.keys && chmod 440 /var/ossec/etc/client.keys && echo "Installed" executable="/bin/bash"
+  register: clientInstalledNewCertificate
+  when: "'ossim' not in group_names and serverCertificate.stdout == 'Not found' and newCertificate != ''"
+
+- name: Install client certificate (old server certificate)
+  shell: echo "{{ serverCertificate.stdout }}" > /var/ossec/etc/client.keys && chown root.ossec /var/ossec/etc/client.keys && chmod 440 /var/ossec/etc/client.keys && echo "Installed" executable="/bin/bash"
+  register: clientInstalledOldCertificate
+  when: "'ossim' not in group_names and serverCertificate.stdout != 'Not found' and clientCertificate.stdout != serverCertificate.stdout"
+
+- name: Remove client queue
+  shell: rm -rf /var/ossec/queue/rids/* 2>/dev/null executable="/bin/bash"
+  when: "'ossim' not in group_names and (clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
+
+- name: Getting Paths (to get ossec daemon)
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: "'ossim' not in group_names and checkService.stdout == 'True' and path.daemons.ossec|default('') == ''"
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons.ossec }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: "'ossim' not in group_names and checkService.stdout == 'True' and path.daemons.ossec|default('') != ''"
+
+- name: Restart ossec service
+  service: name={{ serviceName.stdout }} state=restarted enabled=true
+  when: "'ossim' not in group_names and checkService.stdout == 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
+
+- name: Restart ossec daemon
+  shell: "{{ path.daemons.ossec }} restart executable='/bin/bash'"
+  when: "'ossim' not in group_names and checkService.stdout != 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')" 
+

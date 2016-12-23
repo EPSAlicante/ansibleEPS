@@ -1,0 +1,54 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Common configuration 
+
+- include: locales.yml 
+  tags: [ common, locales ]
+- include: manager.yml 
+  tags: [ common, manager ]
+- include: group.yml 
+  tags: [ common, group ]
+- include: repos.yml 
+  tags: [ common, repos ]
+  when: reposUpdate == "y"
+- include: dselect.yml 
+  tags: [ common, dselect ]
+- include: concurrency.yml 
+  tags: [ common, concurrency ]
+- include: services.yml 
+  tags: [ common, services ]
+- include: resolv.yml 
+  tags: [ common, resolv ]
+- include: nscd.yml 
+  tags: [ common, nscd ]
+- include: securetty.yml 
+  tags: [ common, securetty ]
+- include: profile.yml 
+  tags: [ common, profile ]
+- include: nvi.yml 
+  tags: [ common, nvi ]
+- include: utils.yml 
+  tags: [ common, utils ]
+- include: munin-node.yml 
+  tags: [ common, munin-node ]
+- include: nrpe.yml 
+  tags: [ common, nrpe ]
+- include: pam-ldap.yml 
+  tags: [ common, pam-ldap ]
+- include: syslog.yml 
+  tags: [ common, syslog ]
+- include: sshd.yml 
+  tags: [ common, sshd ]
+- include: ntp.yml 
+  tags: [ common, ntp ]
+- include: bacula-fd.yml 
+  tags: [ common, bacula-fd ]
+- include: ossec.yml 
+  tags: [ common, ossec ]
+  when: ansible_fqdn != ossecMaster

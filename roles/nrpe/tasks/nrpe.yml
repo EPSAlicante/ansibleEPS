@@ -1,0 +1,51 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# NRPE Commands configuration 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Create directory /etc/nagios/nrpe.d
+  file: path=/etc/nagios/nrpe.d state=directory owner=root group=root mode=0755
+
+- name: Configure /etc/nagios/nrpe.cfg file with include_dir=/etc/nagios/nrpe.d/
+  lineinfile: name=/etc/nagios/nrpe.cfg state=present regexp='^include_dir=/etc/nagios/nrpe.d/$' line='include_dir=/etc/nagios/nrpe.d/'
+  register: includeConfig
+
+- name: Configure /etc/nagios/nrpe.d/baseNrpe.cfg
+  template: src=etc/nagios/nrpe.d/baseNrpe.cfg.j2 dest=/etc/nagios/nrpe.d/baseNrpe.cfg owner=root group=root mode=0644
+  register: baseNrpe
+
+- name: Comment commands in /etc/nagios/nrpe.cfg
+  shell: ((cat /etc/nagios/nrpe.cfg |grep '^command\[' >/dev/null) && (sed -e 's/^command\[/#command\[/g' -i /etc/nagios/nrpe.cfg >/dev/null) && echo "Changed") || echo "No" executable="/bin/bash"
+  register: commentCommands
+  changed_when: commentCommands.stdout == "Changed"  
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons.nrpe }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.nrpe|default("") != ""
+
+- name: Restart nrpe service
+  service: name={{ serviceName.stdout }} state=restarted enabled=true
+  when: checkService.stdout == "True" and serviceName.stdout|default("") != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed)
+
+- name: Restart nrpe daemon
+  shell: '{{ path.daemons.nrpe }} restart executable="/bin/bash"'
+  when: checkService.stdout != "True" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed) 
+

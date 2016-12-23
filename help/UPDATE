@@ -1,0 +1,11 @@
+*** UPDATE PlayBook ***
+
+Update playbook 'update.yml' is able to update Debian and CentOS families servers (servers with 'yum' or 'apt package managers) in a centralized way, updating all software required. Playbook can update all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. 
+
+Command-line execution: 'ansible-playbook update.yml'
+
+Scope: Playbook will update all servers except those belonging to 'noupdate' group.
+
+Labels: 'Centos' and 'Debian' labels can be used to filter update (only servers of this distribution will be updates)
+
+

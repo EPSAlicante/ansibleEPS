@@ -1,0 +1,24 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+uid nslcd
+gid ldap
+
+uri ldap://{{ ldapA }}:8365 {{ "ldap://%s:8365" % (ldapB) if ldapB != "" else "" }} {{ "ldap://%s:8365" % (ldapC) if ldapC != "" else "" }}
+ldap_version 3
+base ou=eps,o=ua,c=es
+binddn uid=admin,ou=Directory Administrators,ou=eps,o=ua,c=es
+bindpw admin 
+scope sub
+ssl no
+bind_timelimit 10
+nss_initgroups_ignoreusers root,manager
+base passwd ou=People,ou=eps,o=ua,c=es
+base group ou=Groups,ou=eps,o=ua,c=es
+

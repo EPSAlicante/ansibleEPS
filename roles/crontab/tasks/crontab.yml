@@ -1,0 +1,33 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Crontab configuration 
+
+- name: Make users list
+  template: src=tmp/cronUsers.j2 dest=/tmp/cronUsers owner=root group=root mode=0600
+  changed_when: false
+
+- name: Get users
+  shell: cat /tmp/cronUsers|uniq|sort executable="/bin/bash"
+  register: cronUsers
+  changed_when: false
+
+- name: Configure crontab
+  template: src=var/spool/cron/user.j2 dest={{ crontabDirectory }}/{{ item }} owner=root group={{ crontabGroupFile }} mode=0600
+  with_items: "{{ cronUsers.stdout_lines }}"
+
+- name: Get files in crontab directory
+  shell: ls -1 {{ crontabDirectory }} executable="/bin/bash"
+  register: filesDir
+  changed_when: false
+
+- name: Delete files in crontab directory if not belong to users list
+  file: path="{{ crontabDirectory}}/{{ item }}" state="absent"
+  with_items: "{{ filesDir.stdout_lines }}" 
+  when: item not in cronUsers.stdout_lines  
+  

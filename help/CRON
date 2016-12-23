@@ -1,0 +1,25 @@
+*** CRON PlayBook ***
+
+Cron playbook 'cron.yml' is able to amanage crontab configuration in Ansible server to execute in background all playbooks daily. Errors and changes produced by playbooks will be saved in '/var/log/ansibleEPS/errors.log' and '/var/log/ansibleEPS/changes.log' files respectively. These logs could be analized from menu '/etc/ansibleEPS/menu.py', option 'l.  Check System Logs (Errors and Changes)'.
+
+This playbook use the following variables to set playbooks execution in crontab: 'minuteCron', 'hoursCron', 'dayCron', 'weekdayCron' and 'monthCron'.
+
+
+Command-line execution: 'ansible-playbook cron.yml'
+
+Scope: Playbook will update Ansible server crontab
+
+Labels: 'cronStart' to add entries to crontab, and 'cronStop' to delete them
+
+Variables:
+
+  * 'minuteCron' -> Crontab minutes
+
+  * 'hoursCron' -> Crontab hours
+
+  * 'dayCron' -> Crontab day 
+
+  * 'weekdayCron' -> Crontab weekday
+
+  * 'monthCron' -> Crontab month
+

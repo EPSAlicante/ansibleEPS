@@ -1,0 +1,107 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Nagios NRPE configuration 
+
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
+  changed_when: False
+
+- name: Find service binary
+  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkService
+  changed_when: False
+
+- name: Be sure nrpe is installed (Centos)
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - nagios-nrpe
+    - nagios-plugins-dhcp
+    - nagios-plugins-disk
+    - nagios-plugins-dns
+    - nagios-plugins-http
+    - nagios-plugins-file_age
+    - nagios-plugins-fping
+    - nagios-plugins-ldap
+    - nagios-plugins-load
+    - nagios-plugins-log
+    - nagios-plugins-mysql
+    - nagios-plugins-ntp
+    - nagios-plugins-oracle
+    - nagios-plugins-perl
+    - nagios-plugins-pgsql
+    - nagios-plugins-ping
+    - nagios-plugins-procs
+    - nagios-plugins-rpc
+    - nagios-plugins-smtp
+    - nagios-plugins-snmp
+    - nagios-plugins-ssh
+    - nagios-plugins-swap
+    - nagios-plugins-users
+  when: ansible_pkg_mgr == "yum"
+
+- name: Be sure nrpe is installed (Debian and python >= 2.6)
+  apt: pkg=nagios-nrpe-server state=installed 
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float >= 2.6
+
+- name: Be sure nrpe is installed (Debian and python < 2.6)
+  #shell: apt-get -y --force-yes install nagios-nrpe-server 
+  shell: ((apt-cache pkgnames|grep "^nagios-nrpe-server$") >/dev/null && echo "No") || ((apt-get -y --force-yes install nagios-nrpe-server) && echo "Changed") executable="/bin/bash"
+  register: installDebian
+  changed_when: installDebian.stdout == "Changed"
+  when: ansible_pkg_mgr == "apt" and pythonVersion.stdout|float < 2.6
+
+- name: Enlazar /usr/lib/nagios -> /usr/lib64/nagios
+  file: path=/usr/lib/nagios state=link src=/usr/lib64/nagios force=yes
+  when: ansible_os_family == "RedHat" and ansible_architecture == "x86_64"
+
+- name: Copy check_file_content.pl plugin
+  copy: src=usr/lib/nagios/plugins/check_file_content.pl dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Enlazar check_file_content -> check_file_content.pl
+  file: path=/usr/lib/nagios/plugins/check_file_content state=link src=/usr/lib/nagios/plugins/check_file_content.pl force=yes
+
+- name: Copy check_mem.sh plugin
+  copy: src=usr/lib/nagios/plugins/check_mem.sh dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Copy check_file_age2.pl plugin
+  copy: src=usr/lib/nagios/plugins/check_file_age2.pl dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Copy check_iptables.sh plugin
+  copy: src=usr/lib/nagios/plugins/check_iptables.sh dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Copy check_ups_nut plugin
+  copy: src=usr/lib/nagios/plugins/check_ups_nut dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Add node to allowed_hosts in /etc/nagios/nrpe.cfg
+  shell: (((grep '^allowed_hosts' /etc/nagios/nrpe.cfg | grep "{{ item }}" -v >/dev/null 2>/dev/null && sed -i "s@$(grep '^allowed_hosts' /etc/nagios/nrpe.cfg |head -1)@$(grep '^allowed_hosts' /etc/nagios/nrpe.cfg | head -1 | xargs),{{ item }}@g" /etc/nagios/nrpe.cfg) || (! (grep '^allowed_hosts' /etc/nagios/nrpe.cfg >/dev/null 2>/dev/null) && echo "allowed_hosts={{ item }}" >> /etc/nagios/nrpe.cfg)) && echo "Changed") || echo "No" executable="/bin/bash"
+  with_items: "{{ nagiosMaster }}"
+  register: allowedFile
+  changed_when: allowedFile.stdout == "Changed"
+
+- name: Getting Paths (to get nrpe daemon)
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.nrpe|default("") == ""
+
+- name: Getting Service Name
+  shell: ( echo "{{ path.daemons.nrpe }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
+  register: serviceName
+  changed_when: False
+  ignore_errors: yes
+  when: checkService.stdout == "True" and path.daemons.nrpe|default("") != ""
+
+- name: Restart nrpe service
+  service: name={{ serviceName.stdout }} state=restarted enabled=true
+  when: checkService.stdout == "True" and serviceName.stdout|default("") != "" and allowedFile|changed
+
+- name: Restart nrpe daemon
+  shell: '{{ path.daemons.nrpe }} restart executable="/bin/bash"'
+  when: checkService.stdout != "True" and allowedFile|changed

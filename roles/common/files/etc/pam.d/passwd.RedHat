@@ -1,0 +1,8 @@
+#%PAM-1.0
+
+# Made by AnsibleEPS
+
+auth       include      system-auth
+account    include      system-auth
+password   substack     system-auth
+-password   optional    pam_gnome_keyring.so

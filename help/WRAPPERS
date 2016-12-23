@@ -1,0 +1,125 @@
+*** WRAPPERS PlayBook ***
+
+Wrappers playbook 'wrappers.yml' is able to manage TCP Wrappers Security ('/etc/hosts.deny' and /etc/hosts.allow' files configuration) for all servers (except those belonging to 'nowrappers' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+ 
+Changes will be generated using some variables (through two templates) to create '/etc/hosts.deny' and '/etc/hosts.allow' files for every server.
+
+Variables are defined by default in 'group_vars/all/wrappers' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook wrappers.yml'
+
+Scope: Playbook will update all server except those belonging to 'nowrappers' group.
+
+Templates:
+ 
+  *'roles/wrappers/templates/etc/hosts.deny.j2'
+
+  *'roles/wrappers/templates/etc/hosts.allow.j2'
+
+Variables:
+
+    * 'hostsAllowGlobal' -> '/etc/hosts.allow' file configuration for all servers
+
+       This variable is a list of items to define rules in file with access permission for server and origin. Every item has three attributes:
+
+       - label: This attribute play two roles, on the one side it will be a comment for rule, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
+
+       - services: Services List in string format. There's an exception to the rule: if value is set to 'hostname' string, playbook will update entry with server name ('inventory_hostname' ansible variable).
+
+       - origins: Origins List (IPs, networks, terminals, etc.) in string format. There's an exception to the rule: if value is set to 'hostname' string, playbook will update entry with server name ('inventory_hostname' ansible variable).
+
+     All attributes are required. If any of them are not defined, this item will be ignored
+
+
+     Example:
+
+       hostsAllowGlobal:
+	- label: localhost and Admon subnet 172.20.40.0/24 (sshd access)
+	  services: sshd
+	  origins: 127.0.0.1 172.20.40.0/255.255.255.0
+	- label: Bacula server and Admon subnet (hostname-fd access)
+	  services: hostname-fd
+	  origins: 127.0.0.1 172.20.40.0/255.255.255.0 172.20.3.30
+	- label: Nagios servers (nrpe access)
+	  services: nrpe
+	  origins: 172.20.1.12 172.20.1.15
+
+
+    * 'hostsAllowGroup' -> '/etc/hosts.allow' file configuration for a specific group. It has two attributes: 
+
+      - group: Group name (in inventory)
+
+      - rules: A list of rules in '/etc/hosts.allow' file, with the same attributes and meaning than 'hostsAllowGlobal' variable (label, services and origins)
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global items) will be added to config file after global items.
+
+
+      Example:
+
+        hostsAllowGroup:
+	- group: bacula
+	  rules:
+	  - label: Admon subnet (mysqld access)
+	    services: mysqld
+	    origins: 127.0.0.1 172.20.40.0/255.255.255.0
+	  - label: Total (hostname-dir access)
+	    services: hostname-dir
+	    origins: ALL
+	  - label: Total (hostname-sd access)
+	    services: hostname-sd
+	    origins: ALL
+	
+	- group: LDAP
+	  rules:
+	  - label: Total (ldaps access)
+	    services: ldaps
+	    origins: ALL
+
+
+    * 'hostsAllowHost' -> '/etc/hosts.allow' file configuration for a specific server. It has two attributes: 
+
+      - host: Server name (in inventory)
+
+      - rules: A list of rules in '/etc/hosts.allow' file, with the same attributes and meaning than 'hostsAllowGlobal' variable (label, services and origins)
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global or groups items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global and groups items) will be added to config file after global and groups items.
+
+
+      Example:
+
+        hostsAllowHost:
+	- host: ansible_server
+	  rules:
+	  - label: localhost and Admon subnet 172.20.40.0/24 (sshd access)
+	  - label: SysAdm access (172.20.40.100)
+	    services: sshd
+	    origins: 127.0.0.1 172.20.40.100
+
+
+    * 'hostsDenyGlobal', 'hostsDenyGroup' and 'hostsDenyHost' -> '/etc/hosts.deny' file configuration for all servers, a specific group and a specific server, respectively.
+
+      All three variables are identical to 'hostsAllowGlobal', 'hostsAllowGroup' and 'hostsAllowHost' respectively. The only difference between them is that rules (in case of 'hostsDeny*' variables) are for deny access instead of allow access.
+
+
+      Examples:
+
+        hostsDenyGlobal:
+        - label: Deny ALL
+          services: ALL
+          origins: ALL
+
