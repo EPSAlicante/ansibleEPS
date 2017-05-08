@@ -30,7 +30,7 @@
   register: sshdLogLevel
 
 - name: Configure /etc/ssh/sshd_config con Subsystem sftp 
-  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?Subsystem\\s*sftp\\s*' insertafter=EOF line='Subsystem sftp {{ path.commands.opensshSftpServer }} {{ sshdConfig.subsystemSftp }}'"
+  lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?Subsystem\\s*sftp\\s*' insertafter=EOF line='Subsystem sftp {{ \"%s\" % (sshdConfig.opensshSftpServer) if sshdConfig.opensshSftpServer is defined else \"%s\" % (path.commands.opensshSftpServer) }} {{ sshdConfig.subsystemSftp }}'"
   register: sshdSubsystemSftp
 
 - name: Configure /etc/ssh/sshd_config con MatchGroup

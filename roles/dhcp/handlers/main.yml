@@ -8,6 +8,14 @@
 
 # Restarts 
 
-- name: restart dhcp 
-  service: name={{ serviceName.stdout }} state=restarted enabled=yes
+- name: restart dhcp P1 
+  service: name={{ serviceNameP1.stdout }} state=restarted enabled=yes
 
+- name: restart dhcp P4
+  service: name={{ serviceNameP4.stdout }} state=restarted enabled=yes
+
+- name: restart dhcp Elec
+  service: name={{ serviceNameElec.stdout }} state=restarted enabled=yes
+
+- name: restart dhcp TV
+  service: name={{ serviceNameTV.stdout }} state=restarted enabled=yes

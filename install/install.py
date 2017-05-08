@@ -70,7 +70,7 @@ def main():
 
     print
     # Check Ansible package (EPEL repository enabled)
-    print "Checking Ansible package (EPEL repository enabled)..."
+    print "Checking Ansible package (EPEL repository has to be enabled)..."
     cadAnsible = subprocess.Popen("yum list ansible 2>/dev/null|grep '^ansible'|tr -s ' '", shell=True, stdout=subprocess.PIPE)
     ansible = cadAnsible.stdout.read().strip()
     if "ansible" in ansible:

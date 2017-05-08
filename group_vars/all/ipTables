@@ -7,6 +7,9 @@ ipTablesCleaning:
 - "-F"
 - "-X"
 - "-Z"
+- "-t nat -F"
+- "-t nat -X"
+- "-t nat -Z"
 
 # Default Policies definition
 ipTablesPolicy:

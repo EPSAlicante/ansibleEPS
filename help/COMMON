@@ -246,7 +246,11 @@ Variables: Every tasks list has a set of variables to configure task to perform.
 
   * sshd.yml tasks list -> SSHD service configuration
 
-    This task configures '/etc/ssh/sshd_config' SSH configuration file, modifying config parameters in file through 'sshdConfig' variables and its attributes: 'permitRootLogin', 'clientAliveinterval', 'clientAliveCountMax', 'logLevel' and 'subsystemSftp'. Using 'sshdConfig' we'll assign sshd file parameters to attributes values.
+    This task configures '/etc/ssh/sshd_config' SSH configuration file, modifying config parameters in file through 'sshdConfig' variables and its attributes: 'permitRootLogin', 'clientAliveinterval', 'clientAliveCountMax', 'matchGroup', 'logLevel' and 'subsystemSftp'.
+
+    In addition, if we specify the 'opensshSftpServer' attribute, we will modify the executable that will be used as sftp server. If we don't specify this attribute, the executable that is configured by default will be used as sftp server. 
+
+    Using 'sshdConfig' we'll assign sshd file parameters to attributes values.
 
     It checks config file syntax before restart service with updates. In case of syntax error, In case of syntax error it show error and stop task execution (don't restart service).
 
@@ -258,7 +262,9 @@ Variables: Every tasks list has a set of variables to configure task to perform.
        clientAliveInterval: 43200
        clientAliveCountMax: 0
        logLevel: INFO
+       matchGroup: manager
        subsystemSftp: -l VERBOSE
+       opensshSftpServer: "internal-sftp"
 
 
   * ntp.yml tasks list -> NTP service installation and configuration 

@@ -9,12 +9,12 @@
 # /etc/hosts configuration 
 
 - name: Get hostname IP
-  shell: host {{ inventory_hostname }}|cut -d' ' -f4
+  shell: cad=$(host {{ inventory_hostname }}) && echo $cad|cut -d' ' -f4
   register: hostIP
   changed_when: False
 
 - name: Get hostname FQDN
-  shell: host {{ inventory_hostname }}|cut -d' ' -f1
+  shell: cad=$(host {{ inventory_hostname }}) && echo $cad|cut -d' ' -f1 
   register: hostFQDN
   changed_when: False
 

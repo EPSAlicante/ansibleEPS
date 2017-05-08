@@ -54,7 +54,7 @@
     authorized_key: user={{ ansibleUser }} key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
  
   - name: Be sure sudo is installed (apt)
-    shell: DEBIAN_FRONTEND=noninteractive {{ path['apt-get'] }} -y --force-yes install {{ item }}
+    shell: DEBIAN_FRONTEND=noninteractive {{ path.commands['apt-get'] }} -y --force-yes install {{ item }}
     with_items:
       - sudo
     ignore_errors: yes

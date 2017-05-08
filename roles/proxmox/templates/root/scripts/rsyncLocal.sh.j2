@@ -37,6 +37,8 @@
  dirLocal="/var/lib/vz"
  dirNFS="/mnt/pve"
  dirNFSGeneral="$dirNFS/VM"
+ dirGlusterFS="/mnt/pve"
+ dirGlusterFSGeneral="$dirGlusterFS/gVM"
  dirBackup="$mountBackup/rsync"
  dirMaquinasVZ="$mountSnapshot/private"
  dirMaquinasKVM="$mountSnapshot/images"
@@ -136,7 +138,7 @@
 	    # Check if disk exists
             if [ -d "$pathMaquina" ]; then
 	 	# Copying conf files in machine root directory
-                echo "Copying ${maqID}.* conf files" >> $fileLog
+                echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina/root" >> $fileLog
                 /bin/cp "$dirConfVZ/${maqID}".* "$pathMaquina/root"
                 erroresCP=$?
                 if [[ $erroresCP -gt 0 ]]; then
@@ -170,14 +172,22 @@
             if [ "$tipoPath" = "local" ]; then
 		# Local disk
                 pathMaquina="$dirLocalMaquinasKVM/$maqID"
-            else
+	    elif [ "$tipoPath" = "gVM" ]; then
+		# GlusterFS disk
+		pathMaquina="$dirGlusterFSGeneral/images/$maqID"
+            elif [ "$tipoPath" = "VM" ]; then
                 # NFS disk
                 pathMaquina="$dirNFSGeneral/images/$maqID"
+	    else
+		pathMaquina=""
+		echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $fileLog
+		echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $errorLog
+		echo "" >> $fileLog
             fi
 
             if [ -d "$pathMaquina" ]; then
 		# Copying conf files to disk directory
-                echo "Copying conf files ${maqID}.*" >> $fileLog
+                echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina" >> $fileLog
                 /bin/cp "$dirConfKVM/${maqID}".* "$pathMaquina"
                 erroresCP=$?
                 if [[ $erroresCP -gt 0 ]]; then
@@ -218,7 +228,7 @@
 		# Checking if disk path exists
                 if [ -d "$pathMaquina" ]; then
 		    # Copying conf files to machine root directory
-                    echo "Copying ${maqID}.* conf files" >> $fileLog
+		    echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina/root" >> $fileLog
                     /bin/cp "$dirConfVZ/${maqID}".* "$pathMaquina/root"
                     erroresCP=$?
                     if [[ $erroresCP -gt 0 ]]; then
@@ -255,14 +265,22 @@
                 if [ "$tipoPath" = "local" ]; then
 		    # Local disk
                     pathMaquina="$dirLocalMaquinasKVM/$maqID"
-                else
-		    # NFS disk
+            	elif [ "$tipoPath" = "gVM" ]; then
+                    # GlusterFS disk
+                    pathMaquina="$dirGlusterFSGeneral/images/$maqID"
+            	elif [ "$tipoPath" = "VM" ]; then
+                    # NFS disk
                     pathMaquina="$dirNFSGeneral/images/$maqID"
-                fi
+            	else
+                    pathMaquina=""
+                    echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $fileLog
+                    echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $errorLog
+                    echo "" >> $fileLog
+            	fi
 
                 if [ -d "$pathMaquina" ]; then
 		    # Copying conf files to machine root directory
-                    echo "Copying ${maqID}.* conf files" >> $fileLog
+		    echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina" >> $fileLog
                     /bin/cp "$dirConfKVM/${maqID}".* "$pathMaquina"
                     erroresCP=$?
                     if [[ $erroresCP -gt 0 ]]; then
@@ -299,7 +317,7 @@
 		# Checking if disk path exists 
                 if [ -d "$pathMaquina" ]; then
 		    # Copying conf files to machine root directory
-                    echo "Copying ${maqID}.* conf files" >> $fileLog
+		    echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina/root" >> $fileLog
                     /bin/cp "$dirConfVZ/${maqID}".* "$pathMaquina/root"
                     erroresCP=$?
                     if [[ $erroresCP -gt 0 ]]; then
@@ -328,14 +346,22 @@
                 if [ "$tipoPath" = "local" ]; then
 		    # Local disk
                     pathMaquina="$dirLocalMaquinasKVM/$maqID"
-                else
-		    # NFS disk
+	        elif [ "$tipoPath" = "gVM" ]; then
+               	    # GlusterFS disk
+                    pathMaquina="$dirGlusterFSGeneral/images/$maqID"
+            	elif [ "$tipoPath" = "VM" ]; then
+                    # NFS disk
                     pathMaquina="$dirNFSGeneral/images/$maqID"
-                fi
+            	else
+                    pathMaquina=""
+                    echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $fileLog
+                    echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $errorLog
+                    echo "" >> $fileLog
+            	fi
 
                 if [ -d "$pathMaquina" ]; then
 		    # Copying conf files to disk directory 
-                    echo "Copying ${maqID}.* conf files" >> $fileLog
+		    echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina" >> $fileLog
                     /bin/cp "$dirConfKVM/${maqID}".* "$pathMaquina"
                     erroresCP=$?
                     if [[ $erroresCP -gt 0 ]]; then

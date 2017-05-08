@@ -24,7 +24,7 @@
 - name: If check OK -> Copy dhcpd.conf file to DHCP Servers (TV)
   copy: src=etc/dhcp/dhcpd-TV.conf dest=/etc/dhcp/dhcpd.conf owner=manager group=manager mode=0640 backup=yes
   when: checkFile|changed and checkResult|success
-  notify: restart dhcp
+  notify: restart dhcp TV
 
 - name: If check fails -> move .dhcpd.conf.check as .dhcpd.conf.error
   shell: mv -f /etc/dhcp/.dhcpd.conf.check /etc/dhcp/.dhcpd.conf.error
@@ -32,12 +32,12 @@
 
 - name: Getting Service Name
   shell: ( echo "{{ path.daemons.dhcp }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
+  register: serviceNameTV
   changed_when: False
   ignore_errors: yes
   when: checkFile|changed
 
-- name: Be sure dhcp is running and enabled (P1)
-  service: name={{ serviceName.stdout }} state=started enabled=true
+- name: Be sure dhcp is running and enabled (TV)
+  service: name={{ serviceNameTV.stdout }} state=started enabled=true
   when: checkFile|changed
 

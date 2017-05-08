@@ -31,7 +31,7 @@ Variables:
 
       - label: This attribute play two roles, on the one side it will be the label of NRPE check, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
 
-      - command: Plugin to execute and its arguments (string format)
+      - command: Plugin to execute and its arguments (string format). Could be a text with command or 'indirect commands'. In this case, commands are not written directly. Every Operating System could have diffeent names for the same command, so we use script 'scripts/path_facts.py' to get path and name of commands. This way, we use variables used by 'path_facts.py' as 'command.commandLabel' or 'daemon.daemonLabel' depending on we are using commands or daemons. If we need a command and daemon, and it doesn't exist in 'path_facts.py' script, first we'll have to add it to script to get path and name when script will be executed.
 
        Both attributes are required. If any of them are not defined, this item will be ignored.
 

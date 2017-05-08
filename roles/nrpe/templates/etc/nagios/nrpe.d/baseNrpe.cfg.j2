@@ -40,9 +40,33 @@
 {%    endif -%}
 {%   endif -%}
 {# Print label -#}
-{%   if printRule.value and rule.command is defined -%}
-command[{{ rule.label }}]={{ rule.command }}
-{%   endif -%}
+{%   if printRule.value and rule.command is defined %}
+command[{{ rule.label }}]=
+{%-   if rule.command|wordcount > 1 -%}
+{%     set word = [] -%}
+{%     for item in rule.command|list -%}
+{%      if item != ' ' and word.append(item) -%}{% endif -%}
+{%      if item == ' ' or loop.last -%}
+{%       if word|join("") != word|join("")|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}} 
+{%       elif word|join("") != word|join("")|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%       else -%}
+{{ word|join("") -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%       endif -%}
+{%       set word = [] -%}
+{%      endif -%}
+{%     endfor -%}
+{%    else -%}
+{%     if rule.command != rule.command|replace('command.','',1) %}
+{{ hostvars[inventory_hostname]['path']['commands'][rule.command|replace('command.','',1)] }}
+{%     elif rule.command != rule.command|replace('daemon.','',1) %}
+{{ hostvars[inventory_hostname]['path']['daemons'][rule.command|replace('daemon.','',1)] }}
+{%     else %}
+{{ rule.command }}
+{%     endif -%}
+{%    endif -%}
+{%   endif %}
 {%  endfor %}
 {% endif -%}
 {# Group block -#}
@@ -65,10 +89,34 @@ command[{{ rule.label }}]={{ rule.command }}
 {%     endif -%}
 {# Print label -#}
 {%     if printRule.value and grule.command is defined -%}
-command[{{ grule.label }}]={{ grule.command }}
+command[{{ grule.label }}]=
+{%-     if grule.command|wordcount > 1 -%}
+{%       set word = [] -%}
+{%       for item in grule.command|list -%}
+{%        if item != ' ' and word.append(item) -%}{% endif -%}
+{%        if item == ' ' or loop.last -%}
+{%         if word|join("") != word|join("")|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%         elif word|join("") != word|join("")|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%         else -%}
+{{ word|join("") -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%         endif -%}
+{%         set word = [] -%}
+{%        endif -%}
+{%       endfor -%}
+{%      else -%}
+{%       if grule.command != grule.command|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][grule.command|replace('command.','',1)] -}}
+{%       elif grule.command != grule.command|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][grule.command|replace('daemon.','',1)] -}}
+{%       else -%}
+{{ grule.command -}}
+{%       endif -%}
+{%      endif -%}
 {%     endif -%}
 {%    endfor -%}
-{%   endif -%}
+{%   endif %}
 {%  endfor %}
 {% endif -%}
 {# Host block -#}
@@ -78,10 +126,34 @@ command[{{ grule.label }}]={{ grule.command }}
 {%    for hrule in rHost.rules -%}
 {# Print label -#}
 {%     if hrule.command is defined -%}
-command[{{ hrule.label }}]={{ hrule.command }}
+command[{{ hrule.label }}]=
+{%-     if hrule.command|wordcount > 1 -%}
+{%       set word = [] -%}
+{%       for item in hrule.command|list -%}
+{%        if item != ' ' and word.append(item) -%}{% endif -%}
+{%        if item == ' ' or loop.last -%}
+{%         if word|join("") != word|join("")|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%         elif word|join("") != word|join("")|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%         else -%}
+{{ word|join("") -}}
+{%         endif -%}
+{%         set word = [] -%}
+{%        endif -%}
+{%       endfor -%}
+{%      else -%}
+{%       if hrule.command != hrule.command|replace('command.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['commands'][hrule.command|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%       elif hrule.command != hrule.command|replace('daemon.','',1) -%}
+{{ hostvars[inventory_hostname]['path']['daemons'][hrule.command|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{%       else -%}
+{{ hrule.command -}}
+{%       endif -%}
+{%      endif -%}
 {%     endif -%}
 {%    endfor -%}
-{%   endif -%}
+{%   endif %}
 {%  endfor %}
 {% endif %}
 

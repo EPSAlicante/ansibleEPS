@@ -18,6 +18,15 @@
 
 # Made by AnsibleEPS
 
+Error()
+{
+  ### Ansible access rule to restore old version ###
+  ($IPTABLES -A INPUT -p tcp --dport 22 -s 172.16.40.99/32 -j ACCEPT)
+  ($IPTABLES -A OUTPUT -p tcp -d 172.16.40.99/32 --sport 22 -j ACCEPT)
+
+  exit $1
+}
+
 IPTABLES=/sbin/iptables
 
 {% if ansible_os_family == "Debian" -%}
@@ -35,17 +44,17 @@ case "$1" in
 
         # Cleaning rules and counters 
 	{% for rule in ipTablesCleaning -%}
-	($IPTABLES {{ rule }}) || exit $? 
+	($IPTABLES {{ rule }}) || Error $? 
 	{% endfor %}
 
         # Default policies 
         {% for rule in ipTablesPolicy -%}
-        ($IPTABLES {{ rule }}) || exit $?
+        ($IPTABLES {{ rule }}) || Error $?
         {% endfor %}
 
 	### Ansible access rule ###
-	($IPTABLES -A INPUT -p tcp --dport 22 -s {{ ansibleMaster }}/32 -j ACCEPT) || exit $? 
-	($IPTABLES -A OUTPUT -p tcp -d {{ ansibleMaster }}/32 --sport 22 -j ACCEPT) || exit $? 
+	($IPTABLES -A INPUT -p tcp --dport 22 -s {{ ansibleMaster }}/32 -j ACCEPT) || Error $? 
+	($IPTABLES -A OUTPUT -p tcp -d {{ ansibleMaster }}/32 --sport 22 -j ACCEPT) || Error $? 
 
 	### Global rules ###
 	{# Global block -#}
@@ -88,7 +97,7 @@ case "$1" in
 
 	{# There's a free rule? -#}
 	{%    if rule.free is defined -%}
-	($IPTABLES {{ rule.free }}) || exit $? 
+	($IPTABLES {{ rule.free }}) || Error $? 
 	{%    else -%}
 
 	{# Watching rules -#}
@@ -100,11 +109,11 @@ case "$1" in
 
 	{%          if rule.chain == "IO" or rule.chain is undefined -%}
 
-	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} INPUT {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-i %s" %rule.interfaceIN if rule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
-	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-o %s" %rule.interfaceOUT if rule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} INPUT {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-i %s" %rule.interfaceIN if rule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
+	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-o %s" %rule.interfaceOUT if rule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
 	{% else -%}
 
-	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} {{ rule.chain }} {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-i %s" %rule.interfaceIN if rule.interfaceIN is defined else "" }} {{ "-o %s" %rule.interfaceOUT if rule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+	($IPTABLES {{ "-t %s" %rule.table if rule.table is defined else "" }} {{ "-%s" %rule.oper if rule.oper is defined else "-A" }} {{ rule.chain }} {{ "-p %s" %rule.protocol if rule.protocol is defined else "" }} {{ "-i %s" %rule.interfaceIN if rule.interfaceIN is defined else "" }} {{ "-o %s" %rule.interfaceOUT if rule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %rule.state|join(',') if rule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
 	{%          endif -%}
 
         {%         endfor -%}
@@ -149,7 +158,7 @@ case "$1" in
 
         {# There's a free rule? -#}
         {%      if grule.free is defined -%}
-        ($IPTABLES {{ grule.free }}) || exit $? 
+        ($IPTABLES {{ grule.free }}) || Error $? 
         {%      else -%}
 
         {# Watching rules -#}
@@ -161,11 +170,11 @@ case "$1" in
 
         {%            if grule.chain == "IO" or grule.chain is undefined -%}
 
-        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} INPUT {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-i %s" %grule.interfaceIN if grule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
-        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-o %s" %grule.interfaceOUT if grule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} INPUT {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-i %s" %grule.interfaceIN if grule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
+        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-o %s" %grule.interfaceOUT if grule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
         {% else -%}
 
-        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} {{ grule.chain }} {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-i %s" %grule.interfaceIN if grule.interfaceIN is defined else "" }} {{ "-o %s" %grule.interfaceOUT if grule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        ($IPTABLES {{ "-t %s" %grule.table if grule.table is defined else "" }} {{ "-%s" %grule.oper if grule.oper is defined else "-A" }} {{ grule.chain }} {{ "-p %s" %grule.protocol if grule.protocol is defined else "" }} {{ "-i %s" %grule.interfaceIN if grule.interfaceIN is defined else "" }} {{ "-o %s" %grule.interfaceOUT if grule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %grule.state|join(',') if grule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
         {%            endif -%}
 
         {%           endfor -%}
@@ -201,7 +210,7 @@ case "$1" in
 
         {# There's a free rule? -#}
         {%      if hrule.free is defined -%}
-        ($IPTABLES {{ hrule.free }}) || exit $? 
+        ($IPTABLES {{ hrule.free }}) || Error $? 
         {%      else -%}
 
         {# Watching rules -#}
@@ -213,11 +222,11 @@ case "$1" in
 
         {%            if hrule.chain == "IO" or hrule.chain is undefined -%}
 
-        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} INPUT {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-i %s" %hrule.interfaceIN if hrule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
-        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-o %s" %hrule.interfaceOUT if hrule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} INPUT {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-i %s" %hrule.interfaceIN if hrule.interfaceIN is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
+        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} OUTPUT {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-o %s" %hrule.interfaceOUT if hrule.interfaceOUT is defined else "" }} {{ "-d %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--dport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-s %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--sport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
         {% else -%}
 
-        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} {{ hrule.chain }} {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-i %s" %hrule.interfaceIN if hrule.interfaceIN is defined else "" }} {{ "-o %s" %hrule.interfaceOUT if hrule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || exit $? 
+        ($IPTABLES {{ "-t %s" %hrule.table if hrule.table is defined else "" }} {{ "-%s" %hrule.oper if hrule.oper is defined else "-A" }} {{ hrule.chain }} {{ "-p %s" %hrule.protocol if hrule.protocol is defined else "" }} {{ "-i %s" %hrule.interfaceIN if hrule.interfaceIN is defined else "" }} {{ "-o %s" %hrule.interfaceOUT if hrule.interfaceOUT is defined else "" }} {{ "-d %s" %Rdaddr if Rdaddr!="NULL" else "" }} {{ "--dport %s" %Rdport if Rdport!="NULL" else "" }} {{ "-s %s" %Rsaddr if Rsaddr!="NULL" else "" }} {{ "--sport %s" %Rsport if Rsport!="NULL" else "" }} {{ "-m state --state %s" %hrule.state|join(',') if hrule.state is defined else "" }} -j {{ Rtarget }}) || Error $? 
         {%            endif -%}
 
         {%           endfor -%}
@@ -254,12 +263,12 @@ case "$1" in
 
         # Cleaning rules and counters 
         {% for rule in ipTablesCleaning -%}
-        ($IPTABLES {{ rule }}) || exit $? 
+        ($IPTABLES {{ rule }}) || Error $? 
         {% endfor %}
 
         # Rules to accept everything 
-        ($IPTABLES -A OUTPUT -j ACCEPT) || exit $? 
-        ($IPTABLES -A INPUT  -j ACCEPT) || exit $? 
+        ($IPTABLES -A OUTPUT -j ACCEPT) || Error $? 
+        ($IPTABLES -A INPUT  -j ACCEPT) || Error $? 
 
         ;;
     force-reload)

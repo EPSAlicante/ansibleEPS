@@ -78,17 +78,17 @@ def getValueFromFile(file, label, separator):
 def getInventory(cadena):
     retCad = ""
     # Trying to find node in inventory 
-    retNode = subprocess.Popen("(cat %s|grep -i '^%s$'|head -1) 2>/dev/null" % (pathInventory,cadena), shell=True, stdout=subprocess.PIPE).stdout.read()
+    retNode = subprocess.Popen("(cat %s|grep -i '^%s$'|head -1) 2>/dev/null" % (pathInventory,cadena), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
     if retNode != "":
       retCad = retNode
     else:
       # Trying to find group in inventory 
-      retGroup = subprocess.Popen("(cat %s|grep -i '^\[%s\:children\]$'|cut -d':' -f1|cut -d '[' -f2|head -1) 2>/dev/null" % (pathInventory,cadena), shell=True, stdout=subprocess.PIPE).stdout.read()
+      retGroup = subprocess.Popen("(cat %s|grep -i '^\[%s\:children\]$'|cut -d':' -f1|cut -d '[' -f2|head -1) 2>/dev/null" % (pathInventory,cadena), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
       if retGroup != "":
 	retCad = retGroup
       else:
 	# Trying to find extra group in inventory
-	retExtra = subprocess.Popen("(cat %s|grep -i '^\[%s\]$'|cut -d']' -f1|cut -d '[' -f2|head -1) 2>/dev/null" % (pathInventory,cadena), shell=True, stdout=subprocess.PIPE).stdout.read()
+	retExtra = subprocess.Popen("(cat %s|grep -i '^\[%s\]$'|cut -d']' -f1|cut -d '[' -f2|head -1) 2>/dev/null" % (pathInventory,cadena), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
 	if retExtra != "":
 	  retCad = retExtra
 
@@ -167,7 +167,7 @@ def execOption(opt):
             if nodeInventory != "":
               print
               print "cd %s && ansible-playbook %s/common.yml -t %s --limit %s" % (pathAnsible,pathAnsible,module,nodeInventory)
-              retCode = subprocess.call("cd %s && ansible-playbook %s/common.yml -t %s --limit %s" % (pathAnsible,pathAnsible,module,nodeInventory), shell=True)
+	      retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/common.yml -t %s --limit %s 2>&1|tee /var/log/ansibleEPS/.common.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS common.yml -t %s --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.common.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.common.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES common.yml -t %s --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.common.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.common.$timestamp.log.tmp; echo \"### common.yml -t %s --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,module,nodeInventory,module,nodeInventory,module,nodeInventory,module,nodeInventory), shell=True)
 
             else:
               print >> sys.stderr
@@ -177,7 +177,7 @@ def execOption(opt):
           else:
             print
             print "cd %s && ansible-playbook %s/common.yml -t %s" % (pathAnsible,pathAnsible,module)
-	    retCode = subprocess.call("cd %s && ansible-playbook %s/common.yml -t %s" % (pathAnsible,pathAnsible,module), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/common.yml -t %s 2>&1|tee /var/log/ansibleEPS/.common.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS common.yml -t %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.common.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.common.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES common.yml -t %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.common.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.common.$timestamp.log.tmp; echo \"### common.yml -t %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,module,module,module,module), shell=True)
 
         elif not module:
 	  nodeName = raw_input('Node (hostname) or Group (name) or All (enter): ')
@@ -187,7 +187,7 @@ def execOption(opt):
             if nodeInventory != "":
               print
               print "cd %s && ansible-playbook %s/common.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-              retCode = subprocess.call("cd %s && ansible-playbook %s/common.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	      retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/common.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.common.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS common.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.common.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.common.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES common.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.common.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.common.$timestamp.log.tmp; echo \"### common.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
 
             else:
               print >> sys.stderr
@@ -197,7 +197,7 @@ def execOption(opt):
           else:
             print
             print "cd %s && ansible-playbook %s/common.yml" % (pathAnsible,pathAnsible)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/common.yml" % (pathAnsible,pathAnsible), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/common.yml 2>&1|tee /var/log/ansibleEPS/.common.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS common.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.common.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.common.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES common.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.common.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.common.$timestamp.log.tmp; echo \"### common.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
         else:
           print >> sys.stderr
@@ -210,6 +210,7 @@ def execOption(opt):
         print "Interrupted"
         print
 
+
     elif opt == '2':
       ## /etc/hosts File configuration (for nodes) ##
       # Ask hostname
@@ -221,7 +222,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/hostsFile.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/hostsFile.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/hostsFile.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS hostsFile.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES hostsFile.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp; echo \"### hostsFile.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -230,13 +232,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/hostsFile.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/hostsFile.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/hostsFile.yml 2>&1|tee /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS hostsFile.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES hostsFile.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.hostsFile.$timestamp.log.tmp; echo \"### hostsFile.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '3':
       ## /etc/sudoers File configuration (for nodes) ##
@@ -249,7 +252,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/sudo.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/sudo.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/sudo.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.sudo.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS sudo.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.sudo.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.sudo.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES sudo.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.sudo.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.sudo.$timestamp.log.tmp; echo \"### sudo.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -258,13 +262,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/sudo.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/sudo.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/sudo.yml 2>&1|tee /var/log/ansibleEPS/.sudo.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS sudo.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.sudo.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.sudo.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES sudo.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.sudo.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.sudo.$timestamp.log.tmp; echo \"### sudo.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '4':
       ## TCP Wrappers Files configuration (for nodes) ##
@@ -277,7 +282,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/wrappers.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/wrappers.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/wrappers.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS wrappers.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES wrappers.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp; echo \"### wrappers.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -286,13 +292,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/wrappers.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/wrappers.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/wrappers.yml 2>&1|tee /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS wrappers.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES wrappers.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.wrappers.$timestamp.log.tmp; echo \"### wrappers.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '5':
       ## /etc/security/access.conf File configuration (for nodes) ##
@@ -305,7 +312,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/pamAccess.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/pamAccess.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/pamAccess.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS pamAccess.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES pamAccess.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp; echo \"### pamAccess.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -314,13 +322,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/pamAccess.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/pamAccess.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/pamAccess.yml 2>&1|tee /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS pamAccess.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES pamAccess.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.pamAccess.$timestamp.log.tmp; echo \"### pamAccess.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '6':
       ## Nagios-NRPE File configuration (for nodes) ##
@@ -333,7 +342,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/nrpe.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/nrpe.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/nrpe.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS nrpe.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES nrpe.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp; echo \"### nrpe.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -342,13 +352,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/nrpe.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/nrpe.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/nrpe.yml 2>&1|tee /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS nrpe.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES nrpe.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.nrpe.$timestamp.log.tmp; echo \"### nrpe.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '7':
       ## IPTables configuration (for nodes) ##
@@ -360,8 +371,9 @@ def execOption(opt):
           nodeInventory = getInventory(nodeName) 
           if nodeInventory != "":
             print
-            print "cd %s && ansible-playbook %s/iptables.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/iptables.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    print "cd %s && ansible-playbook %s/iptables.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/iptables.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.iptables.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS iptables.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.iptables.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.iptables.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES iptables.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.iptables.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.iptables.$timestamp.log.tmp; echo \"### iptables.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -370,13 +382,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/iptables.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/iptables.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/iptables.yml 2>&1|tee /var/log/ansibleEPS/.iptables.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS iptables.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.iptables.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.iptables.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES iptables.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.iptables.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.iptables.$timestamp.log.tmp; echo \"### iptables.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '8':
       ## Crontab configuration (for nodes) ##
@@ -389,7 +402,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/crontab.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/crontab.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/crontab.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.crontab.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS crontab.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.crontab.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.crontab.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES crontab.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.crontab.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.crontab.$timestamp.log.tmp; echo \"### crontab.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -398,13 +412,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/crontab.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/crontab.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/crontab.yml 2>&1|tee /var/log/ansibleEPS/.crontab.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS crontab.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.crontab.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.crontab.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES crontab.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.crontab.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.crontab.$timestamp.log.tmp; echo \"### crontab.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '9':
       ## Proxmox configuration (for nodes) ##
@@ -417,7 +432,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/proxmox.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/proxmox.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/proxmox.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS proxmox.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES proxmox.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp; echo \"### proxmox.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -426,13 +442,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/proxmox.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/proxmox.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/proxmox.yml 2>&1|tee /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS proxmox.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES proxmox.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.proxmox.$timestamp.log.tmp; echo \"### proxmox.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == '10':
       ## Site configuration -> 'total configuration' (for nodes) ##
@@ -445,7 +462,7 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/site.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/site.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/site.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.site.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS site.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.site.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.site.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES site.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.site.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.site.$timestamp.log.tmp; echo \"### site.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -454,13 +471,14 @@ def execOption(opt):
         else:
           print
           print "cd %s && ansible-playbook %s/site.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/site.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/site.yml 2>&1|tee /var/log/ansibleEPS/.site.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS site.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.site.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.site.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES site.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.site.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.site.$timestamp.log.tmp; echo \"### site.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""
         print
         print "Interrupted"
         print
+
 
     elif opt == 'a':
       ## Configure hosts as nodes ##
@@ -497,7 +515,8 @@ def execOption(opt):
       ## Bacula configuration (for Bacula servers) ##
       print
       print "cd %s && ansible-playbook %s/baculaAdmon.yml" % (pathAnsible,pathAnsible)
-      retCode = subprocess.call("cd %s && ansible-playbook %s/baculaAdmon.yml" % (pathAnsible,pathAnsible), shell=True)
+      retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/baculaAdmon.yml 2>&1|tee /var/log/ansibleEPS/.baculaAdmon.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS baculaAdmon.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.baculaAdmon.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.baculaAdmon.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES baculaAdmon.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.baculaAdmon.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.baculaAdmon.$timestamp.log.tmp; echo \"### baculaAdmon.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
 
     elif opt == 'd':
       ## DHCP configuration (for DHCP servers) ##
@@ -507,12 +526,13 @@ def execOption(opt):
         if building in ['P1','P4','Elec','TV']:
           print
           print "cd %s && ansible-playbook %s/dhcp.yml -t %s" % (pathAnsible,pathAnsible,building)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/dhcp.yml -t %s" % (pathAnsible,pathAnsible,building), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/dhcp.yml -t %s 2>&1|tee /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS dhcp.yml -t %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES dhcp.yml -t %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp; echo \"### dhcp.yml -t %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,building,building,building,building), shell=True)
 
         elif not building:
           print
           print "cd %s && ansible-playbook %s/dhcp.yml" % (pathAnsible,pathAnsible)
-          retCode = subprocess.call("cd %s && ansible-playbook %s/dhcp.yml" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/dhcp.yml 2>&1|tee /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS dhcp.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES dhcp.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.dhcp.$timestamp.log.tmp; echo \"### dhcp.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
         else:
           print >> sys.stderr
           print >> sys.stderr, "Option %s not valid (Valid options: P1, P2, P4, Elec or TV)" % (building)
@@ -524,24 +544,26 @@ def execOption(opt):
         print "Interrupted"
         print
 
+
     elif opt == 'm':
       ## Munin configuration (for Munin servers) ##
       print
       print "cd %s && ansible-playbook %s/munin.yml" % (pathAnsible,pathAnsible)
-      retCode = subprocess.call("cd %s && ansible-playbook %s/munin.yml" % (pathAnsible,pathAnsible), shell=True)
+      retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/munin.yml 2>&1|tee /var/log/ansibleEPS/.munin.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS munin.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.munin.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.munin.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES munin.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.munin.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.munin.$timestamp.log.tmp; echo \"### munin.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
 
     elif opt == 'n':
       ## Nagios configuration (for Nagios servers) ##
       print
       print "cd %s && ansible-playbook %s/nagios.yml" % (pathAnsible,pathAnsible)
-      retCode = subprocess.call("cd %s && ansible-playbook %s/nagios.yml" % (pathAnsible,pathAnsible), shell=True)
+      retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/nagios.yml 2>&1|tee /var/log/ansibleEPS/.nagios.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS nagios.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.nagios.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.nagios.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES nagios.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.nagios.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.nagios.$timestamp.log.tmp; echo \"### nagios.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
 
     elif opt == 'i':
       ## Listado de correos (for Qmail server) ##
       print
       print "cd %s && ansible-playbook %s/listaCorreos.yml" % (pathAnsible,pathAnsible)
-      retCode = subprocess.call("cd %s && ansible-playbook %s/listaCorreos.yml" % (pathAnsible,pathAnsible), shell=True)
+      retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/listaCorreos.yml 2>&1|tee /var/log/ansibleEPS/.listaCorreos.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS listaCorreos.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.listaCorreos.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.listaCorreos.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES listaCorreos.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.listaCorreos.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.listaCorreos.$timestamp.log.tmp; echo \"### listaCorreos.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
 
     elif opt == 's':
@@ -554,19 +576,21 @@ def execOption(opt):
           print
           print "cd %s && ansible-playbook %s/cron.yml -t cronStop" % (pathAnsible,pathAnsible)
           print
-          retCode = subprocess.call("cd %s && ansible-playbook %s/cron.yml -t cronStop" % (pathAnsible,pathAnsible), shell=True)
+	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/cron.yml -t cronStop 2>&1|tee /var/log/ansibleEPS/.cron.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS cron.yml -t cronStop (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.cron.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.cron.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES cron.yml -t cronStop (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.cron.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.cron.$timestamp.log.tmp; echo \"### cron.yml -t cronStop (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
 	elif operation == "start":
 	  # Start System
 	  print
 	  print "cd %s && ansible-playbook %s/cron.yml -t cronStart" % (pathAnsible,pathAnsible)
 	  print
-	  retCode = subprocess.call("cd %s && ansible-playbook %s/cron.yml -t cronStart" % (pathAnsible,pathAnsible), shell=True)
+          retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/cron.yml -t cronStart 2>&1|tee /var/log/ansibleEPS/.cron.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS cron.yml -t cronStart (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.cron.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.cron.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES cron.yml -t cronStart (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.cron.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.cron.$timestamp.log.tmp; echo \"### cron.yml -t cronStart (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
         elif operation == "restart":
           # Start System
           print
           print "cd %s && ansible-playbook %s/cron.yml -t cronStop && ansible-playbook %s/cron.yml -t cronStart" % (pathAnsible,pathAnsible, pathAnsible)
           print
-          retCode = subprocess.call("cd %s && ansible-playbook %s/cron.yml -t cronStop && ansible-playbook %s/cron.yml -t cronStart" % (pathAnsible,pathAnsible,pathAnsible), shell=True)
+          retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); (ansible-playbook %s/cron.yml -t cronStop && ansible-playbook %s/cron.yml -t cronStart) 2>&1|tee /var/log/ansibleEPS/.cron.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS cron.yml restart (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.cron.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.cron.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES cron.yml restart (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.cron.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.cron.$timestamp.log.tmp; echo \"### cron.yml restart (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,pathAnsible), shell=True)
 	
 	else:
           print >> sys.stderr
@@ -579,12 +603,6 @@ def execOption(opt):
         print "Interrupted"
         print
 
-    elif opt == 't':
-      ## Start System ##
-      print
-      print "cd %s && ansible-playbook %s/cron.yml -t cronStart" % (pathAnsible,pathAnsible)
-      print
-      retCode = subprocess.call("cd %s && ansible-playbook %s/cron.yml -t cronStart" % (pathAnsible,pathAnsible), shell=True)
 
     elif opt == 'l':
       ## Check log files (errors and changes) ##
@@ -600,10 +618,10 @@ def execOption(opt):
               print
               typeList = raw_input('There are errors. View summary or details (s/d): ')
               if typeList == 's':
-                retCode = subprocess.call("grep -h -e '### ' -e '^fatal: ' -e '^failed: ' %s|sed '/### /{x;p;x;G;}'|sed '/^fatal:/G'|sed '/^failed:/G'|less" % (pathFileErrors), shell=True)
+                retCode = subprocess.call("grep -h -e '### ' -e '^PLAY ' -e '^TASK ' -e 'fatal: ' -e 'failed: ' %s|sed '/### /{x;p;x;G;}'|sed '/fatal:/G'|sed '/failed:/G'|less -R" % (pathFileErrors), shell=True)
                 print
               elif typeList == 'd':
-                retCode = subprocess.call("less %s" % (pathFileErrors), shell=True)
+                retCode = subprocess.call("less -R %s" % (pathFileErrors), shell=True)
                 print
               else:
                 print >> sys.stderr, "Error: available options 's' (summary) or 'd' (details)"
@@ -615,7 +633,7 @@ def execOption(opt):
 	  elif logFile == 'c':
             # Check changes file
             if os.access(pathFileChanges, os.R_OK):
-              retCode = subprocess.call("less %s" % (pathFileChanges), shell=True)
+              retCode = subprocess.call("less -R %s" % (pathFileChanges), shell=True)
               print
             else:
               print
@@ -630,6 +648,7 @@ def execOption(opt):
       else:
         print >> sys.stderr, "Directory %s doesn't exist" % (pathDirectoryLogs)
         print >> sys.stderr
+
 
     elif opt == 'c':
       ## Clean logs files (errors and changes) ##
@@ -669,12 +688,13 @@ def execOption(opt):
         print >> sys.stderr, "Directory %s doesn't exist" % (pathDirectoryLogs)
         print >> sys.stderr
 
+
     elif opt == 'x':
       ## View executions List ##
       # Check directory
       if os.path.isdir(pathDirectoryLogs):
         if os.access(pathFileExeList, os.R_OK):
-          retCode = subprocess.call("less %s" % (pathFileExeList), shell=True)
+          retCode = subprocess.call("less -R %s" % (pathFileExeList), shell=True)
           print
         else:
           print >> sys.stderr, "File %s don't exist or not readable" % (pathFileExeList)
@@ -684,11 +704,12 @@ def execOption(opt):
         print >> sys.stderr, "Directory %s doesn't exist" % (pathDirectoryLogs)
         print >> sys.stderr
 
+
     elif opt == 'r':
       ## View Log Running Executions 
       # Check directory
       if os.path.isdir(pathDirectoryLogs):
-        totalLogs = int(subprocess.Popen("(ls -la %s/.*.tmp|awk '{print $6,$7,$8,$5,substr($9,length(\"%s\")+2)}'|wc -l) 2> /dev/null" % (pathDirectoryLogs,pathDirectoryLogs), shell=True, stdout=subprocess.PIPE).stdout.read())
+        totalLogs = int(subprocess.Popen("(ls -la %s/.*.tmp|awk '{print $6,$7,$8,$5,substr($9,length(\"%s\")+2)}'|wc -l) 2> /dev/null" % (pathDirectoryLogs,pathDirectoryLogs), shell=True, stdout=subprocess.PIPE).stdout.read().strip())
         if totalLogs > 0:
           # List logs files
           print
@@ -708,6 +729,7 @@ def execOption(opt):
             inputValue = raw_input('Number Execution: ')
 
             if inputValue:
+	      numberLog = 0
               try:
                 numberLog = int(inputValue)
 		
@@ -718,7 +740,7 @@ def execOption(opt):
 
               if numberLog > 0 and numberLog <= totalLogs:
 		try: 
-	 	  retCode = subprocess.call("echo; echo '%s LOGS'; echo; grep '^TASK ' %s/%s; echo; tail -f %s/%s" % (logs[numberLog],pathDirectoryLogs,logs[numberLog],pathDirectoryLogs,logs[numberLog]), shell=True)
+	 	  retCode = subprocess.call("echo; echo '%s LOGS'; echo; grep '^TASK ' %s/%s; echo; tail -f -n 25 %s/%s" % (logs[numberLog],pathDirectoryLogs,logs[numberLog],pathDirectoryLogs,logs[numberLog]), shell=True)
 		except KeyboardInterrupt:
 		  print
 
@@ -746,6 +768,7 @@ def execOption(opt):
         print >> sys.stderr, "Directory %s doesn't exist" % (pathDirectoryLogs)
         print >> sys.stderr
 
+
     elif opt == 'u':
       ## Update (for nodes) ##
       try:
@@ -756,7 +779,8 @@ def execOption(opt):
           if nodeInventory != "":
             print
             print "cd %s && ansible-playbook %s/update.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/update.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/update.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.update.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS update.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.update.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.update.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES update.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.update.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.update.$timestamp.log.tmp; echo \"### update.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "%s is not in inventory" % (nodeName)
@@ -768,12 +792,13 @@ def execOption(opt):
           if OSType in ['Centos','Debian']:
             print
             print "cd %s && ansible-playbook %s/update.yml -t %s" % (pathAnsible,pathAnsible,OSType)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/update.yml -t %s" % (pathAnsible,pathAnsible,OSType), shell=True)
+	    retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/update.yml -t %s 2>&1|tee /var/log/ansibleEPS/.update.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS update.yml -t %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.update.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.update.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES update.yml -t %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.update.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.update.$timestamp.log.tmp; echo \"### update.yml -t %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,OSType,OSType,OSType,OSType), shell=True)
 
           elif not OSType:
             print
             print "cd %s && ansible-playbook %s/update.yml" % (pathAnsible,pathAnsible)
-            retCode = subprocess.call("cd %s && ansible-playbook %s/update.yml" % (pathAnsible,pathAnsible), shell=True)
+            retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/update.yml 2>&1|tee /var/log/ansibleEPS/.update.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS update.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.update.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.update.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES update.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.update.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.update.$timestamp.log.tmp; echo \"### update.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
           else:
             print >> sys.stderr
             print >> sys.stderr, "Option %s not valid (Valid options: Centos or Debian)" % (OSType)
@@ -785,10 +810,11 @@ def execOption(opt):
         print "Interrupted"
         print
 
+
     elif opt == 'v':
       ## View Inventory ##
       if os.access(pathInventory, os.R_OK):
-        retCode = subprocess.call("less %s" % (pathInventory), shell=True)
+        retCode = subprocess.call("less -R %s" % (pathInventory), shell=True)
         print
       else:
         print >> sys.stderr, "File %s don't exist or not readable" % (pathInventory)
