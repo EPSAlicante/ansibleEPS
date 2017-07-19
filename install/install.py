@@ -11,8 +11,10 @@ import datetime
 pathAnsible = "/etc/ansibleEPS"
 pathCentosVersion = "/etc/centos-release"
 pathAnsibleLibrary = "/usr/share/ansible"
+pathAnsibleLogs = "/var/log/ansibleEPS"
 fileAnsibleCFG = "%s/ansible.cfg" % (pathAnsible)
 findModArgs = "/usr/lib/python2.?/site-packages/ansible/parsing/mod_args.py"
+findFactsLib = "/usr/lib/python2.?/site-packages/ansible/module_utils/facts.py"
 fileTGZ = "ansibleEPS.tgz"
 
 
@@ -53,7 +55,7 @@ def main():
       print >> sys.stderr, "CentOS 6 required"
       print >> sys.stderr, "Read INSTALL help"
       print >> sys.stderr, ""
-      sys.exit(2)
+      sys.exit(3)
 
     print
     # Check LANG environment variable (UTF-8 required)
@@ -66,7 +68,7 @@ def main():
         print >> sys.stderr, "LANG (%s) detected (ERROR). UTF-8 required" % lang
         print >> sys.stderr, "Read INSTALL help"
         print >> sys.stderr, ""
-        sys.exit(3)
+        sys.exit(4)
 
     print
     # Check Ansible package (EPEL repository enabled)
@@ -79,9 +81,18 @@ def main():
         print >> sys.stderr, "Ansible package not found (ERROR). EPEL repository enabled is required"
         print >> sys.stderr, "Read INSTALL help"
         print >> sys.stderr, ""
-        sys.exit(3)
+        sys.exit(5)
 
     print
+
+    # Updating CentOS
+    print "Updating CentOS"
+    retCode = subprocess.call("yum -y update", shell=True)
+    if retCode != 0:
+      print >> sys.stderr, ""
+      print >> sys.stderr, "Error updating CentOS"
+      sys.exit(6)
+
     # Installing ansible
     print "Installing Ansible and dependencies"
     retCode = subprocess.call("yum -y install ansible sshpass libselinux-python", shell=True)
@@ -97,7 +108,7 @@ def main():
         except:
           print >> sys.stderr, ""
           print >> sys.stderr, "Error moving %s directory to %s-%s" % (pathAnsible,pathAnsible,datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-          sys.exit(4)
+          sys.exit(7)
 
       else:
         # Creating directory
@@ -109,60 +120,88 @@ def main():
         except:
           print >> sys.stderr, ""
           print >> sys.stderr, "Error creating %s directory" % (pathAnsible)
-          sys.exit(5)
+          sys.exit(8)
 
       # Installing ansibleEPS
       print
       print "Installing AnsibleEPS"
       pathTGZ = os.path.dirname(os.path.realpath(__file__))
-      if os.access("%s/%s" % (pathTGZ,fileTGZ), os.R_OK): 	
-        print "Unzipping %s/%s..." % (pathTGZ,fileTGZ) 
-        retCode = subprocess.call("cd %s && tar xvpzf %s/%s" % (pathAnsible,pathTGZ,fileTGZ), shell=True)
-        if retCode == 0:
-          print
-          print "AnsibleEPS installed."
-          print
-          print "Configuring AnsibleEPS..."
-          # Create pathAnsibleLibrary directory
-          if not os.path.exists(pathAnsibleLibrary):
-            os.makedirs(pathAnsibleLibrary)
-            print
-            print "%s directory created" % (pathAnsibleLibrary)
-          # Set scp_if_ssh = True in fileAnsibleCFG 
-          retCode = subprocess.call("(grep '^scp_if_ssh' %s && (grep '^scp_if_ssh' %s|grep -i true || (sed -i 's/scp_if_ssh/#scp_if_ssh/' %s && false)) || sed -i 's/\[ssh_connection\]/\[ssh_connection\]\\nscp_if_ssh = True/' %s) > /dev/null" % (fileAnsibleCFG,fileAnsibleCFG,fileAnsibleCFG,fileAnsibleCFG), shell=True)	
-          print
-          print "'scp_if_ssh = True' verified in %s" % (fileAnsibleCFG)
-          # Add db_facts in fileModArgs 
-          fileModArgs =  subprocess.Popen("find %s|head -1" % (findModArgs), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
-          if fileModArgs != "":
-            retCode = subprocess.call("(grep 'db_facts' %s || sed -i \"s/RAW_PARAM_MODULES = (\[/RAW_PARAM_MODULES = (\[\\n    'db_facts',/\" %s) > /dev/null" % (fileModArgs,fileModArgs), shell=True)
-            print
-            print "'db_facts' added in %s" % (fileModArgs)
-          else:
-            print "mod_args.py file not found"
-          print
-          print "AnsibleEPS configured."
-          print
-          print "-----------------------------------"
-          print
-          print "Admin Menu: /etc/ansibleEPS/menu.py"
-          print
-          print "-----------------------------------"
 
-	else:
+      try:
+
+        if os.access("%s/%s" % (pathTGZ,fileTGZ), os.R_OK): 	
+          print "Unzipping %s/%s..." % (pathTGZ,fileTGZ) 
+          retCode = subprocess.call("cd %s && tar xvpzf %s/%s" % (pathAnsible,pathTGZ,fileTGZ), shell=True)
+          if retCode == 0:
+            print
+            print "AnsibleEPS installed."
+
+            print
+            print "Configuring AnsibleEPS..."
+
+            # Create pathAnsibleLibrary directory
+            if not os.path.exists(pathAnsibleLibrary):
+              os.makedirs(pathAnsibleLibrary)
+              print
+              print "%s directory created" % (pathAnsibleLibrary)
+
+            # Create Logs Ansible directory
+            if not os.path.exists(pathAnsibleLogs):
+              os.makedirs(pathAnsibleLogs)
+              print
+              print "%s directory created" % (pathAnsibleLogs)
+
+            # Set scp_if_ssh = True in fileAnsibleCFG 
+            retCode = subprocess.call("(grep '^scp_if_ssh' %s && (grep '^scp_if_ssh' %s|grep -i true || (sed -i 's/scp_if_ssh/#scp_if_ssh/' %s && false)) || sed -i 's/\[ssh_connection\]/\[ssh_connection\]\\nscp_if_ssh = True/' %s) > /dev/null" % (fileAnsibleCFG,fileAnsibleCFG,fileAnsibleCFG,fileAnsibleCFG), shell=True)	
+            print
+            print "'scp_if_ssh = True' verified in %s" % (fileAnsibleCFG)
+
+            # Add db_facts in fileModArgs 
+            fileModArgs =  subprocess.Popen("find %s|head -1" % (findModArgs), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
+            if fileModArgs != "":
+              retCode = subprocess.call("(grep 'db_facts' %s || sed -i \"s/RAW_PARAM_MODULES = (\[/RAW_PARAM_MODULES = (\[\\n    'db_facts',/\" %s) > /dev/null" % (fileModArgs,fileModArgs), shell=True)
+              print
+              print "'db_facts' added in %s" % (fileModArgs)
+            else:
+              print "mod_args.py file not found"
+
+            # Fix error uptime_seconds for Solaris in facts.py
+            fileFactsLib = subprocess.Popen("find %s|head -1" % (findFactsLib), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
+            if fileFactsLib != "":
+              retCode = subprocess.call("(grep \"self\.facts\['uptime_seconds'\] = int(float(out\.split('\\\\t')\[1\]\.split(',')\[0\]))\" %s || sed -i \"s/self\.facts\['uptime_seconds'\] = int(float(out\.split('\\\\t')\[1\]))/self\.facts\['uptime_seconds'\] = int(float(out\.split('\\t')\[1\]\.split(',')\[0\]))/\" %s) > /dev/null" % (fileFactsLib,fileFactsLib), shell=True)
+              print
+              print "Modified %s" % (fileModArgs)
+            else:
+              print "facts.py file not found"
+
+            print
+            print "AnsibleEPS configured."
+            print
+            print "-----------------------------------"
+            print
+            print "Admin Menu: /etc/ansibleEPS/menu.py"
+            print
+            print "-----------------------------------"
+
+	  else:
+            print >> sys.stderr, ""
+            print >> sys.stderr, "Error unzipping %s/%s in %s" % (pathTGZ,fileTGZ,pathAnsible)
+	    sys.exit(9)
+
+        else:
           print >> sys.stderr, ""
-          print >> sys.stderr, "Error unzipping %s/%s in %s" % (pathTGZ,fileTGZ,pathAnsible)
-	  sys.exit(7)
+          print >> sys.stderr, "Error, file %s/%s not found" % (pathTGZ,fileTGZ) 
+	  sys.exit(10)
 
-      else:
+      except Exception as e:
         print >> sys.stderr, ""
-        print >> sys.stderr, "Error, file %s/%s not found" % (pathTGZ,fileTGZ) 
-	sys.exit(6)
+        print >> sys.stderr, "Error Configuring Ansible: %s" % (e)
+        sys.exit(11)
 
     else:
       print >> sys.stderr, ""
       print >> sys.stderr, "Error installing Ansible and dependencies"
-      sys.exit(3)
+      sys.exit(12)
 
     sys.exit(0)    
 

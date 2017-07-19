@@ -45,6 +45,8 @@ Installation:
 
  - Operating System, python, LANG environment variable and EPEL repository version will be checked. 
 
+ - System will be updated before start ansible installation
+
  - If everything is OK ansible software and dependencies will be installed.
 
  - If ansible installation is OK then if '/etc/ansibleEPS' directory exists, it will be renamed to '/etc/ansibleEPS-datetime'. A '/etc/ansibleEPS' directory will be created.
