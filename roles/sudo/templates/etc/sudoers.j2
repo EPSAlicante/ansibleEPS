@@ -129,9 +129,9 @@ Cmnd_Alias {{ command.name }} =
 {%       if word.append(itemList) -%}{% endif -%}
 {%       if itemList == ' ' or loop.last -%}
 {%        if word|join("") != word|join("")|replace('command.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace(' ','',1)|replace('command.','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
 {%        elif word|join("") != word|join("")|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
 {%        else -%}
 {{ word|join("") -}}
 {%        endif -%}
@@ -142,7 +142,7 @@ Cmnd_Alias {{ command.name }} =
 {%      if item != item|replace('command.','',1) -%}
 {{ hostvars[inventory_hostname]['path']['commands'][item|replace('command.','',1)] -}}
 {%      elif item != item|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)] -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}
 {%      else -%}
 {{ item -}}
 {%      endif -%}
@@ -180,9 +180,9 @@ Cmnd_Alias {{ command.name }} =
 {%          if word.append(itemList) -%}{% endif -%}
 {%          if itemList == ' ' or loop.last -%}
 {%           if word|join("") != word|join("")|replace('command.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace(' ','',1)|replace('command.','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
 {%           elif word|join("") != word|join("")|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
 {%           else -%}
 {{ word|join("") -}}
 {%           endif -%}
@@ -193,7 +193,7 @@ Cmnd_Alias {{ command.name }} =
 {%         if item != item|replace('command.','',1) -%}
 {{ hostvars[inventory_hostname]['path']['commands'][item|replace('command.','',1)] -}}
 {%         elif item != item|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)] -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}
 {%         else -%}
 {{ item -}}
 {%	   endif -%}
@@ -221,9 +221,9 @@ Cmnd_Alias {{ command.name }} =
 {%         if word.append(itemList) -%}{% endif -%}
 {%	   if itemList == ' ' or loop.last -%}
 {%          if word|join("") != word|join("")|replace('command.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace(' ','',1)|replace('command.','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
 {%          elif word|join("") != word|join("")|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)|replace(' ','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" %itemList if itemList == ' ' else "" -}}
 {%          else -%}
 {{ word|join("") -}}
 {%          endif -%}
@@ -234,7 +234,7 @@ Cmnd_Alias {{ command.name }} =
 {%        if item != item|replace('command.','',1) -%}
 {{ hostvars[inventory_hostname]['path']['commands'][item|replace('command.','',1)] -}}
 {%        elif item != item|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)] -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][item|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}
 {%        else -%}
 {{ item -}}
 {%	  endif -%}
@@ -318,25 +318,69 @@ Runas_Alias {{ runas.name }} = {{ runas.list|join(', ') }}
 
 # User privilege specification
 root    ALL=(ALL) ALL
+{# Global block -#}
 {% if sudoGlobal.privileges is defined -%}
-{%  for privilege in sudoGlobal.privileges -%}
-{{ privilege.user }} {{ inventory_hostname if privilege.host|lower=="hostname" else privilege.host }}={{ "(%s)" % privilege.runas if privilege.runas is defined else "" }} {{ "NOPASSWD:" if not privilege.password else "PASSWD:" }} {{ privilege.command }}
+{%  for priv in sudoGlobal.privileges -%}
+{%   set printPriv = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   for ruleGroup in sudoGroup -%}
+{%    if ruleGroup.group in group_names -%}
+{%     for gpriv in ruleGroup.privileges -%}
+{%      if gpriv.name == priv.name -%}
+{%       if printPriv.update({'value': False}) -%}{% endif -%}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{# Looking for the same label in Host block -#}
+{%   if printPriv.value -%}
+{%    for ruleHost in sudoHost -%}
+{%     if ruleHost.host==inventory_hostname -%}
+{%      for hpriv in ruleHost.privileges -%}
+{%       if hpriv.name == priv.name -%}
+{%        if printPriv.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Print label -#}
+{%   if printPriv.value -%}
+{{ priv.user }} {{ inventory_hostname if priv.host|lower=="hostname" else priv.host }}={{ "(%s)" % priv.runas if priv.runas is defined else "" }} {{ "NOPASSWD:" if not priv.password else "PASSWD:" }} {{ priv.command }}
+{%   endif -%}
 {%  endfor %}
 {% endif -%}
+{# Group block -#}
 {% for ruleGroup in sudoGroup -%}
 {%  if ruleGroup.group in group_names -%}
 {%   if ruleGroup.privileges is defined -%}
-{%    for privilege in ruleGroup.privileges -%}
-{{ privilege.user }} {{ inventory_hostname if privilege.host|lower=="hostname" else privilege.host }}={{ "(%s)" % privilege.runas if privilege.runas is defined else "" }} {{ "NOPASSWD:" if not privilege.password else "PASSWD:" }} {{ privilege.command }}
+{%    for priv in ruleGroup.privileges -%}
+{%     set printPriv = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%     for ruleHost in sudoHost -%}
+{%      if ruleHost.host==inventory_hostname -%}
+{%       for hpriv in ruleHost.privileges -%}
+{%        if hpriv.name == priv.name -%}
+{%         if printPriv.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print label -#}
+{%     if printPriv.value -%}
+{{ priv.user }} {{ inventory_hostname if priv.host|lower=="hostname" else priv.host }}={{ "(%s)" % priv.runas if priv.runas is defined else "" }} {{ "NOPASSWD:" if not priv.password else "PASSWD:" }} {{ priv.command }}
+{%     endif -%}
 {%    endfor -%}
 {%   endif -%}
 {%  endif -%}
 {% endfor %}
+{# Host block -#}
 {% for ruleHost in sudoHost -%}
 {%  if ruleHost.host==inventory_hostname -%}
 {%   if ruleHost.privileges is defined -%}
-{%    for privilege in ruleHost.privileges -%}
-{{ privilege.user }} {{ inventory_hostname if privilege.host|lower=="hostname" else privilege.host }}={{ "(%s)" % privilege.runas if privilege.runas is defined else "" }} {{ "NOPASSWD:" if not privilege.password else "PASSWD:" }} {{ privilege.command }}
+{%    for priv in ruleHost.privileges -%}
+{# Print label -#}
+{{ priv.user }} {{ inventory_hostname if priv.host|lower=="hostname" else priv.host }}={{ "(%s)" % priv.runas if priv.runas is defined else "" }} {{ "NOPASSWD:" if not priv.password else "PASSWD:" }} {{ priv.command }}
 {%    endfor -%}
 {%   endif -%}
 {%  endif -%}

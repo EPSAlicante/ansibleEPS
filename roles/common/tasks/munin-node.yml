@@ -13,10 +13,11 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
+  when: path.daemons['munin-node']['name']|default("") == ""
 
 - name: Be sure munin-node is installed (Centos)
   yum: pkg=munin-node state=installed
@@ -43,24 +44,15 @@
   with_items: "{{ muninMaster }}"
   register: muninNodeConfAllow 
 
-- name: Getting Paths (to get munin-node daemon)
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons['munin-node']|default("") == ""
-
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons['munin-node'] }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons['munin-node']|default("") != ""
+- name: Restart munin-node systemd
+  systemd: name={{ path.daemons['munin-node']['name'] }} state=restarted enabled=true
+  when: path.daemons['munin-node']['type'] == "systemctl" and path.daemons['munin-node']['name'] != "" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed) 
 
 - name: Restart munin-node service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: checkService.stdout == "True" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed)
+  service: name={{ path.daemons['munin-node']['name'] }} state=restarted enabled=true
+  when: path.daemons['munin-node']['type'] == "service" and path.daemons['munin-node']['name'] != "" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed)
 
-- name: Restart munin-node daemon
-  shell: "{{ path.daemons['munin-node'] }} restart executable='/bin/bash'"
-  when: checkService.stdout != "True" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed)
+- name: Restart munin-node init 
+  shell: "{{ path.daemons['munin-node']['name'] }} restart executable='/bin/bash'"
+  when: path.daemons['munin-node']['type'] == "init" and path.daemons['munin-node']['name'] != "" and (muninNodeConfHostname|changed or muninNodeConfAllow|changed)
 

@@ -165,6 +165,8 @@ System is ready to work with next Operating System (all of them with 'yum' or 'a
 
   * Ubuntu 14
 
+  * Ubuntu 16
+
 These files includes specific variables for a version of a Operating System. For example: specific users, repositories, specific software, specific config files, etc.
 
 Adding a new Operating System and Version (based on 'yum' or 'apt' package manager) is very simple: just create a new file in '/etc/ansibleEPS/group_vars/' directory with name 'OperatingSystem-Version' and fill file with variables and specific values (easier copying other similar file and modify valiues that change from a file to other).

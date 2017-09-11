@@ -13,10 +13,11 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: whereis service|cut -d':' -f2
-  register: serviceBinary
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
+  when: path.daemons.sudo.name|default("") == ""
 
 - name: Be sure sudo is installed (yum)
   yum: pkg=sudo state=installed
@@ -48,13 +49,20 @@
 
 - name: If execution OK -> Copy sudoers file to servers
   template: src=etc/sudoers.j2 dest=/etc/sudoers owner=root group=root mode=0440
-  #notify: restart sudo 
   when: checkFile|changed and checkResult|success
 
 - name: If execution fails -> move .sudoers.check as .sudoers.error 
   shell: mv -f /etc/.sudoers.check /etc/.sudoers.error 
   when: checkFile|changed and checkResult|failed
 
-- name: Be sure sudo is running and enabled (non service)
-  shell: "{{ path.daemons.sudo }} reload"
-  when: ansible_os_family == "Debian" and checkFile|changed and serviceBinary.stdout == ""
+- name: Reload sudo systemd
+  systemd: name={{ path.daemons.sudo.name }} state=started enabled=true
+  when: path.daemons.sudo.type == "systemctl" and checkFile|changed and checkResult|success
+
+- name: Reload sudo service
+  service: name={{ path.daemons.sudo.name }} state=started enabled=true
+  when: path.daemons.sudo.type == "service" and checkFile|changed and checkResult|success
+
+- name: Reload sudo init
+  shell: '{{ path.daemons.sudo.name }} restart executable="/bin/bash"'
+  when: path.daemons.sudo.type == "init" and checkFile|changed and checkResult|success

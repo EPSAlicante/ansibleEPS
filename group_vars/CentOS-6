@@ -14,15 +14,17 @@ managerPassword: $6$CtIxb6i7$lOvaBvrBxdWcJKGXW9KVBWmwXHDA7nAebiQFwHsRH6eseoHjcDs
 managerGroups: 
 - adm
 - wheel
-- www-data
 - apache
 
 
 # Centos Repositories (files)
 reposCentos:
-- base.repo
-- epel.repo
-- rpmforge.repo 
+- base6.repo
+- epel6.repo
+
+
+# Centos EPEL Key
+epelKey: http://ftp.fau.de/epel/RPM-GPG-KEY-EPEL-6
 
 
 # Exclude Packages (update)

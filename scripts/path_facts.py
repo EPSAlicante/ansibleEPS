@@ -40,13 +40,55 @@ def path(command1, command2=''):
 
 def getDaemon(d1, d2='', d3='', d4='', d5='', d6='', d7='', d8='', d9='', d10=''):
     # Getting daemons path
-    ret = subprocess.Popen("(([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || ([ %s != '' ] && ls /etc/init.d/%s) || echo '') 2>%s" % (d1, d1, d2, d2, d3, d3, d4, d4, d5, d5, d6, d6, d7, d7, d8, d8, d9, d9, d10, d10, errorLog), shell=True, executable='%s' % (bash), stdout=subprocess.PIPE).stdout.read().strip()
+    data = subprocess.Popen("for i in \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"; do val=$(([ \"$i\" != \"\" ] && ((%s|grep \"^$i.service\" >/dev/null && echo \"systemctl $i\") || (%s $i status >/dev/null && echo \"service $i\") || (ls /etc/init.d/$i >/dev/null && echo \"/etc/init.d/$i\"))) 2>%s); [ \"$val\" != \"\" ] && echo \"$val\" && break; done" % (d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, path('systemctl'), path('service'), errorLog), shell=True, executable='%s' % (bash), stdout=subprocess.PIPE).stdout.read().strip()
+
+    # Get type (systemctl, service or /etc/init.d) and name
+    if data.startswith('systemctl ') or data.startswith('service '):
+      type = data.split(' ')[0]
+      name = data.split(' ')[1]
+    elif data.startswith('/etc/init.d/'):
+      type = "init"
+      name = data
+    else:
+      type = ""
+      name = ""
+
+    # Build cad for actions (stop, start, etc) 
+    if type == "systemctl":
+      cadAction = "%s ***ACTION*** %s" % (path(type), name)
+    elif type == "service":
+      cadAction = "%s %s ***ACTION***" % (path(type), name)
+    elif type == "init":
+      cadAction = "%s ***ACTION***" % (name)
+    else:
+      cadAction = ""
+
+    # Compile info
+    if type == "" or name == "" or cadAction == "":
+      linit = "{\n"
+      lactions = ""
+      ltype = "           \"type\": \"\",\n"
+      lname = "           \"name\": \"\"\n"
+      lend = "         }"
+
+    else:
+      linit = "{\n"
+      actions = [ 'stop', 'start', 'restart', 'reload', 'status' ]
+      lactions = ""
+      for act in actions:
+        lactions = "%s           \"%s\": \"%s\",\n" % (lactions, act, cadAction.replace("***ACTION***","%s" % (act)))
+      ltype = "           \"type\": \"%s\",\n" % (type)
+      lname = "           \"name\": \"%s\"\n" % (name)
+      lend = "         }"
+
+
+    ret = "%s%s%s%s%s" % (linit, lactions, ltype, lname, lend)
 
     return ret
 
 
 def show_paths():
-    # Getting paths
+    # Getting paths (don't use dots '.' for names)
     print "    \"path\": {"
     print "      \"commands\": {" 
     print "        \"ansible-playbook\": \"%s\"," % (path('ansible-playbook'))
@@ -90,6 +132,7 @@ def show_paths():
     print "        \"qm\": \"%s\"," % (path('qm'))
     print "        \"qmail-qstat\": \"%s\"," % (path('qmail-qstat'))
     print "        \"quota\": \"%s\"," % (path('quota'))
+    print "        \"repquota\": \"%s\"," % (path('repquota'))
     print "        \"rm\": \"%s\"," % (path('rm'))
     print "        \"route\": \"%s\"," % (path('route'))
     print "        \"rsync\": \"%s\"," % (path('rsync'))
@@ -110,43 +153,44 @@ def show_paths():
     print "        \"zypper\": \"%s\"" % (path('zypper'))
     print "      },"
     print "      \"daemons\": {"
-    print "        \"activemq\": \"%s\"," % (getDaemon('activemq'))
-    print "        \"actPass\": \"%s\"," % (getDaemon('actPass'))
-    print "        \"apache\": \"%s\"," % (getDaemon('httpd','apache2','apache','http')) 
-    print "        \"bacula-dir\": \"%s\"," % (getDaemon('bacula-dir','bacula-director'))
-    print "        \"bacula-fd\": \"%s\"," % (getDaemon('bacula-fd'))
-    print "        \"bacula-sd\": \"%s\"," % (getDaemon('bacula-sd')) 
-    print "        \"bind\": \"%s\"," % (getDaemon('named','bind9','bind'))
-    print "        \"dhcp\": \"%s\"," % (getDaemon('dhcpd','isc-dhcp-server','dhcp3-server'))
-    print "        \"dovecot\": \"%s\"," % (getDaemon('dovecot')) 
-    print "        \"haproxy\": \"%s\"," % (getDaemon('haproxy'))
-    print "        \"ices0\": \"%s\"," % (getDaemon('ices0'))
-    print "        \"ices2\": \"%s\"," % (getDaemon('ices2'))
-    print "        \"icecast2\": \"%s\"," % (getDaemon('icecast2'))
-    print "        \"ipsec\": \"%s\"," % (getDaemon('ipsec'))
-    print "        \"iptables.sh\": \"%s\"," % (getDaemon('iptables.sh'))
-    print "        \"ldap\": \"%s\"," % (getDaemon('dirsrv','ldap.sh'))
-    print "        \"ldap-admin\": \"%s\"," % (getDaemon('dirsrv-admin','ldap.sh'))
-    print "        \"lvm\": \"%s\"," % (getDaemon('lvm2'))
-    print "        \"munin-node\": \"%s\"," % (getDaemon('munin-node')) 
-    print "        \"mysql\": \"%s\"," % (getDaemon('mysqld','mysql'))
-    print "        \"nagios\": \"%s\"," % (getDaemon('nagios','nagios3'))
-    print "        \"network\": \"%s\"," % (getDaemon('network','networking')) 
-    print "        \"nfs\": \"%s\"," % (getDaemon('nfs','nfs-kernel-server'))
-    print "        \"nfslock\": \"%s\"," % (getDaemon('nfslock','nfs-common'))
-    print "        \"nrpe\": \"%s\"," % (getDaemon('nrpe','nagios-nrpe-server'))
-    print "        \"nscd\": \"%s\"," % (getDaemon('nscd'))
-    print "        \"nslcd\": \"%s\"," % (getDaemon('nslcd'))
-    print "        \"ntp\": \"%s\"," % (getDaemon('ntpd','ntp'))
-    print "        \"ossec\": \"%s\"," % (getDaemon('ossec'))
-    print "        \"qmail\": \"%s\"," % (getDaemon('qmail'))
-    print "        \"qmail-smtp-auth\": \"%s\"," % (getDaemon('qmail-smtp-auth'))
-    print "        \"sshd\": \"%s\"," % (getDaemon('sshd','ssh'))
-    print "        \"stunnel\": \"%s\"," % (getDaemon('stunnel','stunnel4'))
-    print "        \"sudo\": \"%s\"," % (getDaemon('sudo'))
-    print "        \"syslog\": \"%s\"," % (getDaemon('rsyslog','sysklogd'))
-    print "        \"tomcat\": \"%s\"," % (getDaemon('tomcat'))
-    print "        \"ups\": \"%s\"" % (getDaemon('ups','nut-server','nut'))
+    print "        \"activemq\": %s," % (getDaemon('activemq'))
+    print "        \"actPass\": %s," % (getDaemon('actPass'))
+    print "        \"apache\": %s," % (getDaemon('httpd','apache2','apache','http')) 
+    print "        \"bacula-dir\": %s," % (getDaemon('bacula-dir','bacula-director'))
+    print "        \"bacula-fd\": %s," % (getDaemon('bacula-fd'))
+    print "        \"bacula-sd\": %s," % (getDaemon('bacula-sd')) 
+    print "        \"bind\": %s," % (getDaemon('named','bind9','bind'))
+    print "        \"dhcp\": %s," % (getDaemon('dhcpd','isc-dhcp-server','dhcp3-server'))
+    print "        \"dovecot\": %s," % (getDaemon('dovecot')) 
+    print "        \"haproxy\": %s," % (getDaemon('haproxy'))
+    print "        \"ices0\": %s," % (getDaemon('ices0'))
+    print "        \"ices2\": %s," % (getDaemon('ices2'))
+    print "        \"icecast2\": %s," % (getDaemon('icecast2'))
+    print "        \"influxdb\": %s," % (getDaemon('influxdb'))
+    print "        \"ipsec\": %s," % (getDaemon('ipsec'))
+    print "        \"iptables-sh\": %s," % (getDaemon('iptables.sh'))
+    print "        \"ldap\": %s," % (getDaemon('dirsrv','ldap.sh'))
+    print "        \"ldap-admin\": %s," % (getDaemon('dirsrv-admin','ldap.sh'))
+    print "        \"lvm\": %s," % (getDaemon('lvm2'))
+    print "        \"munin-node\": %s," % (getDaemon('munin-node')) 
+    print "        \"mysql\": %s," % (getDaemon('mysqld','mysql'))
+    print "        \"nagios\": %s," % (getDaemon('nagios','nagios3'))
+    print "        \"network\": %s," % (getDaemon('network','networking')) 
+    print "        \"nfs\": %s," % (getDaemon('nfs','nfs-kernel-server'))
+    print "        \"nfslock\": %s," % (getDaemon('nfslock','nfs-common'))
+    print "        \"nrpe\": %s," % (getDaemon('nrpe','nagios-nrpe-server'))
+    print "        \"nscd\": %s," % (getDaemon('nscd'))
+    print "        \"nslcd\": %s," % (getDaemon('nslcd'))
+    print "        \"ntp\": %s," % (getDaemon('ntpd','ntp'))
+    print "        \"ossec\": %s," % (getDaemon('ossec'))
+    print "        \"qmail\": %s," % (getDaemon('qmail'))
+    print "        \"qmail-smtp-auth\": %s," % (getDaemon('qmail-smtp-auth'))
+    print "        \"sshd\": %s," % (getDaemon('sshd','ssh'))
+    print "        \"stunnel\": %s," % (getDaemon('stunnel','stunnel4'))
+    print "        \"sudo\": %s," % (getDaemon('sudo'))
+    print "        \"syslog\": %s," % (getDaemon('rsyslog','sysklogd'))
+    print "        \"tomcat\": %s," % (getDaemon('tomcat'))
+    print "        \"ups\": %s" % (getDaemon('ups','nut-server','nut'))
     print "      }"
     print "    },"
 

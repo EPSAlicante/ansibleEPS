@@ -13,13 +13,14 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
+  when: path.daemons.nrpe.name|default("") == ""
 
 - name: Create directory /etc/nagios/nrpe.d
-  file: path=/etc/nagios/nrpe.d state=directory owner=root group=root mode=0755
+  file: path=/etc/nagios/nrpe.d state=directory follow=yes owner=root group=root mode=0755
 
 - name: Configure /etc/nagios/nrpe.cfg file with include_dir=/etc/nagios/nrpe.d/
   lineinfile: name=/etc/nagios/nrpe.cfg state=present regexp='^include_dir=/etc/nagios/nrpe.d/$' line='include_dir=/etc/nagios/nrpe.d/'
@@ -34,18 +35,15 @@
   register: commentCommands
   changed_when: commentCommands.stdout == "Changed"  
 
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.nrpe }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.nrpe|default("") != ""
+- name: Restart nrpe systemd
+  systemd: name={{ path.daemons.nrpe.name }} state=restarted enabled=true
+  when: path.daemons.nrpe.type == "systemctl" and path.daemons.nrpe.name != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed) 
 
 - name: Restart nrpe service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: checkService.stdout == "True" and serviceName.stdout|default("") != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed)
+  service: name={{ path.daemons.nrpe.name }} state=restarted enabled=true
+  when: path.daemons.nrpe.type == "service" and path.daemons.nrpe.name != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed)
 
-- name: Restart nrpe daemon
-  shell: '{{ path.daemons.nrpe }} restart executable="/bin/bash"'
-  when: checkService.stdout != "True" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed) 
+- name: Restart nrpe init
+  shell: '{{ path.daemons.nrpe.name }} restart executable="/bin/bash"'
+  when: path.daemons.nrpe.type == "init" and path.daemons.nrpe.name != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed) 
 

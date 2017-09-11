@@ -112,6 +112,8 @@ Directory Structure: '/etc/ansibleEPS'
 
 	    - 'Ubuntu-14' (variables for Ubuntu-14 hosts, overwriting global variables)
 
+	    - 'Ubuntu-16' (variables for Ubuntu-16 hosts, overwriting global variables)
+
 	    Every file with 'OS-Version' format, host name or group of hosts (from Inventory) will have the same function, overwriting global variables
 	
 

@@ -8,28 +8,31 @@
 
 # syslog configuration 
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
   changed_when: False
+
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.syslog.name|default("") == ""
 
 - name: Configure /etc/syslog.conf con lista syslog
   lineinfile: "name={{ syslogConf }} state=present regexp='{{ item.search }}' insertafter=EOF line='{{ item.replace }}'"
   register: syslogConfig
   with_items: "{{ syslog }}"
 
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.syslog }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.syslog|default("") != ""
+- name: Restart syslog systemd
+  systemd: name={{ path.daemons.syslog.name }} state=restarted enabled=true
+  when: path.daemons.syslog.type == "systemctl" and path.daemons.syslog.name != ""and syslogConfig|changed
 
 - name: Restart syslog service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: checkService.stdout == "True" and serviceName.stdout|default("") != "" and syslogConfig|changed
+  service: name={{ path.daemons.syslog.name }} state=restarted enabled=true
+  when: path.daemons.syslog.type == "service" and path.daemons.syslog.name != "" and syslogConfig|changed
 
-- name: Restart syslog daemon
-  shell: '{{ path.daemons.syslog }} restart executable="/bin/bash"'
-  when: checkService.stdout != "True" and syslogConfig|changed
+- name: Restart syslog init 
+  shell: '{{ path.daemons.syslog.name }} restart executable="/bin/bash"'
+  when: path.daemons.syslog.type == "init" and path.daemons.syslog.name != "" and syslogConfig|changed
 

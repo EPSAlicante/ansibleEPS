@@ -6,14 +6,3 @@
 # AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
 
 
-# Restarts 
-
-- name: restart bacula-dir 
-  #service: name={{ path.daemons.bacula-dir }} state=restarted enabled=yes
-  # Falla el restart en la Debian Etch, por eso llamo directamente al comando
-  shell: "{{ path.daemons['bacula-dir'] }} restart"
-
-- name: restart bacula-sd
-  #service: name={{ path.daemons.bacula-sd }} state=restarted enabled=yes
-  # Falla el restart en la Debian Etch, por eso llamo directamente al comando
-  shell: "{{ path.daemons['bacula-sd'] }} restart"

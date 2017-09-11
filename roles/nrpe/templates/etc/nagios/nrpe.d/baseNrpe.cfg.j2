@@ -48,9 +48,9 @@ command[{{ rule.label }}]=
 {%      if item != ' ' and word.append(item) -%}{% endif -%}
 {%      if item == ' ' or loop.last -%}
 {%       if word|join("") != word|join("")|replace('command.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}} 
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace(' ','',1)|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}} 
 {%       elif word|join("") != word|join("")|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%       else -%}
 {{ word|join("") -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%       endif -%}
@@ -61,7 +61,7 @@ command[{{ rule.label }}]=
 {%     if rule.command != rule.command|replace('command.','',1) %}
 {{ hostvars[inventory_hostname]['path']['commands'][rule.command|replace('command.','',1)] }}
 {%     elif rule.command != rule.command|replace('daemon.','',1) %}
-{{ hostvars[inventory_hostname]['path']['daemons'][rule.command|replace('daemon.','',1)] }}
+{{ hostvars[inventory_hostname]['path']['daemons'][rule.command|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace('daemon.','',1)|regex_replace('.*\.','',1)] }}
 {%     else %}
 {{ rule.command }}
 {%     endif -%}
@@ -96,9 +96,9 @@ command[{{ grule.label }}]=
 {%        if item != ' ' and word.append(item) -%}{% endif -%}
 {%        if item == ' ' or loop.last -%}
 {%         if word|join("") != word|join("")|replace('command.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace(' ','',1)|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%         elif word|join("") != word|join("")|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%         else -%}
 {{ word|join("") -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%         endif -%}
@@ -109,7 +109,7 @@ command[{{ grule.label }}]=
 {%       if grule.command != grule.command|replace('command.','',1) -%}
 {{ hostvars[inventory_hostname]['path']['commands'][grule.command|replace('command.','',1)] -}}
 {%       elif grule.command != grule.command|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][grule.command|replace('daemon.','',1)] -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][grule.command|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}
 {%       else -%}
 {{ grule.command -}}
 {%       endif -%}
@@ -133,11 +133,11 @@ command[{{ hrule.label }}]=
 {%        if item != ' ' and word.append(item) -%}{% endif -%}
 {%        if item == ' ' or loop.last -%}
 {%         if word|join("") != word|join("")|replace('command.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{{ hostvars[inventory_hostname]['path']['commands'][word|join("")|replace(' ','',1)|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%         elif word|join("") != word|join("")|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace(' ','',1)|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%         else -%}
-{{ word|join("") -}}
+{{ word|join("") -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%         endif -%}
 {%         set word = [] -%}
 {%        endif -%}
@@ -146,7 +146,7 @@ command[{{ hrule.label }}]=
 {%       if hrule.command != hrule.command|replace('command.','',1) -%}
 {{ hostvars[inventory_hostname]['path']['commands'][hrule.command|replace('command.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%       elif hrule.command != hrule.command|replace('daemon.','',1) -%}
-{{ hostvars[inventory_hostname]['path']['daemons'][hrule.command|replace('daemon.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
+{{ hostvars[inventory_hostname]['path']['daemons'][hrule.command|replace('daemon.','',1)|regex_replace('\..*','')][word|join("")|replace('daemon.','',1)|regex_replace('.*\.','',1)] -}}{{ "%s" % (" " if item == ' ' else "\n") -}}
 {%       else -%}
 {{ hrule.command -}}
 {%       endif -%}

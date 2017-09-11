@@ -6,8 +6,3 @@
 # AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
 
 
-# Restarts
-
-- name: restart sudo 
-  service: name=sudo state=restarted enabled=yes
-  when: serviceBinary.stdout != ""

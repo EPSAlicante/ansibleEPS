@@ -13,10 +13,11 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
+  when: path.daemons['bacula-fd']['name']|default("") == ""
 
 - name: Be sure bacula-client is installed (Centos)
   yum: pkg=bacula-client state=present
@@ -37,28 +38,23 @@
   template: src=etc/bacula/bacula-fd.conf.{{ ansible_os_family }}.j2 dest=/etc/bacula/bacula-fd.conf
   register: baculafdConf
   
-- name: Getting Paths (to get bacula-fd daemon)
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when:  checkService.stdout == "True" and path.daemons['bacula-fd']|default("") == ""
+- name: Stop bacula-fd systemd
+  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=stopped enabled=true
+  when: path.daemons['bacula-fd']['type'] == "systemctl" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons['bacula-fd'] }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when:  checkService.stdout == "True" and path.daemons['bacula-fd']|default("") != ""
+- name: Start bacula-fd systemd
+  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=started enabled=true
+  when: path.daemons['bacula-fd']['type'] == "systemctl" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
 - name: Stop bacula-fd service
-  service: name={{ serviceName.stdout }} state=stopped enabled=true
-  when: checkService.stdout == "True" and baculafdConf|changed
+  service: name={{ path.daemons['bacula-fd']['name'] }} state=stopped enabled=true
+  when: path.daemons['bacula-fd']['type'] == "service" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
 - name: Start bacula-fd service
-  service: name={{ serviceName.stdout }} state=started enabled=true
-  when: checkService.stdout == "True" and baculafdConf|changed
+  service: name={{ path.daemons['bacula-fd']['name'] }} state=started enabled=true
+  when: path.daemons['bacula-fd']['type'] == "service" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
-- name: Restart bacula-fd daemon
-  shell: "{{ path.daemons['bacula-fd'] }} restart executable='/bin/bash'"
-  when: checkService.stdout != "True" and baculafdConf|changed
+- name: Restart bacula-fd init
+  shell: "{{ path.daemons['bacula-fd']['name'] }} restart executable='/bin/bash'"
+  when: path.daemons['bacula-fd']['type'] == "init" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 

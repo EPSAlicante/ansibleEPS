@@ -18,6 +18,12 @@
   changed_when: False
   when: "'ossim' not in group_names" 
 
+- name: Find systemctl binary
+  shell: ((pidof systemd >/dev/null && echo "True") || echo "False") 2>/dev/null
+  register: checkSystemd
+  changed_when: False
+  when: "'ossim' not in group_names"
+
 - name: Find service binary
   shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
   register: checkService
@@ -153,20 +159,31 @@
   action: path_EPS
   changed_when: False
   ignore_errors: yes
-  when: "'ossim' not in group_names and checkService.stdout == 'True' and path.daemons.ossec|default('') == ''"
+  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout == 'True' and path.daemons.ossec|default('') == ''"
+
+- name: Getting Systemd Name
+  shell: ( systemctl|grep "ossec.*\.service"|sed 's/\.service.*//g'|sed 's/.* //g' ) 2>/dev/null executable="/bin/bash"
+  register: systemdName
+  changed_when: False
+  ignore_errors: yes
+  when: "'ossim' not in group_names and checkSystemd.stdout == 'True'"
 
 - name: Getting Service Name
   shell: ( echo "{{ path.daemons.ossec }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
   register: serviceName
   changed_when: False
   ignore_errors: yes
-  when: "'ossim' not in group_names and checkService.stdout == 'True' and path.daemons.ossec|default('') != ''"
+  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout == 'True' and path.daemons.ossec|default('') != ''"
+
+- name: Restart nscd systemd
+  systemd: name={{ systemdName.stdout|default("ossec") }} state=restarted enabled=true
+  when: "'ossim' not in group_names and checkSystemd.stdout == 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
 
 - name: Restart ossec service
   service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: "'ossim' not in group_names and checkService.stdout == 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
+  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout == 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
 
 - name: Restart ossec daemon
   shell: "{{ path.daemons.ossec }} restart executable='/bin/bash'"
-  when: "'ossim' not in group_names and checkService.stdout != 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')" 
+  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout != 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')" 
 

@@ -13,10 +13,11 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
+  when: path.daemons.nslcd.name|default("") == "" or path.daemons.nscd.name|default("") == ""
 
 - name: Be sure pam-ldap is installed (Centos)
   yum: pkg={{ item }} state=installed
@@ -57,7 +58,6 @@
 - name: Configure nslcd.conf file (Centos)
   template: src=etc/nslcd.conf.j2 dest=/etc/nslcd.conf owner=root group=root mode=0600
   register: nslcdConf
-  notify: restart nslcd
   when: ansible_os_family == "RedHat"
 
 - name: Configure libnss-ldap.conf file (Debian but not Ubuntu)
@@ -93,36 +93,30 @@
   copy: src=etc/pam.d/ssh.{{ ansible_os_family }} dest={{ sshPam.stdout }} owner=root group=root mode=0644
   when: sshPam.stdout|default("") != ""
 
-- name: Getting Paths (to get nslcd daemon)
-  action: path_EPS
+- name: Restart nslcd (Centos) systemd
+  systemd: name={{ path.daemons.nslcd.name }} state=started enabled=true
   changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.nslcd|default("") == ""
+  when: ansible_os_family == "RedHat" and path.daemons.nslcd.type == "systemctl" and path.daemons.nslcd.name != "" and nslcdConf|changed
 
-- name: Getting Service Name Nslcd
-  shell: ( echo "{{ path.daemons.nslcd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceNslcd
+- name: Restart nslcd (Centos) service
+  service: name={{ path.daemons.nslcd.name }} state=started enabled=true
   changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.nslcd|default("") != ""
+  when: ansible_os_family == "RedHat" and path.daemons.nslcd.type == "service" and path.daemons.nslcd.name != "" and nslcdConf|changed
 
-- name: Be sure nslcd is running and enabled (Centos)
-  service: name={{ serviceNslcd.stdout }} state=started enabled=true
+- name: Restart nslcd (Centos) init 
+  shell: "{{ path.daemons.nslcd.name }} restart executable='/bin/bash'"
   changed_when: False
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == "RedHat" and path.daemons.nslcd.type == "init" and path.daemons.nslcd.name != "" and nslcdConf|changed
 
-- name: Getting Service Name Nscd
-  shell: ( echo "{{ path.daemons.nscd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceNscd
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.nscd|default("") != ""
+- name: Restart nscd systemd
+  systemd: name={{ path.daemons.nscd.name }} state=restarted enabled=true
+  when: path.daemons.nscd.type == "systemd" and path.daemons.nscd.name != "" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed) 
 
 - name: Restart nscd service
-  service: name={{ serviceNscd.stdout }} state=restarted enabled=true
-  when: checkService.stdout == "True" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed)
+  service: name={{ path.daemons.nscd.name }} state=restarted enabled=true
+  when: path.daemons.nscd.type == "service" and path.daemons.nscd.name != "" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed)
 
-- name: Restart nscd daemon
-  shell: "{{ path.daemons.nscd }} restart executable='/bin/bash'"
-  when: checkService.stdout != "True" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed) 
+- name: Restart nscd init 
+  shell: "{{ path.daemons.nscd.name }} restart executable='/bin/bash'"
+  when: path.daemons.nscd.type == "init" and path.daemons.nscd.name != "" and (pamldapConf|changed or ldapConf|changed or libnssConf|changed or nslcdConf|changed) 
 

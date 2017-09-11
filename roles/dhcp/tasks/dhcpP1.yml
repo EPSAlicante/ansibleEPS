@@ -8,6 +8,12 @@
 
 # DHCP (P1) configuration
 
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.dhcp.name|default("") == ""
+
 - name: /etc/dhcp directory permissions
   file: path=/etc/dhcp state=directory owner=root group=manager mode=0750
 
@@ -16,7 +22,7 @@
   register: checkFile
 
 - name: Check syntax (P1)
-  shell: "dhcpd -t -cf /etc/dhcp/.dhcpd.conf.check executable='/bin/bash'"
+  shell: "{{ path.commands.dhcpd }} -t -cf /etc/dhcp/.dhcpd.conf.check executable='/bin/bash'"
   register: checkResult
   ignore_errors: True
   when: checkFile|changed
@@ -24,20 +30,19 @@
 - name: If check OK -> Copy dhcpd.conf file to DHCP Servers (P1)
   copy: src=etc/dhcp/dhcpd-P1.conf dest=/etc/dhcp/dhcpd.conf owner=manager group=manager mode=0640 backup=yes
   when: checkFile|changed and checkResult|success
-  notify: restart dhcp P1
 
 - name: If check fails -> move .dhcpd.conf.check as .dhcpd.conf.error
   shell: mv -f /etc/dhcp/.dhcpd.conf.check /etc/dhcp/.dhcpd.conf.error
   when: checkFile|changed and checkResult|failed
 
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.dhcp }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceNameP1
-  changed_when: False
-  ignore_errors: yes
-  when: checkFile|changed
+- name: Restart dhcp (P1) systemd
+  systemd: name={{ path.daemons.dhcp.name }} state=started enabled=true
+  when: path.daemons.dhcp.type == "systemctl" and checkFile|changed and checkResult|success
 
-- name: Be sure dhcp is running and enabled (P1)
-  service: name={{ serviceNameP1.stdout }} state=started enabled=true
-  when: checkFile|changed
+- name: Restart dhcp (P1) service
+  service: name={{ path.daemons.dhcp.name }} state=started enabled=true
+  when: path.daemons.dhcp.type == "service" and checkFile|changed and checkResult|success
 
+- name: Restart dhcp (P1) init
+  shell: '{{ path.daemons.dhcp.name }} restart executable="/bin/bash"'
+  when: path.daemons.dhcp.type == "init" and checkFile|changed and checkResult|success

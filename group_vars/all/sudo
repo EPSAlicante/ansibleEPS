@@ -2,11 +2,11 @@
 #
 # Variables to generate '/etc/sudoers' file (sudo permissions)
 #
-# sudoGlobal: 
+# sudoGlobal:
 # users: (List of global users)
 # ...
 # commands: (List of global commands)
-# ...   
+# ...
 # runas: (List of global runas)
 #
 # privileges: (List of global privileges)
@@ -37,22 +37,23 @@
 # Users definition (syntax)
 # -------------------------
 # name: value --> User alias name and label used as key to be called from other variables (required attribute)
-# list: value --> list of users (required attribute, but could be an empty list '[]')
+# list: value --> List of users (required attribute, but could be an empty list '[]')
 #
 # Commands definition (syntax)
 # ----------------------------
 # name: value --> Command alias name and label used as key to be called from other variables (required attribute)
-# list: value --> list of commands (required attribute, but could be an empty list '[]')
+# list: value --> List of commands (required attribute, but could be an empty list '[]')
 #
 # Runas definition (syntax)
 # -------------------------
 # name: value --> Runas alias name and label used as key to be called from other variables (required attribute)
-# list: value --> list of runas (required attribute, but could be an empty list '[]')
+# list: value --> List of runas (required attribute, but could be an empty list '[]')
 #
 # Privileges definition (syntax)
 # ------------------------------
-# user: value --> User Alias name and label used as key to be called from other variables (required attribute)
-# host: value --> list of hosts (required attribute)
+# name: value --> Label used as key to be called from other variables (required attribute)
+# user: value --> User Alias name (required attribute)
+# host: value --> List of hosts (required attribute)
 # command: value --> Command Alias name (required attribute)
 # password: value --> Yes|No (required attribute)
 #
@@ -73,10 +74,10 @@ sudoGlobal:
 
   commands:
   - name: ADMIN
-    list: [ command.shutdown, daemon.sshd, daemon.network, daemon.bacula-fd, daemon.syslog, daemon.nrpe, daemon.nscd, daemon.munin-node, daemon.ossec ]
+    list: [ command.shutdown, daemon.sshd.stop, daemon.sshd.start, daemon.sshd.restart, daemon.network.stop, daemon.network.start, daemon.network.restart, daemon.bacula-fd.stop, daemon.bacula-fd.start, daemon.bacula-fd.restart, daemon.syslog.stop, daemon.syslog.start, daemon.syslog.restart, daemon.nrpe.stop, daemon.nrpe.start, daemon.nrpe.restart, daemon.nscd.stop, daemon.nscd.start, daemon.nscd.restart, daemon.munin-node.stop, daemon.munin-node.start, daemon.munin-node.restart, daemon.ossec.stop, daemon.ossec.start, daemon.ossec.restart ]
 
   - name: NAGIOS
-    list: [ daemon.bacula-fd, daemon.nscd, daemon.munin-node, daemon.ossec, command.iptables -nL ]
+    list: [ daemon.bacula-fd.stop, daemon.bacula-fd.start, daemon.bacula-fd.restart, daemon.nscd.stop, daemon.nscd.start, daemon.nscd.restart , daemon.munin-node.stop, daemon.munin-node.start, daemon.munin-node.restart, daemon.ossec.stop, daemon.ossec.start, daemon.ossec.restart, command.iptables -nL ]
 
   privileges:
   - user: ROOT
@@ -106,10 +107,10 @@ sudoGroup:
 
   commands:
   - name: GROUP_ADMIN_BACULA
-    list: [ daemon.bacula-dir, daemon.bacula-sd, command.bconsole, daemon.mysql ]
+    list: [ daemon.bacula-dir.stop, daemon.bacula-dir.start, daemon.bacula-dir.restart, daemon.bacula-sd.stop, daemon.bacula-sd.start, daemon.bacula-sd.restart, command.bconsole, daemon.mysql.stop, daemon.mysql.start, daemon.mysql.restart ]
 
   - name: GROUP_NAGIOS_BACULA
-    list: [ daemon.mysql ]
+    list: [ daemon.mysql.stop, daemon.mysql.start, daemon.mysql.restart ]
 
   privileges:
   - user: ADMIN
@@ -127,7 +128,7 @@ sudoGroup:
 
   commands:
   - name: GROUP_DHCP
-    list: [ daemon.dhcp ]
+    list: [ daemon.dhcp.stop, daemon.dhcp.start, daemon.dhcp.restart ]
 
   privileges:
   - user: ADMIN, NAGIOS
@@ -140,7 +141,7 @@ sudoGroup:
 
   commands:
   - name: GROUP_DNS
-    list: [ daemon.bind ]
+    list: [ daemon.bind.stop, daemon.bind.start, daemon.bind.restart ]
 
   privileges:
   - user: ADMIN, NAGIOS
@@ -153,7 +154,7 @@ sudoGroup:
 
   commands:
   - name: GROUP_LDAP
-    list: [ daemon.ldap, daemon.ldap-admin ]
+    list: [ daemon.ldap.stop, daemon.ldap.start, daemon.ldap.restart, daemon.ldap-admin.stop, daemon.ldap-admin.start, daemon.ldap-admin.restart ]
 
   privileges:
   - user: ADMIN, NAGIOS
@@ -166,7 +167,7 @@ sudoGroup:
 
   commands:
   - name: GROUP_MYSQL
-    list: [ daemon.mysql ]
+    list: [ daemon.mysql.stop, daemon.mysql.start, daemon.mysql.restart ]
 
   privileges:
   - user: ADMIN, NAGIOS
@@ -179,10 +180,10 @@ sudoGroup:
 
   commands:
   - name: GROUP_ADMIN_NAGIOS
-    list: [ daemon.apache, daemon.nagios ]
+    list: [ daemon.apache.stop, daemon.apache.start, daemon.apache.restart, daemon.nagios.stop, daemon.nagios.start, daemon.nagios.restart ]
 
   - name: GROUP_NAGIOS_NAGIOS
-    list: [ daemon.apache ]
+    list: [ daemon.apache.stop, daemon.apache.start, daemon.apache.restart ]
 
   privileges:
   - user: ADMIN
@@ -205,7 +206,7 @@ sudoGroup:
     list: [ command.rsync, command.vzlist, command.qm list, command.ls /backup/rsync ]
 
   - name: GROUP_PROXMOX
-    list: [ daemon.ntp, command.ntpdate ]
+    list: [ daemon.ntp.stop, daemon.ntp.start, daemon.ntp.restart, command.ntpdate ]
 
   privileges:
   - user: GROUP_RSYNC
@@ -225,7 +226,7 @@ sudoGroup:
 
   commands:
   - name: GROUP_ADMIN_QMAIL
-    list: [ daemon.apache, daemon.qmail, daemon.qmail-smtp-auth, daemon.dovecot, command.qmail-qstat ]
+    list: [ daemon.apache.stop, daemon.apache.start, daemon.apache.restart, daemon.qmail.stop, daemon.qmail.start, daemon.qmail.restart, daemon.qmail-smtp-auth.stop, daemon.qmail-smtp-auth.start, daemon.qmail-smtp-auth.restart, daemon.dovecot.stop, daemon.dovecot.start, daemon.dovecot.restart, command.qmail-qstat, command.qmail-qstat, command.qmail-qstat ]
 
   - name: GROUP_WWW_QMAIL
     list: [ command.quota -v * ]

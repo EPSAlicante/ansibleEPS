@@ -6,8 +6,3 @@
 # AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
 
 
-# Restarts 
-
-- name: restart nagios 
-  service: name={{ path.daemon.nagios }} state=restarted enabled=yes
-

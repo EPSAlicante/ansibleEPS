@@ -51,11 +51,13 @@ Variables:
 
 	      Ex: /root/scripts/backup.sh all 
 
-	    * Indirect commands -> These commands are not written directly. Every Operating System could have diffeent names for the same command, so we use script 'scripts/path_facts.py' to get path and name of commands. This way, we use variables used by 'path_facts.py' as 'command.commandLabel' or 'daemon.daemonLabel' depending on we are using commands or daemons.
+	    * Indirect commands -> These commands are not written directly. Every Operating System could have different names for the same command, so we use script 'scripts/path_facts.py' to get path and name of commands. This way, we use variables used by 'path_facts.py' as 'command.commandLabel' or 'daemon.daemonLabel.operation' depending on we are using commands or daemons.
 
-	      If we need a command and daemon, and it doesn't exist in 'path_facts.py' script, first we'll have to add it to script to get path and name when script will be executed.
+	      If we need a command or daemon, and it doesn't exist in 'path_facts.py' script, first we'll have to add it to script to get path and name when script will be executed.
 
 	      Ex: command.umount ('umount' has to be written in 'path_facts.py' too)
+
+	      Ex: daemon.bind.restart ('bind' has to be written in 'path_facts.py')
 
 	    * Indirect commands with specific arguments -> Using an indirect command and specifics arguments written directly
 
@@ -72,8 +74,10 @@ Variables:
 
         - privileges: Privileges definition depending on defined alias 
 
-	  It'a a list with four attributes to define privileges:
+	  It'a a list with five attributes to define privileges:
  
+	    * 'name' -> label (used to overwrite privileges in group or host levels)
+
 	    * 'user' -> field with an alias users defined (or users name directly)
 
 	    * 'host' -> field with server with privileges. There's an exception to the rule: if value is set to 'hostname' string, playbook will update field with server name ('inventory_hostname' ansible variable).
@@ -101,28 +105,32 @@ Variables:
          
          commands:
          - name: ADMIN
-           list: [ command.shutdown, daemon.ssh, daemon.network, daemon.bacula-fd, daemon.syslog, daemon.nrpe, daemon.nscd, daemon.munin-node, daemon.ossec ]
+           list: [ command.shutdown, daemon.ssh.restart, daemon.network.restart, daemon.bacula-fd.restart, daemon.syslog.restart, daemon.nrpe.restart, daemon.nscd.restart, daemon.munin-node.restart, daemon.ossec.restart ]
          
          - name: NAGIOS
-           list: [ daemon.bacula-fd, daemon.nscd, daemon.munin-node, daemon.ossec, command.iptables-nL ]
+           list: [ daemon.bacula-fd.stop, daemon.bacula-fd.start, daemon.nscd.stop, daemon.nscd.start, daemon.munin-node.stop, daemon.munin-node.start, daemon.ossec.stop, daemon.ossec.start, command.iptables-nL ]
          
          privileges:
-         - user: ROOT
+         - name: ROOT global
+	   user: ROOT
            host: hostname
            command: ALL
            password: Yes
          
-         - user: ADMIN
+         - name: ADMIN global
+	   user: ADMIN
            host: hostname
            command: ADMIN
            password: No
          
-         - user: NAGIOS
+         - name: NAGIOS global
+	   user: NAGIOS
            host: hostname
            command: NAGIOS
            password: No
          
-         - user: ansible
+         - name: ansible global
+	   user: ansible
            host: hostname
            command: ALL
            password: No
@@ -138,9 +146,9 @@ Variables:
 
         * Empty List (if it's a required attribute) -> In this case we don't need more items than we inherit from the same attribute on 'sudoGlobal' variable
 
-	* New items -> In this case we'll get items inherits from the same attribute on 'sudoGlobal' variable, adding these new items
+	* New items (different name field) -> In this case we'll get items inherits from the same attribute on 'sudoGlobal' variable, adding these new items
 
-	* Overwrite items -> In this case we'll change values of items inherits from the same attribute on 'sudoGlobal' variable with new values
+	* Overwrite items (equal name field) -> In this case we'll change values of items inherits from the same attribute on 'sudoGlobal' variable with new values
 
 
       Example:
@@ -153,18 +161,20 @@ Variables:
 	
 	  commands:
 	  - name: GROUP_ADMIN_QMAIL
-	    list: [ daemon.apache, daemon.qmail, daemon.qmail-smtp-auth, daemon.dovecot, command.qmail-qstat ]
+	    list: [ daemon.apache.restart, daemon.qmail.restart, daemon.qmail-smtp-auth.restart, daemon.dovecot.restart, command.qmail-qstat ]
 	
 	  - name: GROUP_WWW_QMAIL
 	    list: [ command.quota -v * ]
 	
 	  privileges:
-	  - user: ADMIN, NAGIOS
+	  - name: ADMIN, NAGIOS qmail group
+	    user: ADMIN, NAGIOS
 	    host: hostname
 	    command: GROUP_ADMIN_QMAIL
 	    password: No
 	
-	  - user: GROUP_WWW_QMAIL
+	  - name: GROUP_WWW_QMAIL qmail group
+	    user: GROUP_WWW_QMAIL
 	    host: hostname
 	    command: GROUP_WWW_QMAIL
         	    
@@ -181,9 +191,9 @@ Variables:
 
         * Empty List (if it's a required attribute) -> In this case we don't need more items than we inherit from the same attribute on 'sudoGlobal' and 'sudoGroup' variables
 
-        * New items -> In this case we'll get items inherits from the same attribute on 'sudoGlobal' and 'sudoGroup' variables, adding these new items
+        * New items (different name field) -> In this case we'll get items inherits from the same attribute on 'sudoGlobal' and 'sudoGroup' variables, adding these new items
 
-        * Overwrite items -> In this case we'll change values of items inherits from the same attribute on 'sudoGlobal' or 'sudoGroup' variables  with new values
+        * Overwrite items (equal name field) -> In this case we'll change values of items inherits from the same attribute on 'sudoGlobal' or 'sudoGroup' variables  with new values
 
 
       Example:
@@ -203,7 +213,8 @@ Variables:
 	    list: [ 'command.ansible-playbook -i /etc/ansibleEPS/eps /etc/ansibleEPS/dhcp.yml -t ??', command.joe /etc/ansibleEPS/roles/dhcp/files/etc/dhcp/dhcpd-??.conf' ]
 	
 	  privileges:
-	  - user: HOST_DHCP
+	  - name: HOST_DHCP ansible_server host
+	    user: HOST_DHCP
 	    host: hostname
 	    command: HOST_DHCP
 	    password: No

@@ -19,11 +19,11 @@
   changed_when: False
   when: openVZ.stdout == "False" 
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
-  when: openVZ.stdout == "False" 
+  ignore_errors: yes
+  when: openVZ.stdout == "False" and path.daemons.ntp.name|default("") == ""
 
 - name: Be sure ntp is installed (Centos)
   yum: pkg={{ item }} state=installed
@@ -54,24 +54,15 @@
   register: ntpConf
   when: openVZ.stdout == "False" 
 
-- name: Getting Paths (to get ntp daemon)
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: openVZ.stdout == "False" and checkService.stdout == "True" and path.daemons.ntp|default("") == ""
-
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.ntp }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: openVZ.stdout == "False" and checkService.stdout == "True" and path.daemons.ntp|default("") != ""
+- name: Restart ntp systemd
+  systemd: name={{ path.daemons.ntp.name }} state=restarted enabled=true
+  when: openVZ.stdout == "False" and path.daemons.ntp.type == "systemctl" and path.daemons.ntp.name != "" and ntpConf|changed
 
 - name: Restart ntp service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: openVZ.stdout == "False" and checkService.stdout == "True" and serviceName.stdout|default("") != "" and ntpConf|changed
+  service: name={{ path.daemons.ntp.name }} state=restarted enabled=true
+  when: openVZ.stdout == "False" and path.daemons.ntp.type == "service" and path.daemons.ntp.name != "" and ntpConf|changed
 
-- name: Restart ntp daemon
-  shell: '{{ path.daemons.ntp }} restart executable="/bin/bash"'
-  when: openVZ.stdout == "False" and checkService.stdout != "True" and ntpConf|changed
+- name: Restart ntp init 
+  shell: '{{ path.daemons.ntp.name }} restart executable="/bin/bash"'
+  when: openVZ.stdout == "False" and path.daemons.ntp.type == "init" and path.daemons.ntp.name != "" and ntpConf|changed
 

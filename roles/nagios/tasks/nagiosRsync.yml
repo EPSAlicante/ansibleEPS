@@ -40,17 +40,14 @@
   shell: "{{ path.commands.nagios }} -v /etc/nagios3/nagios.cfg executable='/bin/bash'"
   when: rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout
 
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.nagios }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: path.daemons.nagios|default("") != ""
+- name: Reload nagios systemd 
+  systemd: name={{ path.daemons.nagios.name }} state=reloaded enabled=yes
+  when: path.daemons.nagios.type == "systemctl" and (rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout)
 
-- name: Reload nagios
-  service: name={{ serviceName.stdout }} state=reloaded enabled=yes
-  when: rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout
+- name: Reload nagios service
+  service: name={{ path.daemons.nagios.name }} state=reloaded enabled=yes
+  when: path.daemons.nagios.type == "service" and (rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout)
 
-- name: Be sure nagios is running and enabled
-  service: name={{ serviceName.stdout }} state=started enabled=true
-  when: rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout
+- name: Reload nagios init
+  shell: '{{ path.daemons.nagios.name }} restart executable="/bin/bash"'
+  when: path.daemons.nagios.type == "init" and (rsyncNagios3.stdout or rsyncNagios3Confd.stdout or rsyncNagiosConfig.stdout or rsyncPlugins.stdout) 

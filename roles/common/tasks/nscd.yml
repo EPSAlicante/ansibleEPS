@@ -13,10 +13,11 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
+  when: path.daemons.nscd.name|default("") == ""
 
 - name: Be sure nscd is installed (Centos)
   yum: pkg=nscd state=installed
@@ -37,23 +38,14 @@
   copy: src=etc/nscd.conf.{{ ansible_os_family }} dest=/etc/nscd.conf
   register: nscdConf
 
-- name: Getting Paths (to get nscd daemon)
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.nscd|default("") == ""
-
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.nscd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.nscd|default("") != ""
+- name: Restart nscd systemd
+  systemd: name={{ path.daemons.nscd.name }} state=restarted enabled=true
+  when: path.daemons.nscd.type == "systemctl" and path.daemons.nscd.name != "" and nscdConf|changed 
 
 - name: Restart nscd service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: checkService.stdout == "True" and nscdConf|changed
+  service: name={{ path.daemons.nscd.name }} state=restarted enabled=true
+  when: path.daemons.nscd.type == "service" and path.daemons.nscd.name != "" and nscdConf|changed
 
-- name: Restart nscd daemon
-  shell: "{{ path.daemons.nscd }} restart executable='/bin/bash'"
-  when: checkService.stdout != "True" and nscdConf|changed
+- name: Restart nscd init 
+  shell: "{{ path.daemons.nscd.name }} restart executable='/bin/bash'"
+  when: path.daemons.nscd.type == "init" and path.daemons.nscd.name != "" and nscdConf|changed

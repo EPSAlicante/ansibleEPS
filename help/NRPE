@@ -31,7 +31,7 @@ Variables:
 
       - label: This attribute play two roles, on the one side it will be the label of NRPE check, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
 
-      - command: Plugin to execute and its arguments (string format). Could be a text with command or 'indirect commands'. In this case, commands are not written directly. Every Operating System could have diffeent names for the same command, so we use script 'scripts/path_facts.py' to get path and name of commands. This way, we use variables used by 'path_facts.py' as 'command.commandLabel' or 'daemon.daemonLabel' depending on we are using commands or daemons. If we need a command and daemon, and it doesn't exist in 'path_facts.py' script, first we'll have to add it to script to get path and name when script will be executed.
+      - command: Plugin to execute and its arguments (string format). Could be a text with command or 'indirect commands'. In this case, commands are not written directly. Every Operating System could have different names for the same command, so we use script 'scripts/path_facts.py' to get path and name of commands. This way, we use variables used by 'path_facts.py' as 'command.commandLabel' or 'daemon.daemonLabel.operation' depending on we are using commands or daemons (Ex. 'command.umount' or 'daemon.bind.restart'). If we need a command or a daemon, and it doesn't exist in 'path_facts.py' script, first we'll have to add it to script to get path and name when script will be executed.
 
        Both attributes are required. If any of them are not defined, this item will be ignored.
 
@@ -69,14 +69,14 @@ Variables:
 	  - label: check_dhcp
 	    command: "/usr/lib/nagios/plugins/check_procs -w 1: -c 1: -a 'dhcpd' -u dhcpd"
 	  - label: restart-dhcp
-	    command: sudo /etc/init.d/isc-dhcp-server stop > /dev/null 2> /dev/null;sudo /etc/init.d/isc-dhcp-server start
+	    command: sudo daemon.dhcp.stop > /dev/null 2> /dev/null;sudo daemon.dhcp.start
 	
 	- group: DNS
 	  rules:
 	  - label: check_dns
 	    command: /usr/lib/nagios/plugins/check_dns -H server_11 -s 127.0.0.1 -a 172.20.1.11 -t 5
 	  - label: restart-dns
-	    command: sudo /etc/init.d/named stop > /dev/null 2> /dev/null;sudo /etc/init.d/named start
+	    command: sudo daemon.bind.stop > /dev/null 2> /dev/null;sudo daemon.bind.start
 
 
     * 'nrpeHost' -> 'baseNrpe.cfg' file configuration with NRPE checks for a specific server. It has two attributes:

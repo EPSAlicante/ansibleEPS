@@ -6,14 +6,3 @@
 # AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
 
 
-# Reinicio de servicios
-
-- name: restart nslcd
-  service: name=nslcd state=restarted enabled=yes
-
-- name: restart munin-node 
-  service: name=munin-node state=restarted enabled=yes
-
-- name: restart nrpe 
-  service: name=nrpe state=restarted enabled=yes
-

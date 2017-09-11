@@ -34,12 +34,8 @@
   when: reposUpdate == "y" and ansible_pkg_mgr == "yum"
 
 - name: Import EPEL key (Centos)
-  shell: rpm --import http://centos.eps.ua.es/eps-epel/RPM-GPG-KEY-EPEL-6
+  shell: rpm --import {{ epelKey }} 
   when: reposUpdate == "y" and ansible_pkg_mgr == "yum" and newRepos|changed 
-
-- name: Import Rpmforge key (Centos)
-  shell: rpm --import http://centos.eps.ua.es/eps-rpmforge/RPM-GPG-KEY.dag.txt
-  when: reposUpdate == "y" and ansible_pkg_mgr == "yum" and newRepos|changed
 
 - name: Exclude packages to update (Centos)
   lineinfile: name=/etc/yum.conf state=present regexp="^exclude" line='exclude={{ excludeUpdate|join(",") }}'
