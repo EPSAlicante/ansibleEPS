@@ -55,14 +55,14 @@
   shell: mv -f /etc/.sudoers.check /etc/.sudoers.error 
   when: checkFile|changed and checkResult|failed
 
-- name: Reload sudo systemd
-  systemd: name={{ path.daemons.sudo.name }} state=started enabled=true
+- name: Restart sudo systemd
+  systemd: name={{ path.daemons.sudo.name }} state=restarted enabled=true
   when: path.daemons.sudo.type == "systemctl" and checkFile|changed and checkResult|success
 
-- name: Reload sudo service
-  service: name={{ path.daemons.sudo.name }} state=started enabled=true
+- name: Restart sudo service
+  service: name={{ path.daemons.sudo.name }} state=restarted enabled=true
   when: path.daemons.sudo.type == "service" and checkFile|changed and checkResult|success
 
-- name: Reload sudo init
+- name: Restart sudo init
   shell: '{{ path.daemons.sudo.name }} restart executable="/bin/bash"'
   when: path.daemons.sudo.type == "init" and checkFile|changed and checkResult|success

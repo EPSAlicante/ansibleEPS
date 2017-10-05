@@ -36,11 +36,11 @@
   when: checkFile|changed and checkResult|failed
 
 - name: Restart dhcp (TV) systemd
-  systemd: name={{ path.daemons.dhcp.name }} state=started enabled=true
+  systemd: name={{ path.daemons.dhcp.name }} state=restarted enabled=true
   when: path.daemons.dhcp.type == "systemctl" and checkFile|changed and checkResult|success
 
 - name: Restart dhcp (TV) service
-  service: name={{ path.daemons.dhcp.name }} state=started enabled=true
+  service: name={{ path.daemons.dhcp.name }} state=restarted enabled=true
   when: path.daemons.dhcp.type == "service" and checkFile|changed and checkResult|success
 
 - name: Restart dhcp (TV) init

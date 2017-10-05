@@ -1,6 +1,6 @@
-#Ansible EPS
+# Ansible EPS
 
-##Table of contents
+## Table of contents
 - [What's ansibleEPS?](#whats-ansibleeps)
 - [What can I do with AnsibleEPS?](#what-can-i-do-with-ansibleeps)
 - [How does it work?](#how-does-it-work?)
@@ -9,13 +9,13 @@
 - [Copyright & License](#copyright-license)
 
 
-##What's ansibleEPS?
+## What's ansibleEPS?
 
 AnsibleEPS is a **collection of [Ansible](https://www.ansible.com) playbooks** to manage Linux/Unix hosts of your network.
 
 Management permits in a centralized way: **software management** (install, update, delete), **services** (start, stop, configure), **users** (add, modify, delete), **security**, and much more.
 
-##What can I do with AnsibleEPS?
+## What can I do with AnsibleEPS?
 
 Especifically, ansibleEPS does the following tasks:
 
@@ -37,7 +37,7 @@ Especifically, ansibleEPS does the following tasks:
 | Email addresses list of QMail server | Addresss list generation of Qmail server |
 
 
-##How does it work?
+## How does it work?
 
 Management can be done in **two ways** (we can use both):
 
@@ -50,17 +50,17 @@ This way, we can manage anything for a host, a group or all hosts, just selectin
 All changes made and errors produced will be saved in log files to be watched next morning.
 
 
-##Installation & Configuration
+## Installation & Configuration
 
 We have to install and prepare system to be ready for management. There are some step to do:
 
-###Installation
+### Installation
 
 1. Copy tgz package **'ansibleEPS.tgz'** and installation script **'install.py'** (located in **install** directory) in a directory on a CentOS 6 host (this will be our 'Ansible Server').
 
 2. Execute **'install.py'** script to install 'AnsibleEPS'.
 
-###Configuration
+### Configuration
 
 1. First of all, we have to **configure a host as node**. What's a node?
 
@@ -89,13 +89,15 @@ We have to install and prepare system to be ready for management. There are some
 4. **Execute playbooks** from Admin menu '/etc/ansibleEPS/menu.py'
 
 
-##Does it work for all Operating System?
+## Does it work for all Operating System?
 
 Most playbooks need to install specific software on nodes. By default playbooks work with **'yum'** and **'apt'** package managers. To add new package managers, it's necessary to modify playbooks code.
 
 System is ready to work with the following Operating Systems (all of them with 'yum' or 'apt' package manager):
 
   - CentOS 6
+
+  - CentOS 7
 
   - Debian 4
 
@@ -106,6 +108,8 @@ System is ready to work with the following Operating Systems (all of them with '
   - Debian 8
 
   - Ubuntu 14
+
+  - Ubuntu 16
 
 There’s a specific file for every Operating System and version in '/etc/ansibleEPS/group_vars' directory. They include variables and specific values. For example: specific users, repositories, software, configuration files, etc.
 

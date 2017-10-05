@@ -33,11 +33,11 @@
   when: checkFile|changed and checkResult|failed
 
 - name: Restart bacula-dir systemd
-  systemd: name={{ path.daemons['bacula-dir']['name'] }} state=started enabled=true
+  systemd: name={{ path.daemons['bacula-dir']['name'] }} state=restarted enabled=true
   when: path.daemons['bacula-dir']['type'] == "systemctl" and checkFile|changed and checkResult|success
 
 - name: Restart bacula-dir service
-  service: name={{ path.daemons['bacula-dir']['name'] }} state=started enabled=true
+  service: name={{ path.daemons['bacula-dir']['name'] }} state=restarted enabled=true
   when: path.daemons['bacula-dir']['type'] == "service" and checkFile|changed and checkResult|success
 
 - name: Restart bacula-dir init
