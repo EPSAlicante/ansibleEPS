@@ -1,0 +1,74 @@
+# Operating System
+#SO: Centos
+
+
+# Version
+#vSO: Centos6
+
+
+# Password of manager
+managerPassword: $6$CtIxb6i7$lOvaBvrBxdWdJKGXWi1KVVWmwXHDA7nAobiQFwHsRH6exeoHjcDs/XMIkW1zWEgD8y4E5tswU9EoXfCI5Yxr3Q0
+
+
+# Groups with manager
+managerGroups: 
+- adm
+- wheel
+- apache
+
+
+# Centos Repositories (files)
+reposCentos:
+- base7.repo
+- epel7.repo
+
+
+# Centos EPEL Key
+epelKey: http://ftp.fau.de/epel/RPM-GPG-KEY-EPEL-7
+
+
+# Exclude Packages (update)
+excludeUpdate:
+- perl-XML-SAX-Base
+
+
+# List of services to stop
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind-utils
+- lsof
+- traceroute
+- telnet
+- openssh-clients
+- man
+
+
+# Syslog conf file
+syslogConf: /etc/rsyslog.conf
+
+
+# Sudo Options
+sudoOptions:
+- Defaults !visiblepw
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+- Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron
+
+
+# Crontab Group file
+crontabGroupFile: root 
