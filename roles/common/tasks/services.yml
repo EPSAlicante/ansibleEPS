@@ -13,32 +13,50 @@
   register: pythonVersion
   changed_when: False
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
+  ignore_errors: yes
 
-- name: Check if services exist
-  shell: ((service {{ item }} status || /etc/init.d/{{ item }} status) >/dev/null 2>/dev/null && echo "{{ item }}") || echo "No" executable="/bin/bash"
+- name: Check if service exists in Paths
+  shell: (echo {{ item if path.daemons[item] is defined else "No" }}) 2>/dev/null executable="/bin/bash"
   register: existService
   with_items: "{{ stopServices }}"
   changed_when: False
 
-- name: Be sure services are stopped and unabled
-  service: name={{ item.stdout }} state=stopped enabled=false 
+- name: Create fact with services not in Paths 
+  set_fact:
+    noService: "{{ noService|default({}) | combine( {item.item: item.stdout} ) }}"
   with_items: "{{ existService.results }}"
-  when: checkService.stdout == "True" and item.stdout != "No"
+  changed_when: false
+  when: item.stdout == "No"
+
+- name: Services not in Paths. Add services to script '/etc/ansible/scripts/path_facts.py'
+  debug: msg="Service {{ item }} not in Paths."
+  changed_when: False
+  with_items: "{{ noService }}"
+  when: noService is defined
+
+- name: Be sure systemd are stopped and unabled
+  systemd: name={{ path.daemons[item.stdout]['name'] }} state=stopped enabled=false
+  with_items: "{{ existService.results }}"
+  when: item.stdout != "No" and path.daemons[item.stdout]['type'] == "systemctl"
+
+- name: Be sure services are stopped and unabled
+  service: name={{ path.daemons[item.stdout]['name'] }} state=stopped enabled=false 
+  with_items: "{{ existService.results }}"
+  when: item.stdout != "No" and path.daemons[item.stdout]['type'] == "service"
 
 - name: Stop daemon and unable (Debian)
-  shell: ([ -f /etc/init.d/{{ item }} ] && /etc/init.d/{{ item }} status >/dev/null && /etc/init.d/{{ item }} stop && update-rc.d -f {{ item }} remove) 2>/dev/null || echo "No" executable="/bin/bash"
+  shell: (/etc/init.d/{{ path.daemons[item.stdout]['name'] }} stop && update-rc.d -f {{ path.daemons[item.stdout]['name'] }} remove) 2>/dev/null || echo "No" executable="/bin/bash"
   register: stopDaemonDebian
-  with_items: "{{ stopServices }}"
+  with_items: "{{ existService.results }}"
   changed_when: stopDaemonDebian.stdout != "No" 
-  when: ansible_os_family == "Debian" and checkService.stdout != "True"
+  when: ansible_os_family == "Debian" and item.stdout != "No" and path.daemons[item.stdout]['type'] == "init" 
 
 - name: Stop daemon and unable (Centos)
-  shell: ([ -f /etc/init.d/{{ item }} ] && /etc/init.d/{{ item }} status >/dev/null && /etc/init.d/{{ item }} stop && chkconfig {{ item }} off) 2>/dev/null || echo "No" executable="/bin/bash"
+  shell: (/etc/init.d/{{ path.daemons[item.stdout]['name'] }} stop && chkconfig {{ path.daemons[item.stdout]['name'] }} off) 2>/dev/null || echo "No" executable="/bin/bash"
   register: stopDaemonCentos
   changed_when: stopDaemonCentos.stdout != "No"
-  with_items: "{{ stopServices }}"
-  when: ansible_os_family == "RedHat" and checkService.stdout != "True"
+  with_items: "{{ existService.results }}"
+  when: ansible_os_family == "RedHat" and item.stdout != "No" and path.daemons[item.stdout]['type'] == "init" 

@@ -8,10 +8,16 @@
 
 # sshd configuration 
 
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
+- name: Get python version
+  shell: echo {{ ansible_python_version }}|cut -d' ' -f2|cut -d'.' -f1,2
+  register: pythonVersion
   changed_when: False
+
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.sshd.name|default("") == ""
 
 - name: Configure /etc/ssh/sshd_config con PermitRootLogin
   lineinfile: "name=/etc/ssh/sshd_config state=present regexp='^#?PermitRootLogin\\s*' insertafter=EOF line='PermitRootLogin {{ sshdConfig.permitRootLogin }}'"
@@ -53,18 +59,15 @@
   register: sshdBorradoForceCommand
   when: sshdConfig.forceCommand == "Delete"
 
-- name: Getting ssh Service Name
-  shell: ( echo "{{ path.daemons.sshd }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: checkService.stdout == "True" and path.daemons.sshd|default("") != ""
+- name: Restart sshd systemd
+  systemd: name={{ path.daemons.sshd.name }} state=restarted enabled=true
+  when: path.daemons.sshd.type == "systemctl" and path.daemons.sshd.name != "" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed) 
 
-- name: Restart ssh service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: checkService.stdout == "True" and serviceName.stdout|default("") != "" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed)
+- name: Restart sshd service
+  service: name={{ path.daemons.sshd.name }} state=restarted enabled=true
+  when: path.daemons.sshd.type == "service" and path.daemons.sshd.name != "" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed)
 
-- name: Restart ssh daemon
-  shell: '{{ path.daemons.sshd }} restart executable="/bin/bash"'
-  when: checkService.stdout != "True" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed) 
+- name: Restart sshd init
+  shell: "{{ path.daemons.sshd.name }} restart executable='/bin/bash'"
+  when: path.daemons.sshd.type == "init" and path.daemons.sshd.name != "" and (sshdPermitRootLogin|changed or sshdClientAliveInterval|changed or sshdClientAliveCountMax|changed or sshdLogLevel|changed or sshdSubsystemSftp|changed or sshdMatchGroup|changed or sshdBorradoMatchGroup|changed or sshdForceCommand|changed or sshdBorradoForceCommand|changed)
 

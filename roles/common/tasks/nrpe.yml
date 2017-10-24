@@ -20,7 +20,7 @@
   when: path.daemons.nrpe.name|default("") == ""
 
 - name: Be sure nrpe is installed (Centos)
-  yum: pkg={{ item }} state=installed
+  yum: pkg={{ item }} state=installed enablerepo={{ epelLabel }}
   with_items:
     - nagios-nrpe
     - nagios-plugins-dhcp

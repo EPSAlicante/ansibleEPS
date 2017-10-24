@@ -20,7 +20,7 @@
   when: path.daemons['munin-node']['name']|default("") == ""
 
 - name: Be sure munin-node is installed (Centos)
-  yum: pkg=munin-node state=installed
+  yum: pkg=munin-node state=installed enablerepo={{ epelLabel }} 
   when: ansible_pkg_mgr == "yum"
 
 - name: Be sure munin-node is installed (Debian and python >= 2.6)

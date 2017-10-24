@@ -18,17 +18,11 @@
   changed_when: False
   when: "'ossim' not in group_names" 
 
-- name: Find systemctl binary
-  shell: ((pidof systemd >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkSystemd
+- name: Getting Paths
+  action: path_EPS
   changed_when: False
-  when: "'ossim' not in group_names"
-
-- name: Find service binary
-  shell: (((service --version || service --help || service) >/dev/null && echo "True") || echo "False") 2>/dev/null
-  register: checkService
-  changed_when: False
-  when: "'ossim' not in group_names" 
+  ignore_errors: yes
+  when: "'ossim' not in group_names and path.daemons.ossec.name|default('') == ''"
 
 - name: Ossec installed?
   shell: "(((( path.daemons.ossec != '') && ({{ path.daemons.ossec }} >/dev/null)) || [ -r /var/ossec/etc/ossec.conf ]) && echo 'Yes') || echo 'No'  executable='/bin/bash'"
@@ -155,35 +149,15 @@
   shell: rm -rf /var/ossec/queue/rids/* 2>/dev/null executable="/bin/bash"
   when: "'ossim' not in group_names and (clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
 
-- name: Getting Paths (to get ossec daemon)
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout == 'True' and path.daemons.ossec|default('') == ''"
-
-- name: Getting Systemd Name
-  shell: ( systemctl|grep "ossec.*\.service"|sed 's/\.service.*//g'|sed 's/.* //g' ) 2>/dev/null executable="/bin/bash"
-  register: systemdName
-  changed_when: False
-  ignore_errors: yes
-  when: "'ossim' not in group_names and checkSystemd.stdout == 'True'"
-
-- name: Getting Service Name
-  shell: ( echo "{{ path.daemons.ossec }}"|sed 's/.*\///' ) 2>/dev/null executable="/bin/bash"
-  register: serviceName
-  changed_when: False
-  ignore_errors: yes
-  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout == 'True' and path.daemons.ossec|default('') != ''"
-
-- name: Restart nscd systemd
-  systemd: name={{ systemdName.stdout|default("ossec") }} state=restarted enabled=true
-  when: "'ossim' not in group_names and checkSystemd.stdout == 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
+- name: Restart ossec systemd
+  systemd: name={{ path.daemons.ossec.name }} state=restarted enabled=true
+  when: "'ossim' not in group_names and path.daemons.ossec.type == 'systemctl' and path.daemons.ossec.name != '' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
 
 - name: Restart ossec service
-  service: name={{ serviceName.stdout }} state=restarted enabled=true
-  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout == 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
+  service: name={{ path.daemons.ossec.name }} state=restarted enabled=true
+  when: "'ossim' not in group_names and path.daemons.ossec.type == 'service' and path.daemons.ossec.name != '' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
 
-- name: Restart ossec daemon
-  shell: "{{ path.daemons.ossec }} restart executable='/bin/bash'"
-  when: "'ossim' not in group_names and checkSystemd.stdout != 'True' and checkService.stdout != 'True' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')" 
+- name: Restart ossec init
+  shell: "{{ path.daemons.ossec.name }} restart executable='/bin/bash'"
+  when: "'ossim' not in group_names and path.daemons.ossec.type == 'init' and path.daemons.ossec.name != '' and (ossecConf|changed or clientInstalledOldCertificate.stdout|default('') == 'Installed' or clientInstalledNewCertificate.stdout|default('') == 'Installed')"
 

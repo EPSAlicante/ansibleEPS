@@ -40,7 +40,7 @@ def path(command1, command2=''):
 
 def getDaemon(d1, d2='', d3='', d4='', d5='', d6='', d7='', d8='', d9='', d10=''):
     # Getting daemons path
-    data = subprocess.Popen("for i in \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"; do val=$(([ \"$i\" != \"\" ] && ((%s|grep \"^$i.service\" >/dev/null && echo \"systemctl $i\") || (%s $i status >/dev/null && echo \"service $i\") || (ls /etc/init.d/$i >/dev/null && echo \"/etc/init.d/$i\"))) 2>%s); [ \"$val\" != \"\" ] && echo \"$val\" && break; done" % (d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, path('systemctl'), path('service'), errorLog), shell=True, executable='%s' % (bash), stdout=subprocess.PIPE).stdout.read().strip()
+    data = subprocess.Popen("for i in \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"; do val=$(([ \"$i\" != \"\" ] && ((%s cat $i|grep '^\[Service\]' >/dev/null && echo \"systemctl $i\") || (%s $i status >/dev/null && echo \"service $i\") || (ls /etc/init.d/$i >/dev/null && echo \"/etc/init.d/$i\"))) 2>%s); [ \"$val\" != \"\" ] && echo \"$val\" && break; done" % (d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, path('systemctl'), path('service'), errorLog), shell=True, executable='%s' % (bash), stdout=subprocess.PIPE).stdout.read().strip()
 
     # Get type (systemctl, service or /etc/init.d) and name
     if data.startswith('systemctl ') or data.startswith('service '):
@@ -183,6 +183,7 @@ def show_paths():
     print "        \"nslcd\": %s," % (getDaemon('nslcd'))
     print "        \"ntp\": %s," % (getDaemon('ntpd','ntp'))
     print "        \"ossec\": %s," % (getDaemon('ossec'))
+    print "        \"postfix\": %s," % (getDaemon('postfix'))
     print "        \"qmail\": %s," % (getDaemon('qmail'))
     print "        \"qmail-smtp-auth\": %s," % (getDaemon('qmail-smtp-auth'))
     print "        \"sshd\": %s," % (getDaemon('sshd','ssh'))

@@ -27,9 +27,12 @@ reposCentos:
 epelKey: http://ftp.fau.de/epel/RPM-GPG-KEY-EPEL-7
 
 
+# Centos EPEL label
+epelLabel: epel
+
+
 # Exclude Packages (update)
-excludeUpdate:
-- perl-XML-SAX-Base
+excludeUpdate: ''
 
 
 # List of services to stop
