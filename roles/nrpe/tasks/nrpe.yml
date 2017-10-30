@@ -13,12 +13,6 @@
   register: pythonVersion
   changed_when: False
 
-- name: Getting Paths
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: path.daemons.nrpe.name|default("") == ""
-
 - name: Create directory /etc/nagios/nrpe.d
   file: path=/etc/nagios/nrpe.d state=directory follow=yes owner=root group=root mode=0755
 
@@ -35,15 +29,36 @@
   register: commentCommands
   changed_when: commentCommands.stdout == "Changed"  
 
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.nrpe.name|default("") == ""
+
 - name: Restart nrpe systemd
-  systemd: name={{ path.daemons.nrpe.name }} state=restarted enabled=true
+  systemd: name={{ path.daemons.nrpe.name }} state=restarted
   when: path.daemons.nrpe.type == "systemctl" and path.daemons.nrpe.name != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed) 
 
 - name: Restart nrpe service
-  service: name={{ path.daemons.nrpe.name }} state=restarted enabled=true
+  service: name={{ path.daemons.nrpe.name }} state=restarted
   when: path.daemons.nrpe.type == "service" and path.daemons.nrpe.name != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed)
 
 - name: Restart nrpe init
   shell: '{{ path.daemons.nrpe.name }} restart executable="/bin/bash"'
   when: path.daemons.nrpe.type == "init" and path.daemons.nrpe.name != "" and (includeConfig|changed or baseNrpe|changed or commentCommands|changed) 
+
+- name: Checking nrpe systemd
+  systemd: name={{ path.daemons.nrpe.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.nrpe.type == "systemctl" and path.daemons.nrpe.name != ""
+
+- name: Checking nrpe service
+  service: name={{ path.daemons.nrpe.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.nrpe.type == "service" and path.daemons.nrpe.name != ""
+
+- name: Checking nrpe init
+  shell: '{{ path.daemons.nrpe.name }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons.nrpe.name }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons.nrpe.name }}) on) executable="/bin/bash"'
+  changed_when: False
+  when: path.daemons.nrpe.type == "init" and path.daemons.nrpe.name != ""
 

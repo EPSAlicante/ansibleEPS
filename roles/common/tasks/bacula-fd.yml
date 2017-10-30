@@ -13,12 +13,6 @@
   register: pythonVersion
   changed_when: False
 
-- name: Getting Paths
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: path.daemons['bacula-fd']['name']|default("") == ""
-
 - name: Be sure bacula-client is installed (Centos)
   yum: pkg=bacula-client state=present
   when: ansible_pkg_mgr == "yum"
@@ -37,24 +31,45 @@
 - name: Configure /etc/bacula/bacula-fd.conf file
   template: src=etc/bacula/bacula-fd.conf.{{ ansible_os_family }}.j2 dest=/etc/bacula/bacula-fd.conf
   register: baculafdConf
-  
+
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons['bacula-fd']['name']|default("") == ""
+
 - name: Stop bacula-fd systemd
-  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=stopped enabled=true
+  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=stopped
   when: path.daemons['bacula-fd']['type'] == "systemctl" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
 - name: Start bacula-fd systemd
-  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=started enabled=true
+  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=started
   when: path.daemons['bacula-fd']['type'] == "systemctl" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
 - name: Stop bacula-fd service
-  service: name={{ path.daemons['bacula-fd']['name'] }} state=stopped enabled=true
+  service: name={{ path.daemons['bacula-fd']['name'] }} state=stopped
   when: path.daemons['bacula-fd']['type'] == "service" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
 - name: Start bacula-fd service
-  service: name={{ path.daemons['bacula-fd']['name'] }} state=started enabled=true
+  service: name={{ path.daemons['bacula-fd']['name'] }} state=started
   when: path.daemons['bacula-fd']['type'] == "service" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
 
 - name: Restart bacula-fd init
   shell: "{{ path.daemons['bacula-fd']['name'] }} restart executable='/bin/bash'"
   when: path.daemons['bacula-fd']['type'] == "init" and path.daemons['bacula-fd']['name'] != "" and baculafdConf|changed
+
+- name: Checking bacula-fd systemd
+  systemd: name={{ path.daemons['bacula-fd']['name'] }} state=started enabled=true
+  changed_when: False
+  when: path.daemons['bacula-fd']['type'] == "systemctl" and path.daemons['bacula-fd']['name'] != ""
+
+- name: Checking bacula-fd service
+  service: name={{ path.daemons['bacula-fd']['name'] }} state=started enabled=true
+  changed_when: False
+  when: path.daemons['bacula-fd']['type'] == "service" and path.daemons['bacula-fd']['name'] != ""
+
+- name: Checking bacula-fd init
+  shell: "{{ path.daemons['bacula-fd']['name'] }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons['bacula-fd']['name'] }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons['bacula-fd']['name'] }}) on) executable='/bin/bash'"
+  changed_when: False
+  when: path.daemons['bacula-fd']['type'] == "init" and path.daemons['bacula-fd']['name'] != ""
 

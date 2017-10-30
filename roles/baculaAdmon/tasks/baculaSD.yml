@@ -8,12 +8,6 @@
 
 # Bacula Storage Daemon configuration
 
-- name: Getting Paths
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: path.daemons['bacula-sd']['name']|default("") == ""
-
 - name: Copy bacula-sd.conf file to baculaAdmon Servers to check syntax
   template: src=etc/bacula/bacula-sd.conf.j2 dest=/etc/bacula/.bacula-sd.conf.check owner=root group=bacula mode=0640
   register: checkFile
@@ -32,14 +26,36 @@
   shell: mv -f /etc/bacula/.bacula-sd.conf.check /etc/bacula/.bacula-sd.conf.error
   when: checkFile|changed and checkResult|failed
 
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons['bacula-sd']['name']|default("") == ""
+
 - name: Restart bacula-sd systemd
-  systemd: name={{ path.daemons['bacula-sd']['name'] }} state=restarted enabled=true
-  when: path.daemons['bacula-sd']['type'] == "systemctl" and checkFile|changed and checkResult|success
+  systemd: name={{ path.daemons['bacula-sd']['name'] }} state=restarted
+  when: path.daemons['bacula-sd']['type'] == "systemctl" and path.daemons['bacula-sd']['name'] != "" and checkFile|changed and checkResult|success
 
 - name: Restart bacula-sd service
-  service: name={{ path.daemons['bacula-sd']['name'] }} state=restarted enabled=true
-  when: path.daemons['bacula-sd']['type'] == "service" and checkFile|changed and checkResult|success
+  service: name={{ path.daemons['bacula-sd']['name'] }} state=restarted
+  when: path.daemons['bacula-sd']['type'] == "service" and path.daemons['bacula-sd']['name'] != "" and checkFile|changed and checkResult|success
 
 - name: Restart bacula-sd init
   shell: "{{ path.daemons['bacula-sd']['name'] }} restart executable='/bin/bash'"
-  when: path.daemons['bacula-sd']['type'] == "init" and checkFile|changed and checkResult|success
+  when: path.daemons['bacula-sd']['type'] == "init" and path.daemons['bacula-sd']['name'] != "" and checkFile|changed and checkResult|success
+
+- name: Checking bacula-sd systemd
+  systemd: name={{ path.daemons['bacula-sd']['name'] }} state=started enabled=true
+  changed_when: False
+  when: path.daemons['bacula-sd']['type'] == "systemctl" and path.daemons['bacula-sd']['name'] != ""
+
+- name: Checking bacula-sd service
+  service: name={{ path.daemons['bacula-sd']['name'] }} state=started enabled=true
+  changed_when: False
+  when: path.daemons['bacula-sd']['type'] == "service" and path.daemons['bacula-sd']['name'] != ""
+
+- name: Checking bacula-sd init
+  shell: "{{ path.daemons['bacula-sd']['name'] }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons['bacula-sd']['name'] }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons['bacula-sd']['name'] }}) on) executable='/bin/bash'"
+  changed_when: False
+  when: path.daemons['bacula-sd']['type'] == "init" and path.daemons['bacula-sd']['name'] != ""
+

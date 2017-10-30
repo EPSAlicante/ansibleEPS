@@ -13,26 +13,41 @@
   register: pythonVersion
   changed_when: False
 
+- name: Configure /etc/syslog.conf con lista syslog
+  lineinfile: "name={{ syslogConf }} state=present regexp='{{ item.search }}' insertafter=EOF line='{{ item.replace }}'"
+  register: syslogConfig
+  with_items: "{{ syslog }}"
+
 - name: Getting Paths
   action: path_EPS
   changed_when: False
   ignore_errors: yes
   when: path.daemons.syslog.name|default("") == ""
 
-- name: Configure /etc/syslog.conf con lista syslog
-  lineinfile: "name={{ syslogConf }} state=present regexp='{{ item.search }}' insertafter=EOF line='{{ item.replace }}'"
-  register: syslogConfig
-  with_items: "{{ syslog }}"
-
 - name: Restart syslog systemd
-  systemd: name={{ path.daemons.syslog.name }} state=restarted enabled=true
-  when: path.daemons.syslog.type == "systemctl" and path.daemons.syslog.name != ""and syslogConfig|changed
+  systemd: name={{ path.daemons.syslog.name }} state=restarted
+  when: path.daemons.syslog.type == "systemctl" and path.daemons.syslog.name != "" and syslogConfig|changed
 
 - name: Restart syslog service
-  service: name={{ path.daemons.syslog.name }} state=restarted enabled=true
+  service: name={{ path.daemons.syslog.name }} state=restarted
   when: path.daemons.syslog.type == "service" and path.daemons.syslog.name != "" and syslogConfig|changed
 
 - name: Restart syslog init 
   shell: '{{ path.daemons.syslog.name }} restart executable="/bin/bash"'
   when: path.daemons.syslog.type == "init" and path.daemons.syslog.name != "" and syslogConfig|changed
+
+- name: Checking syslog systemd
+  systemd: name={{ path.daemons.syslog.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.syslog.type == "systemctl" and path.daemons.syslog.name != ""
+
+- name: Checking syslog service
+  service: name={{ path.daemons.syslog.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.syslog.type == "service" and path.daemons.syslog.name != ""
+
+- name: Checking syslog init
+  shell: '{{ path.daemons.syslog.name }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons.syslog.name }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons.syslog.name }}) on) executable="/bin/bash"'
+  changed_when: False
+  when: path.daemons.syslog.type == "init" and path.daemons.syslog.name != ""
 

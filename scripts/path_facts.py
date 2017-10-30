@@ -40,7 +40,7 @@ def path(command1, command2=''):
 
 def getDaemon(d1, d2='', d3='', d4='', d5='', d6='', d7='', d8='', d9='', d10=''):
     # Getting daemons path
-    data = subprocess.Popen("for i in \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"; do val=$(([ \"$i\" != \"\" ] && ((%s cat $i|grep '^\[Service\]' >/dev/null && echo \"systemctl $i\") || (%s $i status >/dev/null && echo \"service $i\") || (ls /etc/init.d/$i >/dev/null && echo \"/etc/init.d/$i\"))) 2>%s); [ \"$val\" != \"\" ] && echo \"$val\" && break; done" % (d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, path('systemctl'), path('service'), errorLog), shell=True, executable='%s' % (bash), stdout=subprocess.PIPE).stdout.read().strip()
+    data = subprocess.Popen("for i in \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"; do val=$(([ \"$i\" != \"\" ] && (((%s status $i || (%s -a|grep \" $i.service\")) >/dev/null 2>&1 && echo \"systemctl $i\") || (command -v service >/dev/null 2>&1 && (%s $i status >/dev/null 2>&1 || [ -f /etc/init.d/$i ]) && echo \"service $i\") || ([ -f /etc/init.d/$i ] && echo \"/etc/init.d/$i\"))) 2>%s); [ \"$val\" != \"\" ] && echo \"$val\" && break; done" % (d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, path('systemctl'), path('systemctl'), path('service'), errorLog), shell=True, executable='%s' % (bash), stdout=subprocess.PIPE).stdout.read().strip()
 
     # Get type (systemctl, service or /etc/init.d) and name
     if data.startswith('systemctl ') or data.startswith('service '):
@@ -95,17 +95,20 @@ def show_paths():
     print "        \"apt-get\": \"%s\"," % (path('apt-get'))
     print "        \"apxs2\": \"%s\"," % (path('apxs2'))
     print "        \"awk\": \"%s\"," % (path('gawk','awk'))
+    print "        \"basename\": \"%s\"," % (path('basename'))
     print "        \"bash\": \"%s\"," % (bash)
     print "        \"bacula-dir\": \"%s\"," % (path('bacula-dir'))
     print "        \"bacula-fd\": \"%s\"," % (path('bacula-fd'))
     print "        \"bacula-sd\": \"%s\"," % (path('bacula-sd'))
     print "        \"bconsole\": \"%s\"," % (path('bconsole'))
+    print "        \"chkconfig\": \"%s\"," % (path('chkconfig'))
     print "        \"chmod\": \"%s\"," % (path('chmod'))
     print "        \"chown\": \"%s\"," % (path('chown'))
     print "        \"chroot\": \"%s\"," % (path('chroot'))
     print "        \"conary\": \"%s\"," % (path('conary'))
     print "        \"cp\": \"%s\"," % (path('cp'))
     print "        \"dhcpd\": \"%s\"," % (path('dhcpd'))
+    print "        \"dirname\": \"%s\"," % (path('dirname'))
     print "        \"emerge\": \"%s\"," % (path('emerge'))
     print "        \"equery\": \"%s\"," % (path('equery'))
     print "        \"find\": \"%s\"," % (path('gfind','find'))
@@ -148,6 +151,7 @@ def show_paths():
     print "        \"tar\": \"%s\"," % (path('tar'))
     print "        \"umount\": \"%s\"," % (path('umount'))
     print "        \"uname\": \"%s\"," % (path('uname'))
+    print "        \"update-rc.d\": \"%s\"," % (path('update-rc.d'))
     print "        \"vzlist\": \"%s\"," % (path('vzlist'))
     print "        \"yum\": \"%s\"," % (path('yum'))
     print "        \"zypper\": \"%s\"" % (path('zypper'))

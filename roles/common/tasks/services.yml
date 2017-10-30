@@ -39,24 +39,19 @@
 
 - name: Be sure systemd are stopped and unabled
   systemd: name={{ path.daemons[item.stdout]['name'] }} state=stopped enabled=false
+  changed_when: False
   with_items: "{{ existService.results }}"
   when: item.stdout != "No" and path.daemons[item.stdout]['type'] == "systemctl"
 
 - name: Be sure services are stopped and unabled
   service: name={{ path.daemons[item.stdout]['name'] }} state=stopped enabled=false 
+  changed_when: False
   with_items: "{{ existService.results }}"
   when: item.stdout != "No" and path.daemons[item.stdout]['type'] == "service"
 
-- name: Stop daemon and unable (Debian)
-  shell: (/etc/init.d/{{ path.daemons[item.stdout]['name'] }} stop && update-rc.d -f {{ path.daemons[item.stdout]['name'] }} remove) 2>/dev/null || echo "No" executable="/bin/bash"
-  register: stopDaemonDebian
+- name: Stop daemon and unable
+  shell: "{{ path.daemons[item.stdout]['name'] }} stop; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d -f $(basename {{ path.daemons[item.stdout]['name'] }}) remove) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons[item.stdout]['name'] }}) off) executable='/bin/bash'"
+  changed_when: False
   with_items: "{{ existService.results }}"
-  changed_when: stopDaemonDebian.stdout != "No" 
-  when: ansible_os_family == "Debian" and item.stdout != "No" and path.daemons[item.stdout]['type'] == "init" 
+  when: item.stdout != "No" and path.daemons[item.stdout]['type'] == "init" 
 
-- name: Stop daemon and unable (Centos)
-  shell: (/etc/init.d/{{ path.daemons[item.stdout]['name'] }} stop && chkconfig {{ path.daemons[item.stdout]['name'] }} off) 2>/dev/null || echo "No" executable="/bin/bash"
-  register: stopDaemonCentos
-  changed_when: stopDaemonCentos.stdout != "No"
-  with_items: "{{ existService.results }}"
-  when: ansible_os_family == "RedHat" and item.stdout != "No" and path.daemons[item.stdout]['type'] == "init" 

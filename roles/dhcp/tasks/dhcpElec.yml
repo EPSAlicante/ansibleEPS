@@ -8,12 +8,6 @@
 
 # DHCP (Elec) configuration
 
-- name: Getting Paths
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: path.daemons.dhcp.name|default("") == ""
-
 - name: /etc/dhcp directory permissions
   file: path=/etc/dhcp state=directory owner=root group=manager mode=0750
 
@@ -35,14 +29,36 @@
   shell: mv -f /etc/dhcp/.dhcpd.conf.check /etc/dhcp/.dhcpd.conf.error
   when: checkFile|changed and checkResult|failed
 
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.dhcp.name|default("") == ""
+
 - name: Restart dhcp (Elec) systemd
-  systemd: name={{ path.daemons.dhcp.name }} state=restarted enabled=true
-  when: path.daemons.dhcp.type == "systemctl" and checkFile|changed and checkResult|success
+  systemd: name={{ path.daemons.dhcp.name }} state=restarted
+  when: path.daemons.dhcp.type == "systemctl" and path.daemons.dhcp.name != "" and checkFile|changed and checkResult|success
 
 - name: Restart dhcp (Elec) service
-  service: name={{ path.daemons.dhcp.name }} state=restarted enabled=true
-  when: path.daemons.dhcp.type == "service" and checkFile|changed and checkResult|success
+  service: name={{ path.daemons.dhcp.name }} state=restarted
+  when: path.daemons.dhcp.type == "service" and path.daemons.dhcp.name != "" and checkFile|changed and checkResult|success
 
 - name: Restart dhcp (Elec) init
   shell: '{{ path.daemons.dhcp.name }} restart executable="/bin/bash"'
-  when: path.daemons.dhcp.type == "init" and checkFile|changed and checkResult|success
+  when: path.daemons.dhcp.type == "init" and path.daemons.dhcp.name != "" and checkFile|changed and checkResult|success
+
+- name: Checking dhcp (Elec) systemd
+  systemd: name={{ path.daemons.dhcp.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.dhcp.type == "systemctl" and path.daemons.dhcp.name != ""
+
+- name: Checking dhcp (Elec) service
+  service: name={{ path.daemons.dhcp.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.dhcp.type == "service" and path.daemons.dhcp.name != ""
+
+- name: Checking dhcp (Elec) init
+  shell: "{{ path.daemons.dhcp.name }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons.dhcp.name }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons.dhcp.name }}) on) executable='/bin/bash'"
+  changed_when: False
+  when: path.daemons.dhcp.type == "init" and path.daemons.dhcp.name != ""
+

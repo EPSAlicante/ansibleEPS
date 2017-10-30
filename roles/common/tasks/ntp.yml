@@ -19,12 +19,6 @@
   changed_when: False
   when: openVZ.stdout == "False" 
 
-- name: Getting Paths
-  action: path_EPS
-  changed_when: False
-  ignore_errors: yes
-  when: openVZ.stdout == "False" and path.daemons.ntp.name|default("") == ""
-
 - name: Be sure ntp is installed (Centos)
   yum: pkg={{ item }} state=installed
   with_items:
@@ -54,15 +48,36 @@
   register: ntpConf
   when: openVZ.stdout == "False" 
 
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: openVZ.stdout == "False" and path.daemons.ntp.name|default("") == ""
+
 - name: Restart ntp systemd
-  systemd: name={{ path.daemons.ntp.name }} state=restarted enabled=true
+  systemd: name={{ path.daemons.ntp.name }} state=restarted
   when: openVZ.stdout == "False" and path.daemons.ntp.type == "systemctl" and path.daemons.ntp.name != "" and ntpConf|changed
 
 - name: Restart ntp service
-  service: name={{ path.daemons.ntp.name }} state=restarted enabled=true
+  service: name={{ path.daemons.ntp.name }} state=restarted
   when: openVZ.stdout == "False" and path.daemons.ntp.type == "service" and path.daemons.ntp.name != "" and ntpConf|changed
 
 - name: Restart ntp init 
   shell: '{{ path.daemons.ntp.name }} restart executable="/bin/bash"'
   when: openVZ.stdout == "False" and path.daemons.ntp.type == "init" and path.daemons.ntp.name != "" and ntpConf|changed
+
+- name: Checking ntp systemd
+  systemd: name={{ path.daemons.ntp.name }} state=started enabled=true
+  changed_when: False
+  when: openVZ.stdout == "False" and path.daemons.ntp.type == "systemctl" and path.daemons.ntp.name != ""
+
+- name: Checking ntp service
+  service: name={{ path.daemons.ntp.name }} state=started enabled=true
+  changed_when: False
+  when: openVZ.stdout == "False" and path.daemons.ntp.type == "service" and path.daemons.ntp.name != ""
+
+- name: Checking ntp init
+  shell: '{{ path.daemons.ntp.name }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons.ntp.name }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons.ntp.name }}) on) executable="/bin/bash"'
+  changed_when: False
+  when: openVZ.stdout == "False" and path.daemons.ntp.type == "init" and path.daemons.ntp.name != ""
 
