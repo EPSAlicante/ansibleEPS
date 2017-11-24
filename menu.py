@@ -18,7 +18,7 @@ pathConfig = "%s/group_vars/all" % (pathAnsible)
 pathDirectoryLogs = "/var/log/ansibleEPS"
 pathFileErrors = "%s/errors.log" % (pathDirectoryLogs)
 pathFileChanges = "%s/changes.log" % (pathDirectoryLogs)
-pathFileExeList = "%s/summary.log" % (pathDirectoryLogs)
+pathFileExesList = "%s/summary.log" % (pathDirectoryLogs)
 pathInventory = "%s/eps" % (pathAnsible)
 
 
@@ -693,11 +693,11 @@ def execOption(opt):
       ## View executions List ##
       # Check directory
       if os.path.isdir(pathDirectoryLogs):
-        if os.access(pathFileExeList, os.R_OK):
-          retCode = subprocess.call("less -R %s" % (pathFileExeList), shell=True)
+        if os.access(pathFileExesList, os.R_OK):
+	  retCode = subprocess.call("(tac %s|sed 's/^###/-------------------------------------------------------------------------------------\\n/g'|sed 's/###$//g'|less -R) 2>/dev/null" % (pathFileExesList), shell=True)
           print
         else:
-          print >> sys.stderr, "File %s don't exist or not readable" % (pathFileExeList)
+          print >> sys.stderr, "File %s don't exist or not readable" % (pathFileExesList)
           print >> sys.stderr
 
       else:
