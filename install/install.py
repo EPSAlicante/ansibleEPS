@@ -156,6 +156,11 @@ def main():
             print
             print "'scp_if_ssh = True' verified in %s" % (fileAnsibleCFG)
 
+            # Set force_color = 1 in fileAnsibleCFG
+            retCode = subprocess.call("(grep '^force_color' %s && (grep '^force_color' %s|grep -i '1' || (sed -i 's/force_color/#force_color/' %s && false)) || sed -i 's/\[defaults\]/\[defaults\]\\nforce_color = 1/' %s) > /dev/null" % (fileAnsibleCFG,fileAnsibleCFG,fileAnsibleCFG,fileAnsibleCFG), shell=True)
+            print
+            print "'force_color = 1' verified in %s" % (fileAnsibleCFG)
+
             # Add db_facts in fileModArgs 
             fileModArgs =  subprocess.Popen("find %s|head -1" % (findModArgs), shell=True, stdout=subprocess.PIPE).stdout.read().strip()
             if fileModArgs != "":
