@@ -46,19 +46,19 @@
 
 - name: Execute chkconfig on in Centos
   shell: chkconfig iptables.sh on
-  when: ansible_pkg_mgr == "yum" and checkFile|changed
+  when: ansible_pkg_mgr == "yum" and checkFile|changed and checkResult|success
 
 - name: Execute update-rc.d defaults in Debian
   shell: update-rc.d iptables.sh defaults
-  when: ansible_pkg_mgr == "apt" and checkFile|changed
+  when: ansible_pkg_mgr == "apt" and checkFile|changed and checkResult|success
 
 - name: Be sure iptables is running and enabled (service)
   service: name=iptables.sh state=started enabled=yes
-  when: systemctl.stdout == "No" and checkFile|changed
+  when: systemctl.stdout == "No" and checkFile|changed and checkResult|success
 
 - name: Be sure iptables is running and enabled (systemd)
   environment:
     _SYSTEMCTL_SKIP_REDIRECT: 1
   shell: /etc/init.d/iptables.sh start
-  when: systemctl.stdout == "Yes" and checkFile|changed
+  when: systemctl.stdout == "Yes" and checkFile|changed and checkResult|success
 

@@ -11,12 +11,9 @@
 - include: dhcpP1.yml 
   tags: [ dhcp, P1 ]
   when: inventory_hostname in groups.P1
-- include: dhcpP4.yml 
-  tags: [ dhcp, P4 ]
-  when: inventory_hostname in groups.P4
-- include: dhcpElec.yml 
-  tags: [ dhcp, Elec ]
-  when: inventory_hostname in groups.Elec
-- include: dhcpTV.yml 
-  tags: [ dhcp, TV ]
-  when: inventory_hostname in groups.TV
+- include: dhcpP2.yml 
+  tags: [ dhcp, P2 ]
+  when: inventory_hostname in groups.P2
+- include: dhcpP2.yml
+  tags: [ dhcp, P3 ]
+  when: inventory_hostname in groups.P3

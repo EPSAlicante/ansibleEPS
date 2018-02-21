@@ -86,7 +86,7 @@ ipTablesRulesGlobal:
 - label: NTP access
   chain: IO
   protocol: udp
-  saddr: [ ntp.pool.org, es.ntp.pool.org ]
+  saddr: [ 64.99.80.121, 216.239.35.0 ]
   sport: [ 123 ]
   comment: NTP access 
 - label: External DNS access

@@ -21,8 +21,8 @@
 Error()
 {
   ### Ansible access rule to restore old version ###
-  ($IPTABLES -A INPUT -p tcp --dport 22 -s 172.16.40.99/32 -j ACCEPT)
-  ($IPTABLES -A OUTPUT -p tcp -d 172.16.40.99/32 --sport 22 -j ACCEPT)
+  ($IPTABLES -A INPUT -p tcp --dport 22 -s {{ ansibleMaster }}/32 -j ACCEPT)
+  ($IPTABLES -A OUTPUT -p tcp -d {{ ansibleMaster }}/32 --sport 22 -j ACCEPT)
 
   exit $1
 }
