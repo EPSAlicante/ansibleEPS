@@ -1,0 +1,8 @@
+# Made by AnsibleEPS
+
+[rpmforge]
+name=RPMforge RPM repository for Red Hat Enterprise Linux
+baseurl=http://apt.sw.be/redhat/el6/en/$basearch/rpmforge/
+gpgcheck=1
+enabled=1
+
