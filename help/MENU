@@ -65,16 +65,30 @@ Admin Menu's options:
     See CRONTAB file to get details about Crontab module.
 
 
- 9. Proxmox module (nodes config)
+ 9. Proxmox module (proxmox nodes config)
 
     To configure some basic features in proxmox nodes (hosts in inventory with proxmox installed).
 
     See PROXMOX file to get details about Proxmox module.
 
 
-10. All modules (nodes config)
+10. My.cnf file module (mysql nodes config)
 
-    To configure every module (Menu 1 to 8) in nodes (hosts in inventory).
+    To configure my.cnf file in mysql nodes (hosts in inventory with mysql installed).
+
+    See MYCNF file to get details about Mycnf module.
+
+
+11. Apache includes module (apache nodes config)
+
+    To create and configure includes in apache nodes (hosts in inventory with apache installed)
+
+    See APACHEINC file to get details about ApacheInc module.
+
+
+12. All modules (nodes config)
+
+    To configure every module (Menu 1 to 11) in nodes (hosts in inventory).
 
 
  b. Bacula Servers (bacula config)

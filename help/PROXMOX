@@ -1,6 +1,6 @@
 *** PROXMOX PlayBook ***
 
-Proxmox playbook 'proxmox.yml' is able to manage Proxmox servers configuration, in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+Proxmox playbook 'proxmox.yml' is able to manage Proxmox servers (server of 'proxmox' group') configuration, in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
 
 Updates will be done using some variables to customize operations for every proxmox server.
 

@@ -12,7 +12,7 @@ Command-line execution: 'ansible-playbook crontab.yml'
 Scope: Playbook will update all server except those belonging to 'nocrontab' group.
 
 Templates: 'roles/crontab/templates/tmp/cronUsers.j2'
-           'roles/crontab/templates/var/spool/cron/user.j2
+           'roles/crontab/templates/var/spool/cron/user.j2'
 
 Variables:
 

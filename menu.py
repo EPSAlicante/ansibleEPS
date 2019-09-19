@@ -110,7 +110,9 @@ def printMenu():
     print "##  7. IPTables module (nodes config)          ##"
     print "##  8. Crontab module (nodes config)           ##"
     print "##  9. Proxmox module (Proxmox nodes config)   ##"
-    print "## 10. All modules (nodes config)              ##"
+    print "## 10. My.cnf file (Mysql nodes config)        ##"
+    print "## 11. Apache includes (Apache nodes config)   ##"
+    print "## 12. All modules (nodes config)              ##"
     print "##---------------------------------------------##"
     print "##  b. Bacula Servers (bacula config)          ##"
     print "##  d. DHCP Servers (DHCP config)              ##"
@@ -134,7 +136,7 @@ def printMenu():
 def selectOption():
 
     answer = None
-    legal_answers = ['0','1','2','3','4','5','6','7', '8', '9', '10', 'a', 'b', 'c', 'd', 'i', 'l', 'm', 'n', 'r', 's', 'u', 'v', 'x', 'q']
+    legal_answers = ['0','1','2','3','4','5','6','7', '8', '9', '10', '11', '12', 'a', 'b', 'c', 'd', 'i', 'l', 'm', 'n', 'r', 's', 'u', 'v', 'x', 'q']
     tried = False
     while answer not in legal_answers:
         print "%s" % "Invalid input, select again" if tried else ""
@@ -452,6 +454,66 @@ def execOption(opt):
 
 
     elif opt == '10':
+      ## My.cnf configuration (for nodes) ##
+      # Ask hostname
+      try:
+        nodeName = raw_input('Node (hostname) or Group (name) or All (enter): ')
+
+        if nodeName:
+          nodeInventory = getInventory(nodeName)
+          if nodeInventory != "":
+            print
+            print "cd %s && ansible-playbook %s/mycnf.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
+            retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/mycnf.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS mycnf.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES mycnf.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp; echo \"### mycnf.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
+          else:
+            print >> sys.stderr
+            print >> sys.stderr, "%s is not in inventory" % (nodeName)
+            print >> sys.stderr
+
+        else:
+          print
+          print "cd %s && ansible-playbook %s/mycnf.yml" % (pathAnsible,pathAnsible)
+          retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/mycnf.yml 2>&1|tee /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS mycnf.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES mycnf.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.mycnf.$timestamp.log.tmp; echo \"### mycnf.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
+      except KeyboardInterrupt:
+        nodeName = ""
+        print
+        print "Interrupted"
+        print
+
+
+    elif opt == '11':
+      ## Apache Includes configuration (for nodes) ##
+      # Ask hostname
+      try:
+        nodeName = raw_input('Node (hostname) or Group (name) or All (enter): ')
+
+        if nodeName:
+          nodeInventory = getInventory(nodeName)
+          if nodeInventory != "":
+            print
+            print "cd %s && ansible-playbook %s/apacheInc.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
+            retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/apacheInc.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS apacheInc.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES apacheInc.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp; echo \"### apacheInc.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
+          else:
+            print >> sys.stderr
+            print >> sys.stderr, "%s is not in inventory" % (nodeName)
+            print >> sys.stderr
+
+        else:
+          print
+          print "cd %s && ansible-playbook %s/apacheInc.yml" % (pathAnsible,pathAnsible)
+          retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/apacheInc.yml 2>&1|tee /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS apacheInc.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES apacheInc.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.apacheInc.$timestamp.log.tmp; echo \"### apacheInc.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
+      except KeyboardInterrupt:
+        nodeName = ""
+        print
+        print "Interrupted"
+        print
+
+
+    elif opt == '12':
       ## Site configuration -> 'total configuration' (for nodes) ##
       # Ask hostname
       try:

@@ -65,11 +65,11 @@ def execOption(opt):
 
     elif opt == '2':
       ## Read Modules Help ##
-      # Modules: common, hostsFile, sudo, wrappers, pamAccess, nrpe, iptables, proxmox, bacula, dhcp, munin, nagios, emailList, update, cron
+      # Modules: common, hostsFile, sudo, wrappers, pamAccess, nrpe, iptables, proxmox, mycnf, apacheInc, bacula, dhcp, munin, nagios, emailList, update, cron
       try:
 	print
-	module = raw_input('Module (common, hostsFile, sudo, wrappers, pamAccess, nrpe, iptables, proxmox, bacula, dhcp, munin, nagios, emailList, update, cron): ')
-	if module.lower() in ['common', 'hostsfile', 'sudo', 'wrappers', 'pamaccess', 'nrpe', 'iptables', 'proxmox', 'bacula', 'dhcp', 'munin', 'nagios', 'emaillist', 'update', 'cron']:
+	module = raw_input('Module (common, hostsFile, sudo, wrappers, pamAccess, nrpe, iptables, proxmox, mycnf, apacheInc, bacula, dhcp, munin, nagios, emailList, update, cron): ')
+	if module.lower() in ['common', 'hostsfile', 'sudo', 'wrappers', 'pamaccess', 'nrpe', 'iptables', 'proxmox', 'mycnf', 'apacheinc', 'bacula', 'dhcp', 'munin', 'nagios', 'emaillist', 'update', 'cron']:
 	  pathHelpModule = "%s/help/%s" % (pathAnsible, module.upper())
           if os.access(pathHelpModule, os.R_OK):
             retCode = subprocess.call("less %s" % (pathHelpModule), shell=True)
@@ -80,7 +80,7 @@ def execOption(opt):
 
         else:
           print >> sys.stderr
-          print >> sys.stderr, "Module %s not valid (Valid modules: common, hostsFile, sudo, wrappers, pamAccess, nrpe, iptables, proxmox, bacula, dhcp, munin, nagios, emailList, update, cron)" % (module)
+          print >> sys.stderr, "Module %s not valid (Valid modules: common, hostsFile, sudo, wrappers, pamAccess, nrpe, iptables, proxmox, mycnf, apacheInc, bacula, dhcp, munin, nagios, emailList, update, cron)" % (module)
           print >> sys.stderr
 
       except KeyboardInterrupt:

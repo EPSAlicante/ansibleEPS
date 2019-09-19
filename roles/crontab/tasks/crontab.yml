@@ -31,3 +31,6 @@
   with_items: "{{ filesDir.stdout_lines }}" 
   when: item not in cronUsers.stdout_lines  
   
+- name: Delete users list
+  file: path=/tmp/cronUsers state="absent"
+  changed_when: false

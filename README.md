@@ -30,6 +30,8 @@ Especifically, ansibleEPS does the following tasks:
 | **IPTables** management for all hosts (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
 | **Crontab** managemenet for all hosts (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
 | **Proxmox servers** management (configuration and checking) | Configuration of Proxmox servers |
+| **My.cnf file ** management for mysql servers (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
+| **Apache includes ** management for apache servers (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
 | **Bacula servers** management (configuration and checking) | Configuration of Bacula servers |
 | **DHCP servers** management (configuration and checking) | Configuration of DHCP servers |
 | **Munin servers** management (configuration and checking) | Configuration of Munin servers |
@@ -110,6 +112,8 @@ System is ready to work with the following Operating Systems (all of them with '
   - Ubuntu 14
 
   - Ubuntu 16
+
+  - Ubuntu 18
 
 There’s a specific file for every Operating System and version in '/etc/ansibleEPS/group_vars' directory. They include variables and specific values. For example: specific users, repositories, software, configuration files, etc.
 

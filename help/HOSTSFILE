@@ -17,7 +17,7 @@ Variables:
 
     * 'hostsFileGlobal' -> '/etc/hosts' file configuration for all servers
 
-      This variable is a list of items to define entries in file, with IP, server full name (FQDN) and aliases. Every item has three attributes:
+      This variable is a list of items to define entries in file, with IP, server full name (FQDN) and aliases. Every item has the following attributes:
 
          - label: This attribute play two roles, on the one side it will be a comment for entry, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
 
@@ -73,9 +73,6 @@ Variables:
           - label: server_34 (cluster)
             host: server_34
             IP: 172.20.3.34
-
-        - group: proxmox
-          rules:
           - label: IP local
             host: hostname
             extra: pvelocalhost

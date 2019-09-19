@@ -29,6 +29,8 @@ Directory Structure: '/etc/ansibleEPS'
     Playbook files:
 
 
+	* 'apacheInc.yml' -> To create and configure includes of Apache in apache nodes (hosts in inventory with apache installed). See APACHEINC file to get details about ApacheInc module.
+
 	* 'baculaAdmon.yml' -> To configure Bacula configuration files ('/etc/bacula/bacula-dir.conf' and '/etc/bacula/bacula-sd.conf' files) in Bacula servers. See BACULAADMON file to get details about Bacula module.
 	
 	* 'common.yml' -> To configure common features in nodes (hosts in inventory). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc. See COMMON file to get details about Common module. 
@@ -48,6 +50,8 @@ Directory Structure: '/etc/ansibleEPS'
 	* 'listaCorreos.yml -> To generate a List of email adresses with extra info from Qmail Server, and publish info in its Web Service in Qmail server. See EMAILLIST file to get details about Email addresses List module.
 
 	* 'munin.yml' -> To configure Munin hosts configuration files (files in '/etc/munin/conf.d/') in Munin servers. See MUNIN file to get details about Munin module. 
+
+        * 'mycnf.yml' -> To configure my.cnf file in mysql nodes (hosts in inventory with mysql installed). See MYCNF file to get details about Mycnf module.
 
 	* 'nagios.yml' -> To configure Nagios configuration files (files in '/etc/nagios3/conf.d' files) in Nagios servers. See NAGIOS file to get details about Nagios module. 
 
@@ -84,6 +88,8 @@ Directory Structure: '/etc/ansibleEPS'
 		
 		* 'all' (File with main global variables)
 
+		* 'apacheInc' (File with Apache includes global variables) 
+
 		* 'baculaAdmon' (File with Bacula Server global variables)
 
 		* 'crontab' (File with Crontab file global variables)
@@ -91,6 +97,8 @@ Directory Structure: '/etc/ansibleEPS'
 		* 'hostsFile' (File with /etc/hosts file global variables)
 
 		* 'ipTables' (File with IPTables global variables)
+
+		* 'mycnf' (File with Mycnf global variables)
 
 		* 'nagiosServices' (File with Nagios Server global variables)
 
@@ -104,6 +112,10 @@ Directory Structure: '/etc/ansibleEPS'
 
 	    - 'CentOS-6' (variables for CentOS-6 hosts, overwriting global variables)
 
+	    - 'CentOS-7' (variables for CentOS-7 hosts, overwriting global variables)
+
+	    - 'Debian-4' (variables for Debian-4 hosts, overwriting global variables)
+
 	    - 'Debian-6' (variables for Debian-6 hosts, overwriting global variables)
 
 	    - 'Debian-7' (variables for Debian-7 hosts, overwriting global variables)
@@ -113,6 +125,8 @@ Directory Structure: '/etc/ansibleEPS'
 	    - 'Ubuntu-14' (variables for Ubuntu-14 hosts, overwriting global variables)
 
 	    - 'Ubuntu-16' (variables for Ubuntu-16 hosts, overwriting global variables)
+
+	    - 'Ubuntu-18' (variables for Ubuntu-18 hosts, overwriting global variables)
 
 	    Every file with 'OS-Version' format, host name or group of hosts (from Inventory) will have the same function, overwriting global variables
 	
@@ -128,6 +142,17 @@ Directory Structure: '/etc/ansibleEPS'
 
 
 	* 'roles/' -> playbooks code by roles
+
+            - 'apacheInc/' (Ansible code to create and configure apache includes to Apache servers. Called by apacheInc.yml playbook)
+
+                + 'tasks/'
+
+                    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+                    * 'apacheInc.yml' (Creates and configures apache includes)
+
+                + 'templates/' (templates called by tasks' files to modify with variables' values and copy to Apache nodes)
+
 
 	    - 'baculaAdmon/' (Ansible code to configure Bacula Servers. Called by baculaAdmon.yml playbook)
 
@@ -288,6 +313,16 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy Munin servers)
 
 
+            - 'mycnf/' (Ansible code to configure my.cnf file to Mysql servers. Called by mycnf.yml playbook)
+
+                + 'tasks/'
+
+                    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+                    * 'mycnf.yml' (Configures my.cnf file)
+
+                + 'templates/' (templates called by tasks' files to modify with variables' values and copy to Mysql nodes)
+
 	    - 'nagios/' (Ansible code to create nagios controls to Nagios servers)
 
 		+ 'files/' (files called by tasks' files to copy to Nagios servers)
@@ -335,7 +370,7 @@ Directory Structure: '/etc/ansibleEPS'
 
 		    * 'proxmox.yml' (Configures proxmox)
 
-		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Proxmox servers)
+		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Proxmox nodes)
 
 
 	    - 'sudo/' (Ansible code to configure /etc/sudoers file to nodes. Called by sudo.yml playbook)

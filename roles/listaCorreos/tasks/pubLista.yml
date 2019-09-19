@@ -14,7 +14,14 @@
   changed_when: false
 
 - name: Copy /var/www/lista/lista.txt.j2 template to qmail Web Server (hermes)
-  template: src=var/www/lista/lista.txt.j2 dest=/var/www/lista/lista.txt owner=www-data group=www-data mode=0644 backup=yes
+  template: src=var/www/lista/lista.txt.j2 dest=/var/www/lista/lista.txt owner=apache group=apache mode=0644 backup=yes
+  register: checkFile
+
+- name: Clean backups (except last 5)
+  shell: "ls -t1 /var/www/lista/lista.txt.*|tail -n +6|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
+  when: checkFile|changed
 
 - debug: msg="Email addresses List for CPD at https://hermes.eps.ua.es/lista/lista.txt"
 
@@ -24,7 +31,7 @@
   changed_when: false
 
 - name: Copy /var/www/lista/infolista.txt.j2 template to qmail Web Server (hermes)
-  template: src=var/www/lista/infolista.txt.j2 dest=/var/www/lista/infolista.txt owner=www-data group=www-data mode=0644
+  template: src=var/www/lista/infolista.txt.j2 dest=/var/www/lista/infolista.txt owner=apache group=apache mode=0644
   changed_when: false
 
 - debug: msg="Information about email address at https://hermes.eps.ua.es/lista/infolista.txt"

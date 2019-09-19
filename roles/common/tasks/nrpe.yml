@@ -68,6 +68,9 @@
 - name: Copy check_file_age2.pl plugin
   copy: src=usr/lib/nagios/plugins/check_file_age2.pl dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
 
+- name: Enlazar check_file_age2 -> check_file_age2.pl
+  file: path=/usr/lib/nagios/plugins/check_file_age2 state=link src=/usr/lib/nagios/plugins/check_file_age2.pl force=yes
+
 - name: Copy check_iptables.sh plugin
   copy: src=usr/lib/nagios/plugins/check_iptables.sh dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
 
@@ -76,6 +79,12 @@
 
 - name: Copy check_mount.sh plugin
   copy: src=usr/lib/nagios/plugins/check_mount.sh dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Copy check_netstat.pl plugin
+  copy: src=usr/lib/nagios/plugins/check_netstat.pl dest=/usr/lib/nagios/plugins owner=root group=root mode=0755
+
+- name: Enlazar check_netstat -> check_netstat.pl
+  file: path=/usr/lib/nagios/plugins/check_netstat state=link src=/usr/lib/nagios/plugins/check_netstat.pl force=yes
 
 - name: Add node to allowed_hosts in /etc/nagios/nrpe.cfg
   shell: (((grep '^allowed_hosts' /etc/nagios/nrpe.cfg | grep "{{ item }}" -v >/dev/null 2>/dev/null && sed -i "s@$(grep '^allowed_hosts' /etc/nagios/nrpe.cfg |head -1)@$(grep '^allowed_hosts' /etc/nagios/nrpe.cfg | head -1 | xargs),{{ item }}@g" /etc/nagios/nrpe.cfg) || (! (grep '^allowed_hosts' /etc/nagios/nrpe.cfg >/dev/null 2>/dev/null) && echo "allowed_hosts={{ item }}" >> /etc/nagios/nrpe.cfg)) && echo "Changed") || echo "No" executable="/bin/bash"

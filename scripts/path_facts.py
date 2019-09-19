@@ -122,6 +122,7 @@ def show_paths():
     print "        \"mksquashfs\": \"%s\"," % (path('mksquashfs'))
     print "        \"mount\": \"%s\"," % (path('mount'))
     print "        \"mv\": \"%s\"," % (path('mv'))
+    print "        \"mysqld\": \"%s\"," % (path('mysqld'))
     print "        \"nagios\": \"%s\"," % (path('nagios','nagios3'))
     print "        \"netstat\": \"%s\"," % (path('netstat'))
     print "        \"ntpdate\": \"%s\"," % (path('ntpdate'))

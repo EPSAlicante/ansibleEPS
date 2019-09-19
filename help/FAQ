@@ -58,6 +58,8 @@
 
     * CentOS 6
 
+    * CentOS 7
+
     * Debian 4
 
     * Debian 6
@@ -69,6 +71,8 @@
     * Ubuntu 14
 
     * Ubuntu 16
+
+    * Ubuntu 18
 
     These files includes specific variables for a version of a Operating System. For example: specific users, repositories, speci fic software, specific config files, etc.
 

@@ -16,4 +16,6 @@
 - include: iptables.yml
 - include: crontab.yml
 - include: proxmox.yml
+- include: mycnf.yml
+- include: apacheInc.yml
 

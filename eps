@@ -5,6 +5,14 @@
 [P1-ansible]
 ansible_server
 
+[P1-apache]
+sentinel
+server_12
+
+[P2-apache]
+hermes
+server_22
+
 [P3-bacula]
 baculaadmon1
 
@@ -73,6 +81,10 @@ server_21
 [ansible:children]
 P1-ansible
 
+[apache:children]
+P1-apache
+P2-apache
+
 [bacula:children]
 P3-bacula
 
@@ -121,6 +133,7 @@ P2-wordpress
 
 [P1:children]
 P1-ansible
+P1-apache
 P1-DHCP
 P1-DNS
 P1-LDAP
@@ -130,6 +143,7 @@ P1-proxmox
 P1-wordpress
 
 [P2:children]
+P2-apache
 P2-DHCP
 P2-DNS
 P2-LDAP
@@ -150,36 +164,40 @@ P3-proxmox
 ######## Special Group ########
 ###############################
 
+[noapacheInc]
+
+[nobaculaAdmon]
+
 [nocommon]
 baculaadmon1
 
 [nocrontab]
 baculaadmon1
 
-[noiptables]
-baculaadmon1
-
-[noupdate]
-
-[nosudo]
-baculaadmon1
-
-[nopamAccess]
-baculaadmon1
-
 [nohostsFile]
 baculaadmon1
 
-[nowrappers]
-baculaadmon1
-
-[nonrpe]
+[noiptables]
 baculaadmon1
 
 [nomunin]
 baculaadmon1
 
-[nobaculaAdmon]
+[nomycnf]
 
 [nonagios]
+
+[nonrpe]
+baculaadmon1
+
+[nopamAccess]
+baculaadmon1
+
+[nosudo]
+baculaadmon1
+
+[noupdate]
+
+[nowrappers]
+baculaadmon1
 

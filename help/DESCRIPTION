@@ -88,15 +88,19 @@ Especifically, ansibleEPS does the following tasks:
 
   (9) Proxmox management (configuration and checking)
 
-  (10) Bacula servers management (configuration and checking)
+  (10) My.cnf file (/etc/my.cnf) management (configuration and checking) with three level configuration
 
-  (11) DHCP servers management (configuration and checking)
+  (11) Apache includes management (creation, configuraion and checking) with three level configuration
 
-  (12) Munin servers management (configuration and checking)
+  (12) Bacula servers management (configuration and checking)
 
-  (13) Nagios servers management (configuration and checking)
+  (13) DHCP servers management (configuration and checking)
 
-  (14) Email addresses list of QMail server
+  (14) Munin servers management (configuration and checking)
+
+  (15) Nagios servers management (configuration and checking)
+
+  (16) Email addresses list of QMail server
 
 
 How it works?
@@ -166,6 +170,8 @@ System is ready to work with next Operating System (all of them with 'yum' or 'a
   * Ubuntu 14
 
   * Ubuntu 16
+
+  * Ubuntu 18
 
 These files includes specific variables for a version of a Operating System. For example: specific users, repositories, specific software, specific config files, etc.
 

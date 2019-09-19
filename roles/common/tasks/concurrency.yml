@@ -8,6 +8,10 @@
 
 # CONCURRENCY configuration 
 
+- name: Check if /etc/init.d/rc exists
+  stat: path=/etc/init.d/rc
+  register: rcfile
+
 - name: Configure concurrency (Debian)
   lineinfile: name=/etc/init.d/rc state=present regexp="^CONCURRENCY=" line="CONCURRENCY={{ concurrency }}" 
-  when: ansible_os_family == "Debian"
+  when: rcfile.stat.exists and ansible_os_family == "Debian"

@@ -18,8 +18,20 @@
   ignore_errors: True
   when: checkFile|changed
 
-- name: if check OK -> Copy bacula-dir.conf file to baculaAdmon Servers
+- name: If check OK -> Copy bacula-dir.conf file to baculaAdmon Servers
   template: src=etc/bacula/bacula-dir.conf.j2 dest=/etc/bacula/bacula-dir.conf owner=root group=bacula mode=0640 backup=yes
+  when: checkFile|changed and checkResult|success
+
+- name: If check OK -> clean backups (except last 5)
+  shell: "ls -t1 /etc/bacula/bacula-dir.conf.*|tail -n +6|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
+  when: checkFile|changed and checkResult|success
+
+- name: If check OK -> delete error file (if exists)
+  shell: "ls -1 /etc/bacula/.bacula-dir.conf.error|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
   when: checkFile|changed and checkResult|success
 
 - name: If check fails -> move .bacula-dir.conf.check as .bacula-dir.conf.error

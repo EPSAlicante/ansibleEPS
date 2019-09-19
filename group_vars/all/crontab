@@ -3,10 +3,10 @@
 # Variables to configure users crontab
 #
 # crontabGlobal:
-# users: (List of crontab users)
-# - name: value --> username
-#   tasks: (List of global crontab tasks by user)
-#   ...
+#   users: (List of crontab users)
+#   - name: value --> username
+#     tasks: (List of global crontab tasks by user)
+#     ...
 #
 # crontabGroup:
 # - group: value (group name)

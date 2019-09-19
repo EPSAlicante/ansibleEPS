@@ -14,7 +14,7 @@
   changed_when: False
 
 - name: Copy iptables.sh file to servers in /etc/init.d/.iptables.sh.check 
-  template: src=etc/init.d/iptables.sh.j2 dest=/etc/init.d/.iptables.sh.check owner=root group=root mode=0750 backup=yes
+  template: src=etc/init.d/iptables.sh.j2 dest=/etc/init.d/.iptables.sh.check owner=root group=root mode=0750
   register: checkFile
 
 - name: Check if original iptables.sh exists
@@ -32,8 +32,20 @@
   when: checkFile|changed
 
 - name: If execution OK -> Copy iptables.sh file to servers
-  template: src=etc/init.d/iptables.sh.j2 dest=/etc/init.d/iptables.sh owner=root group=root mode=0750
+  template: src=etc/init.d/iptables.sh.j2 dest=/etc/init.d/iptables.sh owner=root group=root mode=0750 backup=yes
   notify: restart iptables
+  when: checkFile|changed and checkResult|success
+
+- name: If execution OK -> clean backups (except last 5)
+  shell: "ls -t1 /etc/init.d/iptables.sh.*|tail -n +6|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
+  when: checkFile|changed and checkResult|success
+
+- name: If execution OK -> delete error file (if exists)
+  shell: "ls -1 /etc/init.d/.iptables.sh.error|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
   when: checkFile|changed and checkResult|success
 
 - name: If execution fails and original iptables.sh exists -> Start original iptables.sh
