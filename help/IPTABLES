@@ -1,6 +1,6 @@
 *** IPTABLES PlayBook ***
 
-IPtables playbook 'iptables.yml' is able to manage IPtables configuration for all servers (except those belongig to 'noiptables' group), in a centralized way.  Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks syntax before updating file. In case of syntax error, it undoes updates.
+IPtables playbook 'iptables.yml' is able to manage IPtables configuration for all servers (except those belongig to 'windows' and 'noiptables' group), in a centralized way.  Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks syntax before updating file. In case of syntax error, it undoes updates.
 
 Changes will be generated using some variables (through a template) to create '/etc/init.d/iptables.sh' (configuration and start file) for every server.
 
@@ -9,7 +9,7 @@ Variables are defined by default in 'group_vars/all/iptables' file. We can overw
 
 Command-line execution: 'ansible-playbook iptables.yml'
 
-Scope: Playbook will update all server except those belonging to 'noiptables' group.
+Scope: Playbook will update all server except those belonging to 'windows' and 'noiptables' group.
 
 Templates: 'roles/iptables/templates/etc/init.d/iptables.sh.j2'
 

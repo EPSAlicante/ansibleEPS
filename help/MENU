@@ -11,56 +11,56 @@ Admin Menu's options:
 
  1. Common module (nodes config)                    
  
-    To configure common features in nodes (hosts in inventory). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc.  
+    To configure common features in nodes (hosts in inventory except Windows). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc.  
     
     See COMMON file to get details about Common module. 
 
 
  2. Host File module (nodes config) 
 
-    To configure '/etc/hosts' file in nodes (hosts in inventory). 
+    To configure '/etc/hosts' file in nodes (hosts in inventory except Windows). 
 
     See HOSTFILE file to get details about HostFile module. 
 
 
  3. Sudoers module (nodes config)                       
 
-    To configure '/etc/sudoers' file in nodes (hosts in inventory).
+    To configure '/etc/sudoers' file in nodes (hosts in inventory except Windows).
 
     See SUDO file to get details about Sudoers module.
 
 
  4. TCP Wrappers module (nodes config)
 
-    To configure TCP Wrappers ('/etc/hosts.allow' and '/etc/hosts.deny' files) in nodes (hosts in inventory).
+    To configure TCP Wrappers ('/etc/hosts.allow' and '/etc/hosts.deny' files) in nodes (hosts in inventory except Windows).
 
     See WRAPPERS file to get details about TCP Wrappers module.
 
 
  5. PAM Access module (nodes config)
 
-    To configure PAM Access ('/etc/security/access.conf' file) in nodes (hosts in inventory).
+    To configure PAM Access ('/etc/security/access.conf' file) in nodes (hosts in inventory except Windows).
 
     See PAMACCESS file to get details about PAM Access module.
 
 
  6. NRPE module (nodes config)
 
-    To configure Nagios NRPE commands (files in '/etc/nagios/nrpe.d/') in nodes (hosts in inventory).
+    To configure Nagios NRPE commands (files in '/etc/nagios/nrpe.d/') in nodes (hosts in inventory except Windows).
 
     See NRPE file to get details about NRPE module.
 
 
  7. IPTables module (nodes config)
 
-    To configure IPTables in nodes (hosts in inventory).
+    To configure IPTables in nodes (hosts in inventory except Windows).
 
     See IPTABLES file to get details about IPtables module.
 
 
  8. Crontab module (nodes config)
 
-    To configure crontab in nodes (hosts in inventory).
+    To configure crontab in nodes (hosts in inventory except Windows).
 
     See CRONTAB file to get details about Crontab module.
 
@@ -88,7 +88,14 @@ Admin Menu's options:
 
 12. All modules (nodes config)
 
-    To configure every module (Menu 1 to 11) in nodes (hosts in inventory).
+    To configure every module (Menu 1 to 11) in nodes (hosts in inventory except Windows).
+
+
+w1. Windows NRPE module (Windows nodes config)
+
+    To configure Nagios NRPE commands (NSClient++ agent) in Windows nodes.
+
+    See WINNRPE file to get details about Windows NRPE module.
 
 
  b. Bacula Servers (bacula config)

@@ -4,7 +4,7 @@ Update playbook 'update.yml' is able to update Debian and CentOS families server
 
 Command-line execution: 'ansible-playbook update.yml'
 
-Scope: Playbook will update all servers except those belonging to 'noupdate' group.
+Scope: Playbook will update all servers except those belonging to 'windows' and 'noupdate' group.
 
 Labels: 'Centos' and 'Debian' labels can be used to filter update (only servers of this distribution will be updates)
 

@@ -1,6 +1,6 @@
 *** WRAPPERS PlayBook ***
 
-Wrappers playbook 'wrappers.yml' is able to manage TCP Wrappers Security ('/etc/hosts.deny' and /etc/hosts.allow' files configuration) for all servers (except those belonging to 'nowrappers' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+Wrappers playbook 'wrappers.yml' is able to manage TCP Wrappers Security ('/etc/hosts.deny' and /etc/hosts.allow' files configuration) for all servers (except those belonging to 'windows' and 'nowrappers' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
  
 Changes will be generated using some variables (through two templates) to create '/etc/hosts.deny' and '/etc/hosts.allow' files for every server.
 
@@ -9,7 +9,7 @@ Variables are defined by default in 'group_vars/all/wrappers' file. We can overw
 
 Command-line execution: 'ansible-playbook wrappers.yml'
 
-Scope: Playbook will update all server except those belonging to 'nowrappers' group.
+Scope: Playbook will update all server except those belonging to 'windows' and 'nowrappers' group.
 
 Templates:
  

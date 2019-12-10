@@ -1,6 +1,6 @@
 *** PAMACCESS Playbook ***
 
-PamAccess playbook 'pamAccess.yml' is able to manage PAM security configuration (specifically '/etc/security/access.conf' file) for all servers (except those belonging to 'nopamAccess' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+PamAccess playbook 'pamAccess.yml' is able to manage PAM security configuration (specifically '/etc/security/access.conf' file) for all servers (except those belonging to 'windows' and 'nopamAccess' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
 
 Changes will be generated using some variables (through a template) to create '/etc/security/access.conf' file for every server.
 
@@ -9,7 +9,7 @@ Variables are defined by default in 'group_vars/all/pamAccess' file. We can over
 
 Command-line execution: 'ansible-playbook pamAccess.yml'
 
-Scope: Playbook will update all server except those belonging to 'nopamAccess' group.
+Scope: Playbook will update all server except those belonging to 'windows' and 'nopamAccess' group.
 
 Templates: 'roles/pamAccess/templates/etc/security/access.conf.j2'
 

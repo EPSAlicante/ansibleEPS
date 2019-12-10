@@ -1,6 +1,6 @@
 *** HOSTSFILE PlayBook ***
 
-HostsFile playbook 'hostsFile.yml' is able to manage '/etc/hosts' file for all server (except those belonging to 'nohostsFile' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+HostsFile playbook 'hostsFile.yml' is able to manage '/etc/hosts' file for all server (except those belonging to 'windows' and 'nohostsFile' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
 
 Changes will be generated using some variables (through a template) to create '/etc/hosts' file for every server.
 
@@ -9,7 +9,7 @@ Variables are defined by default in 'group_vars/all/hostsFile' file. We can over
 
 Command-line execution: 'ansible-playbook hostsFile.yml'
 
-Scope: Playbook will update all server except those belonging to 'nohostsFile' group.
+Scope: Playbook will update all server except those belonging to 'windows' and 'nohostsFile' group.
 
 Templates: 'roles/hostsFile/templates/etc/hosts.j2'
 

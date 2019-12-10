@@ -3,10 +3,10 @@
 ## Table of contents
 - [What's ansibleEPS?](#whats-ansibleeps)
 - [What can I do with AnsibleEPS?](#what-can-i-do-with-ansibleeps)
-- [How does it work?](#how-does-it-work?)
-- [Installation & Configuration](#installation-configuration)
-- [Does it work for all Operating System?](#does-it-work-for-all-operating-system?)
-- [Copyright & License](#copyright-license)
+- [How does it work?](#how-does-it-work)
+- [Installation and Configuration](#installation-and-configuration)
+- [Does it work for all Operating System?](#does-it-work-for-all-operating-system)
+- [Copyright and License](#copyright-and-license)
 
 
 ## What's ansibleEPS?
@@ -30,8 +30,9 @@ Especifically, ansibleEPS does the following tasks:
 | **IPTables** management for all hosts (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
 | **Crontab** managemenet for all hosts (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
 | **Proxmox servers** management (configuration and checking) | Configuration of Proxmox servers |
-| **My.cnf file ** management for mysql servers (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
-| **Apache includes ** management for apache servers (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
+| **My.cnf file** management for mysql servers (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
+| **Apache includes** management for apache servers (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
+| **Windows NRPE** management for Windows hosts (configuration and checking) | Three level configuration: ● Global, to apply on all hosts ● Group, to apply on all hosts belonging to group selected ● Host, to apply on host selected |
 | **Bacula servers** management (configuration and checking) | Configuration of Bacula servers |
 | **DHCP servers** management (configuration and checking) | Configuration of DHCP servers |
 | **Munin servers** management (configuration and checking) | Configuration of Munin servers |
@@ -52,7 +53,7 @@ This way, we can manage anything for a host, a group or all hosts, just selectin
 All changes made and errors produced will be saved in log files to be watched next morning.
 
 
-## Installation & Configuration
+## Installation and Configuration
 
 We have to install and prepare system to be ready for management. There are some step to do:
 
@@ -66,11 +67,31 @@ We have to install and prepare system to be ready for management. There are some
 
 1. First of all, we have to **configure a host as node**. What's a node?
 
- A node is a host directly SSH accessed by Ansible server (host where Ansible was installed) with a predefined user and no password.
+   A node is a host directly SSH accessed by Ansible server (host where Ansible was installed) with a predefined user and no password.
 
- By default, user predefined connecting to nodes is 'ansible', but we can change it modifying 'ansible_ssh_user' variable in '/etc/ansibleEPS/group_vars/all/all' main configuration file.
+   By default, user predefined connecting to nodes is 'ansible', but we can change it modifying 'ansible_ssh_user' variable in '/etc/ansibleEPS/group_vars/all/all' main configuration file.
 
- To convert a host as node, simply select 'add node' option in **admin menu** '/etc/ansibleEPS/menu.py'. Select 'user to connect' and hostname or IP. The script will try to connect by SSH to host as 'root' (we have to type password), then it will create 'user to connect' and 'authorized_keys' file with 'Ansible server' public key, also it will install 'sudo' package and configure 'sudoers' file permitting execute everything to 'user to connect'.
+   To convert a host as node, simply select 'add node' option in **admin menu** '/etc/ansibleEPS/menu.py'. Select 'user to connect' and hostname or IP. The script will try to connect by SSH to host as 'root' (we have to type password), then it will create 'user to connect' and 'authorized_keys' file with 'Ansible server' public key, also it will install 'sudo' package and configure 'sudoers' file permitting execute everything to 'user to connect'.
+
+   ● Special case for **Windows hosts**:
+
+     A Windows hosts needs at least **PowerShell 3.0** and **.NET 4.0** (or newer), and a **WinRM** listener installed.
+
+     This script installs and configures the WinRM listener (run in PowerShell):
+
+     >$url = "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"
+     >$file = "$env:temp\ConfigureRemotingForAnsible.ps1"
+     >(New-Object -TypeName System.Net.WebClient).DownloadFile($url, $file)
+     >powershell.exe -ExecutionPolicy ByPass -File $file
+
+     Finally, we have to config 'Windows connection', creating an **administrator user** ('ansible' for example), and configure '**/etc/ansibleEPS/group_vars/windows**' file:
+
+     >\# Windows connection
+     >ansible_user: ansible
+     >ansible_password: XXXXXXX
+     >ansible_port: 5986
+     >ansible_connection: winrm
+     >ansible_winrm_server_cert_validation: ignore
 
 2. Second step: **add nodes to inventory**
 
@@ -115,6 +136,8 @@ System is ready to work with the following Operating Systems (all of them with '
 
   - Ubuntu 18
 
+  - Windows (PowerShell 3.0+, .NET 4.0+)
+
 There’s a specific file for every Operating System and version in '/etc/ansibleEPS/group_vars' directory. They include variables and specific values. For example: specific users, repositories, software, configuration files, etc.
 
 Adding a new Operating System and Version (based on 'yum' or 'apt' package manager) is very simple: just create a new file in '/etc/ansibleEPS/group_vars' directory with name 'OperatingSystem-Version' and fill it with variables and specific values (easier copying other similar file and modifying values).
@@ -122,7 +145,7 @@ Adding a new Operating System and Version (based on 'yum' or 'apt' package manag
 >Example: To prepare system for RedHat 7 nodes, we can copy 'CentOS-6' file (the most similar) to 'RedHat-7', verifying values and changing if necessary.
 
 
-## Copyright & License
+## Copyright and License
 
 The source code packaged with this file is Free Software, Copyright (C) 2016 by Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: `<`aeps at eps.ua.es`>`.
 It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. You can get copies of the licenses here: http://www.affero.org/oagpl.html AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".

@@ -1,6 +1,6 @@
 *** SUDO PlayBook ***
 
-Sudo playbook 'sudo.yml' is able to manage '/etc/sudoers' file for all server (except those belonging to 'nosudo' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+Sudo playbook 'sudo.yml' is able to manage '/etc/sudoers' file for all server (except those belonging to 'windows' and 'nosudo' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
 
 Changes will be generated using some variables (through a template) to create '/etc/sudoers' file for every server.
 
@@ -9,7 +9,7 @@ Variables are defined by default in 'group_vars/all/sudo' file. We can overwrite
 
 Command-line execution: 'ansible-playbook sudo.yml'
 
-Scope: Playbook will update all server except those belonging to 'nosudo' group.
+Scope: Playbook will update all server except those belonging to 'windows' and 'nosudo' group.
 
 Templates: 'roles/sudo/templates/etc/sudoers.j2'
 

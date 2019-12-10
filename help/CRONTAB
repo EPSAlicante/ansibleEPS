@@ -1,6 +1,6 @@
 *** CRONTAB PlayBook ***
 
-HostsFile playbook 'hostsFile.yml' is able to manage crontab tasks for all server (except those belonging to 'nocrontab' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+HostsFile playbook 'hostsFile.yml' is able to manage crontab tasks for all server (except those belonging to 'windows' and 'nocrontab' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
 
 Changes will be generated using some variables (through a template) to create crontab tasks for every server.
 
@@ -9,7 +9,7 @@ Variables are defined by default in 'group_vars/all/crontab' file. We can overwr
 
 Command-line execution: 'ansible-playbook crontab.yml'
 
-Scope: Playbook will update all server except those belonging to 'nocrontab' group.
+Scope: Playbook will update all server except those belonging to 'windows' and 'nocrontab' group.
 
 Templates: 'roles/crontab/templates/tmp/cronUsers.j2'
            'roles/crontab/templates/var/spool/cron/user.j2'

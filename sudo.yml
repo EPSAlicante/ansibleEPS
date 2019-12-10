@@ -7,7 +7,7 @@
 
 
 # All nodes except nosudo Group 
-- hosts: all:!nosudo 
+- hosts: all:!nosudo:!windows 
   remote_user: ansible 
   become: yes
   become_user: root
@@ -16,7 +16,7 @@
   - include: group_by.yml
   - include: pathFacts.yml
 
-- hosts: all:!nosudo
+- hosts: all:!nosudo:!windows
   gather_facts: False
   remote_user: ansible
   become: yes

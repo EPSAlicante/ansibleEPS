@@ -7,7 +7,7 @@
 
 
 # All nodes except noupdate Group 
-- hosts: all:!noupdate 
+- hosts: all:!noupdate:!windows 
   remote_user: ansible 
   become: yes
   become_user: root
@@ -16,7 +16,7 @@
   - include: group_by.yml
   - include: pathFacts.yml
 
-- hosts: all:!noupdate
+- hosts: all:!noupdate:!windows
   gather_facts: False
   remote_user: ansible
   become: yes

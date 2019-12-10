@@ -20,6 +20,9 @@
 # label: value --> name used as key to be called from other variables (required attribute)
 # command: value --> Check command (required attribute)
 #
+# On 'command' attribute, 'indirect commands' could be used with 'command.XXX' ('path_fact.py' script will find 'XXX' path on filesystem)
+# On 'command' attribute, 'indirect daemons' could be used with 'daemon.XXX' ('path_fact.py' script will find 'XXX' path on filesystem)
+#
 
 nrpeGlobal:
 - label: check_load

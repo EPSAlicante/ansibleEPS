@@ -55,7 +55,6 @@ nagiosServices:
 - name: "Dns"
   command: "check_nrpe!check_dns"
   handler: "restart-dns"
-  command: "check_nrpe!check_errorBackup"
 - name: "HTTP"
   command: "check_http!hostname"
   handler: "restart-http"

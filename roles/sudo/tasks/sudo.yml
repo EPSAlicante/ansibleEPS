@@ -55,9 +55,9 @@
   ignore_errors: yes
   when: path.daemons.sudo.name|default("") == ""
 
-- name: Restart sudo systemd
-  systemd: name={{ path.daemons.sudo.name }} state=restarted
-  when: path.daemons.sudo.type == "systemctl" and path.daemons.sudo.name|default("") != "" and checkFile|changed and checkResult|success
+#- name: Restart sudo systemd
+#  systemd: name={{ path.daemons.sudo.name }} state=restarted
+#  when: path.daemons.sudo.type == "systemctl" and path.daemons.sudo.name|default("") != "" and checkFile|changed and checkResult|success
 
 - name: Restart sudo service
   service: name={{ path.daemons.sudo.name }} state=restarted
@@ -67,10 +67,10 @@
   shell: '{{ path.daemons.sudo.name }} restart executable="/bin/bash"'
   when: path.daemons.sudo.type == "init" and path.daemons.sudo.name|default("") != "" and checkFile|changed and checkResult|success
 
-- name: Checking sudo systemd
-  systemd: name={{ path.daemons.sudo.name }} state=started enabled=true
-  changed_when: False
-  when: path.daemons.sudo.type == "systemctl" and path.daemons.sudo.name != ""
+#- name: Checking sudo systemd
+#  systemd: name={{ path.daemons.sudo.name }} state=started enabled=true
+#  changed_when: False
+#  when: path.daemons.sudo.type == "systemctl" and path.daemons.sudo.name != ""
 
 - name: Checking sudo service
   service: name={{ path.daemons.sudo.name }} state=started enabled=true

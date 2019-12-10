@@ -114,6 +114,8 @@ def printMenu():
     print "## 11. Apache includes (Apache nodes config)   ##"
     print "## 12. All modules (nodes config)              ##"
     print "##---------------------------------------------##"
+    print "## w1. Win NRPE module (Windows nodes config)  ##"
+    print "##---------------------------------------------##"
     print "##  b. Bacula Servers (bacula config)          ##"
     print "##  d. DHCP Servers (DHCP config)              ##"
     print "##  m. Munin Servers (munin config)            ##"
@@ -136,7 +138,7 @@ def printMenu():
 def selectOption():
 
     answer = None
-    legal_answers = ['0','1','2','3','4','5','6','7', '8', '9', '10', '11', '12', 'a', 'b', 'c', 'd', 'i', 'l', 'm', 'n', 'r', 's', 'u', 'v', 'x', 'q']
+    legal_answers = ['0','1','2','3','4','5','6','7', '8', '9', '10', '11', '12', 'w1', 'a', 'b', 'c', 'd', 'i', 'l', 'm', 'n', 'r', 's', 'u', 'v', 'x', 'q']
     tried = False
     while answer not in legal_answers:
         print "%s" % "Invalid input, select again" if tried else ""
@@ -534,6 +536,36 @@ def execOption(opt):
           print
           print "cd %s && ansible-playbook %s/site.yml" % (pathAnsible,pathAnsible)
 	  retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/site.yml 2>&1|tee /var/log/ansibleEPS/.site.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS site.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.site.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.site.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES site.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.site.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.site.$timestamp.log.tmp; echo \"### site.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
+
+      except KeyboardInterrupt:
+        nodeName = ""
+        print
+        print "Interrupted"
+        print
+
+
+    elif opt == 'w1':
+      ## Nagios-NRPE 'NSClient++' File configuration (for Windows Nodes) ##
+      # Ask hostname
+      try:
+        nodeName = raw_input('Node (hostname) or Group (name) or All (enter): ')
+
+        if nodeName:
+          nodeInventory = getInventory(nodeName)
+          if nodeInventory != "":
+            print
+            print "cd %s && ansible-playbook %s/winNrpe.yml --limit %s" % (pathAnsible,pathAnsible,nodeInventory)
+            retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/winNrpe.yml --limit %s 2>&1|tee /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS winNrpe.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES winNrpe.yml --limit %s (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp; echo \"### winNrpe.yml --limit %s (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible,nodeInventory,nodeInventory,nodeInventory,nodeInventory), shell=True)
+
+          else:
+            print >> sys.stderr
+            print >> sys.stderr, "%s is not in inventory" % (nodeName)
+            print >> sys.stderr
+
+        else:
+          print
+          print "cd %s && ansible-playbook %s/winNrpe.yml" % (pathAnsible,pathAnsible)
+          retCode = subprocess.call("cd %s && (ini=$(date); timestamp=$(date +\"\\%%y\\%%m\\%%d-\\%%H\\%%M\"); ansible-playbook %s/winNrpe.yml 2>&1|tee /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp; ret=${PIPESTATUS[0]}; [ $ret -gt 0 ] && ((echo; echo \"### ERRORS winNrpe.yml (menu) - $ini TO $(date) ###\"; echo; cat /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp) >> /var/log/ansibleEPS/errors.log); [ `grep \"changed=\" /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp|grep -v \"changed=0\"|wc -l` -gt 0 ] && ((echo; echo \"### CHANGES winNrpe.yml (menu) - $ini TO $(date) ###\"; echo; grep /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp -e \"^PLAY \" -e \"^TASK \" -e \"changed:\" -e \"changed=\"; echo) >> /var/log/ansibleEPS/changes.log); rm -f /var/log/ansibleEPS/.winNrpe.$timestamp.log.tmp; echo \"### winNrpe.yml (menu) - $ini TO $(date) ###\" >> /var/log/ansibleEPS/summary.log; echo $ret)" % (pathAnsible,pathAnsible), shell=True)
 
       except KeyboardInterrupt:
         nodeName = ""

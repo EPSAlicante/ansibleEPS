@@ -44,6 +44,10 @@
 # name: value --> Command alias name and label used as key to be called from other variables (required attribute)
 # list: value --> List of commands (required attribute, but could be an empty list '[]')
 #
+# On 'list' attribute, 'indirect commands' could be used with 'command.XXX' ('path_fact.py' script will find 'XXX' path on filesystem)
+# On 'list' attribute, 'indirect daemons' could be used with 'daemon.XXX' ('path_fact.py' script will find 'XXX' path on filesystem)
+#
+#
 # Runas definition (syntax)
 # -------------------------
 # name: value --> Runas alias name and label used as key to be called from other variables (required attribute)
@@ -255,7 +259,7 @@ sudoHost:
 
   commands:
   - name: HOST_DHCP
-    list: [ 'command.ansible-playbook -i /etc/ansibleEPS/eps /etc/ansibleEPS/dhcp.yml -t ??', command.joe /etc/ansibleEPS/roles/dhcp/files/etc/dhcp/dhcpd-??.conf' ]
+    list: [ 'command.ansible-playbook -i /etc/ansibleEPS/eps /etc/ansibleEPS/dhcp.yml -t ??', 'command.joe /etc/ansibleEPS/roles/dhcp/files/etc/dhcp/dhcpd-??.conf' ]
 
   privileges:
   - user: HOST_DHCP

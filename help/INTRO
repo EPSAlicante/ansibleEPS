@@ -4,7 +4,7 @@
 
   Ansible let us simplify hard tasks, setting several 'control' files in Ansible server and executing some scripts (called playbooks) that made appropiate updates to selected servers.
 
-  Ansible server saves all information about Ansible (control variables, communication and administration code) in '/etc/ansibleEPS' directory. Inside we'll find playbooks (yml extension files), 'eps' inventory file (with servers iforming into groups), 'group_vars' and 'hosts_vars' variables directories, and 'roles' directory with playbooks execution code, separated by roles depending on tasks to do.
+  Ansible server saves all information about Ansible (control variables, communication and administration code) in '/etc/ansibleEPS' directory. Inside we'll find playbooks (yml extension files), 'eps' inventory file (with servers forming into groups), 'group_vars' and 'hosts_vars' variables directories, and 'roles' directory with playbooks execution code, separated by roles depending on tasks to do.
 
 
 * Playbooks

@@ -5,7 +5,7 @@
 
 What's ansibleEPS?
 
-  AnsibleEPS is a collection of ansible playbooks (little ansible programs) to manage Linux/Unix hosts of your network.
+  AnsibleEPS is a collection of ansible playbooks (little ansible programs) to manage Linux/Unix/Windows hosts of your network.
 
   Management permits automatically: 
 
@@ -92,15 +92,17 @@ Especifically, ansibleEPS does the following tasks:
 
   (11) Apache includes management (creation, configuraion and checking) with three level configuration
 
-  (12) Bacula servers management (configuration and checking)
+  (12) Windows NRPE management (configuration and checking) with three level configuration
 
-  (13) DHCP servers management (configuration and checking)
+  (13) Bacula servers management (configuration and checking)
 
-  (14) Munin servers management (configuration and checking)
+  (14) DHCP servers management (configuration and checking)
 
-  (15) Nagios servers management (configuration and checking)
+  (15) Munin servers management (configuration and checking)
 
-  (16) Email addresses list of QMail server
+  (16) Nagios servers management (configuration and checking)
+
+  (17) Email addresses list of QMail server
 
 
 How it works?
@@ -128,6 +130,25 @@ Configuration
 
       To convert a host as node, simply choice 'add node' option in admin menu. Select 'user to connect' and hostname or IP. Script will try to connect by SSH to host as 'root' (we have to put its password), then will create 'user to connect' and create 'authotized_keys' with 'Ansible server' public key, also will install 'sudo' package and configure 'sudoers' file to permit execute everything to 'user to connect'.
 
+     ● Special case for **Windows hosts**:
+ 
+       A Windows hosts needs at least **PowerShell 3.0** and **.NET 4.0** (or newer), and a **WinRM** listener installed.
+
+       This script installs and configures the WinRM listener (run in PowerShell):
+
+       $url = "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"
+       $file = "$env:temp\ConfigureRemotingForAnsible.ps1"
+       (New-Object -TypeName System.Net.WebClient).DownloadFile($url, $file)
+       powershell.exe -ExecutionPolicy ByPass -File $file
+
+       Finally, we have to config 'Windows connection', creating an **administrator user** ('ansible' for example), and configure '**/etc/ansibleEPS/group_vars/windows**' file:
+
+       # Windows connection
+       ansible_user: ansible
+       ansible_password: XXXXXXX
+       ansible_port: 5986
+       ansible_connection: winrm
+       ansible_winrm_server_cert_validation: ignore
 
   (2) Second step: add nodes in inventory
 
@@ -172,6 +193,8 @@ System is ready to work with next Operating System (all of them with 'yum' or 'a
   * Ubuntu 16
 
   * Ubuntu 18
+
+  * Windows (PowerShell 3.0+, .NET 4.0+)
 
 These files includes specific variables for a version of a Operating System. For example: specific users, repositories, specific software, specific config files, etc.
 

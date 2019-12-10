@@ -1,8 +1,8 @@
 *** NRPE PlayBook ***
 
-NRPE playbook 'nrpe.yml' is able to manage Nagios NRPE checks for all servers (except those belonging to 'nonrpe' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+NRPE playbook 'nrpe.yml' is able to manage Nagios NRPE checks for all servers (except those belonging to 'windows' and 'nonrpe' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
 
-First playbook createis '/etc/nagios/nrpe.d' directory if it doesn't exist.
+First playbook create is '/etc/nagios/nrpe.d' directory if it doesn't exist.
 
 Then it adds 'include' directive to created directory, in '/etc/nagios/nrpe.cfg' config file.
 
@@ -19,9 +19,9 @@ Variables are defined by default in 'group_vars/all/nrpe' file. We can overwrite
 
 Command-line execution: 'ansible-playbook nrpe.yml'
 
-Scope: Playbook will update all server except those belonging to 'nonrpe' group
+Scope: Playbook will update all servers except those belonging to 'windows' and 'nonrpe' group
 
-Templates: 'roles/baculaAdmon/templates/etc/nagios/nrpe.d/baseNrpe.cfg.j2'
+Templates: 'roles/nrpe/templates/etc/nagios/nrpe.d/baseNrpe.cfg.j2'
 
 Variables:
 
@@ -64,6 +64,7 @@ Variables:
 
       Example:
 
+        nrpeGroup:
 	- group: DHCP
 	  rules:
 	  - label: check_dhcp
@@ -100,7 +101,7 @@ Variables:
         nrpeHost:
         - host: server_12 
           rules:
-        - label: check_tempP1
-          command: /usr/lib/nagios/plugins/check_ipmi -w 25 -c 30
+          - label: check_tempP1
+            command: /usr/lib/nagios/plugins/check_ipmi -w 25 -c 30
 
 

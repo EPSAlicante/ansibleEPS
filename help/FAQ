@@ -52,6 +52,27 @@
     * And, of course, every change made by playbooks executed
 
 
+(3) Preparing a Windows host to be a 'node'
+
+    A Windows hosts needs at least **PowerShell 3.0** and **.NET 4.0** (or newer), and a **WinRM** listener installed.
+
+    This script installs and configures the WinRM listener (run in PowerShell):
+
+       $url = "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"
+       $file = "$env:temp\ConfigureRemotingForAnsible.ps1"
+       (New-Object -TypeName System.Net.WebClient).DownloadFile($url, $file)
+       powershell.exe -ExecutionPolicy ByPass -File $file
+
+    Finally, we have to config 'Windows connection', creating an **administrator user** ('ansible' for example), and configure '**/etc/ansibleEPS/group_vars/windows**' file:
+
+       # Windows connection
+       ansible_user: ansible
+       ansible_password: XXXXXXX
+       ansible_port: 5986
+       ansible_connection: winrm
+       ansible_winrm_server_cert_validation: ignore
+
+
 (3) Adding a new Operating System or Version 
 
     System is ready to work with next Operating System (all of them with 'yum' or 'apt' package manager):
@@ -74,7 +95,9 @@
 
     * Ubuntu 18
 
-    These files includes specific variables for a version of a Operating System. For example: specific users, repositories, speci fic software, specific config files, etc.
+    * Windows (PowerShell 3.0+, .NET 4.0+)
+
+    These files includes specific variables for a version of a Operating System. For example: specific users, repositories, specific software, specific config files, etc.
 
     Adding a new Operating System and Version (based on 'yum' or 'apt' package manager) is very simple: just create a new file in  '/etc/ansibleEPS/group_vars/' directory with name 'OperatingSystem-Version' and fill file with variables and specific values  (easier copying other similar file and modify valiues that change from a file to other).
 

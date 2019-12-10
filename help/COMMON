@@ -1,6 +1,6 @@
 *** COMMON PlayBook ***
 
-Common playbook 'common.yml' is able to manage basic configuration for all servers (except those belonging to 'nocommon' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+Common playbook 'common.yml' is able to manage basic configuration for all servers (except those belonging to 'windows' and 'nocommon' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
 
 Basic configuration includes the following tasks lists:
 
@@ -54,7 +54,7 @@ Variables are defined by default in 'group_vars/all' global file, but could be o
 
 Command-line execution: 'ansible-playbook common.yml'
 
-Scope: Playbook will update all server except those belonging to 'nocommon' group
+Scope: Playbook will update all server except those belonging to 'windows' and 'nocommon' group
 
 Labels: There are labels for every tasks list: manager, group, repos, dselect, concurrency, services, resolv, wrappers, nscd, securetty, locales, profile, nvi, utils, pam-ldap, syslog, ntp, munin-node, nrpe, bacula-fd, ossec. Selecting a label, only that tasks will be executed. 
 

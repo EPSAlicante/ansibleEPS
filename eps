@@ -68,6 +68,9 @@ server_34
 [P2-qmail]
 hermes
 
+[P3-windows]
+wserver_35
+
 [P1-wordpress]
 server_11
 
@@ -123,6 +126,9 @@ P3-proxmox
 [qmail:children]
 P2-qmail
 
+[windows:children]
+P3-windows
+
 [wordpress:children]
 P1-wordpress
 P2-wordpress
@@ -159,6 +165,7 @@ P3-DHCP
 P3-DNS
 P3-LDAP
 P3-proxmox
+P3-windows
 
 ###############################
 ######## Special Group ########
@@ -197,6 +204,8 @@ baculaadmon1
 baculaadmon1
 
 [noupdate]
+
+[nowinNrpe]
 
 [nowrappers]
 baculaadmon1

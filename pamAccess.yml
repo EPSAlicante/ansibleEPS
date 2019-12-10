@@ -7,7 +7,7 @@
 
 
 # All nodes except nopamAccess Group 
-- hosts: all:!nopamAccess
+- hosts: all:!nopamAccess:!windows
   remote_user: ansible 
   become: yes
   become_user: root
@@ -16,7 +16,7 @@
   - include: group_by.yml
   - include: pathFacts.yml
 
-- hosts: all:!nopamAccess
+- hosts: all:!nopamAccess:!windows
   gather_facts: False
   remote_user: ansible
   become: yes

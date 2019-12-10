@@ -33,19 +33,19 @@ Directory Structure: '/etc/ansibleEPS'
 
 	* 'baculaAdmon.yml' -> To configure Bacula configuration files ('/etc/bacula/bacula-dir.conf' and '/etc/bacula/bacula-sd.conf' files) in Bacula servers. See BACULAADMON file to get details about Bacula module.
 	
-	* 'common.yml' -> To configure common features in nodes (hosts in inventory). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc. See COMMON file to get details about Common module. 
+	* 'common.yml' -> To configure common features in nodes (hosts in inventory except Windows). They includes some features as: configuration of locales, users, groups, repositories, resolv.conf, syslog, sshd, ntp, bacula-fd, nrpe, munin-node, ossec, etc. See COMMON file to get details about Common module. 
 
 	* 'cron.yml' -> To delete or add playbook entries in crontab to execute playbooks in background.
 
-	* 'crontab.yml' -> To configure Crontab in nodes (hosts in inventory). See CRONTAB file to get details about Crontab module.
+	* 'crontab.yml' -> To configure Crontab in nodes (hosts in inventory except Windows). See CRONTAB file to get details about Crontab module.
 
         * 'dhcp.yml' -> To configure DHCP configuration file ('/etc/dhcp3/dhcpd.conf' file) in DHCP servers. See DHCP file to get details about DHCP module.
 
 	* 'group_by.yml' -> Auxiliar file used by playbooks to get information about Operating System and Networks.
 
-	* 'hostsFile.yml' -> To configure '/etc/hosts' file in nodes (hosts in inventory). See HOSTFILE file to get details about HostFile module. 
+	* 'hostsFile.yml' -> To configure '/etc/hosts' file in nodes (hosts in inventory except Windows). See HOSTFILE file to get details about HostFile module. 
 
-	* 'iptables.yml' -> To configure IPTables in nodes (hosts in inventory). See IPTABLES file to get details about IPtables module.
+	* 'iptables.yml' -> To configure IPTables in nodes (hosts in inventory except Windows). See IPTABLES file to get details about IPtables module.
 
 	* 'listaCorreos.yml -> To generate a List of email adresses with extra info from Qmail Server, and publish info in its Web Service in Qmail server. See EMAILLIST file to get details about Email addresses List module.
 
@@ -55,21 +55,23 @@ Directory Structure: '/etc/ansibleEPS'
 
 	* 'nagios.yml' -> To configure Nagios configuration files (files in '/etc/nagios3/conf.d' files) in Nagios servers. See NAGIOS file to get details about Nagios module. 
 
-	* 'nrpe.yml' -> To configure Nagios NRPE commands (files in '/etc/nagios/nrpe.d/') in nodes (hosts in inventory). See NRPE file to get details about NRPE module. 
+	* 'nrpe.yml' -> To configure Nagios NRPE commands (files in '/etc/nagios/nrpe.d/') in nodes (hosts in inventory except Windows). See NRPE file to get details about NRPE module. 
 
-	* 'pamAccess.yml' -> To configure PAM Access ('/etc/security/access.conf' file) in nodes (hosts in inventory). See PAMACCESS file to get details about PAM Access module. 
+	* 'pamAccess.yml' -> To configure PAM Access ('/etc/security/access.conf' file) in nodes (hosts in inventory except Windows). See PAMACCESS file to get details about PAM Access module. 
 
 	* 'pathFacts.yml' -> Auxiliar file used by playbooks to get commands and daemons paths. 
 
 	* 'proxmox.yml' -> To configure some basic features in proxmox nodes (hosts in inventory with proxmox installed). See PROXMOX file to get details about Proxmox module. 
  
-	* 'site.yml' -> To execute the following playbooks: common.yml, hostsFile.yml, sudo.yml, wrappers.yml, pamAccess.yml, nrpe.yml, iptables.yml and proxmox.yml
+	* 'site.yml' -> To execute all playbooks for nodes in inventory except Windows.
 
-	* 'sudo.yml' -> To configure '/etc/sudoers' file in nodes (hosts in inventory). See SUDO file to get details about Sudoers module. 
+	* 'sudo.yml' -> To configure '/etc/sudoers' file in nodes (hosts in inventory except Windows). See SUDO file to get details about Sudoers module. 
 
-	* 'update.yml' -> to update nodes (hosts in inventory).
+	* 'update.yml' -> to update nodes (hosts in inventory except Windows).
 
-	* 'wrappers.yml' -> To configure TCP Wrappers ('/etc/hosts.allow' and '/etc/hosts.deny' files) in nodes (hosts in inventory). See WRAPPERS file to get details about TCP Wrappers module.
+        * 'winNrpe.yml' -> To configure Nagios NRPE commands (NSClient++ agent) in Windows nodes (hosts in 'windows' group). See WINNRPE file to get details about Windows NRPE module. 
+
+	* 'wrappers.yml' -> To configure TCP Wrappers ('/etc/hosts.allow' and '/etc/hosts.deny' files) in nodes (hosts in inventory except Windows). See WRAPPERS file to get details about TCP Wrappers module.
 
 
     Directories:
@@ -108,6 +110,8 @@ Directory Structure: '/etc/ansibleEPS'
 		
 		* 'sudo' (File with sudoers global variables)
 
+                * 'winNrpe' (File with Windows NRPE global variables)
+
 		* 'wrappers' (File with TCP Wrappers global variables)
 
 	    - 'CentOS-6' (variables for CentOS-6 hosts, overwriting global variables)
@@ -127,6 +131,8 @@ Directory Structure: '/etc/ansibleEPS'
 	    - 'Ubuntu-16' (variables for Ubuntu-16 hosts, overwriting global variables)
 
 	    - 'Ubuntu-18' (variables for Ubuntu-18 hosts, overwriting global variables)
+
+	    - 'windows' (variables for connection to Windows hosts)
 
 	    Every file with 'OS-Version' format, host name or group of hosts (from Inventory) will have the same function, overwriting global variables
 	
@@ -169,7 +175,7 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Bacula servers)
 
 
-	    - 'common/' (Ansible code to configure main features to nodes. Called by common.yml playbook)
+	    - 'common/' (Ansible code to configure main features to nodes except Windows. Called by common.yml playbook)
 
 		+ 'files/' (files called by tasks' files to copy to nodes)
 
@@ -235,7 +241,7 @@ Directory Structure: '/etc/ansibleEPS'
 		    * 'cronStop.yml' (Deletes all entries about plaubooks from crontab) 
 
 
-            - 'crontab/' (Ansible code to configure crontab tasks to nodes. Called by crontab.yml playbook)
+            - 'crontab/' (Ansible code to configure crontab tasks to nodes except Windows. Called by crontab.yml playbook)
 
                 + 'tasks/'
 
@@ -267,7 +273,7 @@ Directory Structure: '/etc/ansibleEPS'
                     * 'dhcpTV.yml' (Configures DHCP for TV location)
 
 
-	    - 'hostsFile/' (Ansible code to configure /etc/hosts file to nodes. Called by hostsFile.yml playbook)
+	    - 'hostsFile/' (Ansible code to configure /etc/hosts file to nodes except Windows. Called by hostsFile.yml playbook)
 
 		+ 'tasks/'
 
@@ -278,7 +284,7 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
 
 
-	    - 'iptables/' (Ansible code to configure IPTables to nodes. Called by iptables.yml playbook)
+	    - 'iptables/' (Ansible code to configure IPTables to nodes except Windows. Called by iptables.yml playbook)
 
 		+ 'handlers/' (Daemons' restarts called by tasks' files)
 		
@@ -323,6 +329,7 @@ Directory Structure: '/etc/ansibleEPS'
 
                 + 'templates/' (templates called by tasks' files to modify with variables' values and copy to Mysql nodes)
 
+
 	    - 'nagios/' (Ansible code to create nagios controls to Nagios servers)
 
 		+ 'files/' (files called by tasks' files to copy to Nagios servers)
@@ -338,7 +345,7 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Nagios servers)
 		
 
-	    - 'nrpe/' (Ansible code to configure Nagios NRPE to nodes)
+	    - 'nrpe/' (Ansible code to configure Nagios NRPE to nodes except Windows)
 
 		+ 'tasks/'
 
@@ -349,7 +356,7 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
 
 
-	    - 'pamAccess/' (Ansible code to configure /etc/security/access.conf file. Called by pamAccess.yml playbook)
+	    - 'pamAccess/' (Ansible code to configure /etc/security/access.conf file to nodes except Windows. Called by pamAccess.yml playbook)
 
 		+ 'tasks/'
 
@@ -373,7 +380,7 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to Proxmox nodes)
 
 
-	    - 'sudo/' (Ansible code to configure /etc/sudoers file to nodes. Called by sudo.yml playbook)
+	    - 'sudo/' (Ansible code to configure /etc/sudoers file to nodes except Windows. Called by sudo.yml playbook)
 
                 + 'files/' (files called by tasks' files to copy to Proxmox servers)
 
@@ -388,7 +395,7 @@ Directory Structure: '/etc/ansibleEPS'
 		+ 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
 
 
-            - 'update/' (Ansible code to update nodes. Called by update.yml playbook)
+            - 'update/' (Ansible code to update nodes except Windows. Called by update.yml playbook)
 
                 + 'tasks/'
 
@@ -399,7 +406,18 @@ Directory Structure: '/etc/ansibleEPS'
 		    * 'updateDebian.yml' (Updates nodes based on Debian family)
 
 
-            - 'wrappers/' (Ansible code to configure /etc/hosts.allow and /etc/hosts.deny files to nodes. Called by wrappers.yml playbook)
+            - 'winNrpe/' (Ansible code to configure Nagios NRPE to Windows nodes)
+
+                + 'tasks/'
+
+                    * 'main.yml' (Main Yaml file, that calls the rest of Yaml files)
+
+                    * 'winNrpe.yml' (Configures Nagios NRPE controls file in 'NSClient++')
+
+                + 'templates/' (templates called by tasks' files to modify with variables' values and copy to nodes)
+
+
+            - 'wrappers/' (Ansible code to configure /etc/hosts.allow and /etc/hosts.deny files to nodes except Windows. Called by wrappers.yml playbook)
 
                 + 'tasks/'
 
