@@ -26,7 +26,7 @@
 - name: Execute /etc/init.d/.iptables.sh.check to check syntax (skipping systemctl)
   environment: 
     _SYSTEMCTL_SKIP_REDIRECT: 1
-  shell: /etc/init.d/.iptables.sh.check start
+  shell: ln -s /etc/init.d/.iptables.sh.check /etc/init.d/iptables.sh.check; /etc/init.d/iptables.sh.check start; rm -f /etc/init.d/iptables.sh.check
   register: checkResult
   ignore_errors: True
   when: checkFile|changed

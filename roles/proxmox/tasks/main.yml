@@ -10,4 +10,4 @@
 
 - include: proxmox.yml 
   tags: [ proxmox ]
-  when: "'proxmox' in group_names" 
+  when: "'proxmox' in group_names or 'proxmox6' in group_names"

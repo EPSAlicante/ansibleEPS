@@ -12,7 +12,7 @@
 {{ repos }}
 {% endfor %}
 
-{% if "proxmox" in group_names -%}
+{% if "proxmox" in group_names or "proxmox6" in group_names -%}
 # PVE packages provided by proxmox.com
 {% for reposProx in reposProxmox -%}
 {{ reposProx }}

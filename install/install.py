@@ -9,7 +9,7 @@ import datetime
 
 
 # Configuration Files
-pathAnsible = "/etc/ansible"
+pathAnsible = "/etc/ansibleEPS"
 pathCentosVersion = "/etc/centos-release"
 pathAnsibleLibrary = "/usr/share/ansible"
 pathAnsibleLogs = "/var/log/ansibleEPS"
@@ -18,6 +18,7 @@ findModArgs = "/usr/lib/python2.?/site-packages/ansible/parsing/mod_args.py"
 findFactsLib = "/usr/lib/python2.?/site-packages/ansible/module_utils/facts.py"
 fileTGZ = "ansibleEPS.tgz"
 versionAnsible = "ansible-2.3.2.0"
+versionAnsibleRPM = "ansible-2.3.2.0-1.el6.noarch.rpm"
 yumConf = "/etc/yum.conf"
 
 
@@ -110,8 +111,7 @@ def main():
     # Installing ansible
     print
     print "Installing %s" % (versionAnsible)
-    ret1Code = subprocess.call("yum -y install %s" % (versionAnsible), shell=True)
-
+    ret1Code = subprocess.call("yum -y --nogpgcheck localinstall %s" % (versionAnsibleRPM), shell=True)
     if ret1Code == 0:
       print
       print "Installing required tools"
@@ -221,7 +221,7 @@ def main():
 	    print
 	    print "-----------------------------------"
 	    print
-	    print "Admin Menu: /etc/ansibleEPS/menu.py"
+	    print "Admin Menu: %s/menu.py" % (pathAnsible)
 	    print
 	    print "-----------------------------------"
 

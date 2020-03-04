@@ -21,6 +21,7 @@ Prerequisites:
  - Environment variable LANG to UTF-8 ('/etc/sysconfig/i18n' file in CentOS)
 
  - EPEL repository enabled. If you are a beginner of CentOS distribution, these are the steps to use EPEL repository in your CentOS 6:
+
 	* Check if EPEL repository is installed 
 
 	  yum repolist
@@ -43,7 +44,7 @@ Installation:
 
  - Execute install.py. 
 
- - Operating System, python, LANG environment variable and EPEL repository version will be checked. 
+ - Operating System, architecture, python version, LANG environment variable and EPEL repository will be checked. 
 
  - System will be updated before start ansible installation
 
