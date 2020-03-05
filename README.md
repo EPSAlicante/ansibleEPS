@@ -59,7 +59,7 @@ We have to install and prepare system to be ready for management. There are some
 
 ### Installation
 
-1. Copy tgz package **'ansibleEPS.tgz'** and installation script **'install.py'** (located in **install** directory) in a directory on a CentOS 6 host (this will be our 'Ansible Server').
+1. Download ***'aeps.tgz'*** file of **install** directory and decompress it on a CentOS 6 host (this will be our 'Ansible Server').
 
 2. Execute **'install.py'** script to install 'AnsibleEPS'.
 
@@ -129,6 +129,8 @@ System is ready to work with the following Operating Systems (all of them with '
   - Debian 7
 
   - Debian 8
+
+  - Debian 10
 
   - Ubuntu 14
 
