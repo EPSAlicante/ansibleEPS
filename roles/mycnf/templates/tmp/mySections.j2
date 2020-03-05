@@ -1,0 +1,78 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+{# Global block -#}
+{% if mycnfGlobal.sections is defined -%}
+{%  for section in mycnfGlobal.sections -%}
+{%   set printSection = {'value': True} -%}
+{# Looking for the same name in Group block -#}
+{%   if mycnfGroup is defined -%}
+{%    for rGroup in mycnfGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      for gsection in rGroup.sections -%}
+{%       if gsection.name == section.name -%}
+{%        if printSection.update({'value': False}) -%}{% endif -%}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same name in Host block -#}
+{%   if printSection.value -%}
+{%    if mycnfHost is defined -%}
+{%     for rHost in mycnfHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hsection in rHost.sections -%}
+{%        if hsection.name == section.name -%}
+{%         if printSection.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print Section -#}
+{%   if printSection.value -%}
+{{ section.name }}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if mycnfGroup is defined -%}
+{%  for rGroup in mycnfGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for gsection in rGroup.sections -%}
+{%     set printSection = {'value': True} -%}
+{# Looking for the same name in Host block -#}
+{%     for rHost in mycnfHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       for hsection in rHost.sections -%}
+{%        if hsection.name == gsection.name -%}
+{%         if printSection.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor %}
+{# Print Section -#}
+{%     if printSection.value -%}
+{{ gsection.name }}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if mycnfHost is defined -%}
+{%  for rHost in mycnfHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for hsection in rHost.sections -%}
+{# Print Section -#}
+{{ hsection.name }}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}

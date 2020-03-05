@@ -1,0 +1,105 @@
+*** MYCNF PlayBook ***
+
+Mycnf playbook 'mycnf.yml' is able to manage 'my.cnf' file for servers of 'mysql' group (except those belonging to 'nomycnf' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+
+Changes will be generated using some variables (through a template) to create 'my.cnf' file for every server.
+
+Variables are defined by default in 'group_vars/all/mycnf' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook mycnf.yml'
+
+Scope: Playbook will update server of 'mysql' group except those belonging to 'nomycnf' group.
+
+Templates: 'roles/mycnf/templates/etc/mycnf.j2'
+           'roles/mycnf/templates/tmp/mySections.j2'
+
+Variables:
+
+    * 'mycnfGlobal' -> 'my.cnf' file configuration for all servers
+
+      This variable is a list of sections with two attributes: name (section name) and variables (a mysql variables list). Every item in variables list has five attributes: 
+
+         - label: This attribute play two roles, on the one side it will be the name of variable, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute. Required attribute.
+
+         - printLabel: Name used to print variable if we want to distinguish between 'key' (label) and 'printed' (printLabel) values (optional attribute). Optional attribute.
+
+         - value: Value of variable. Required (with empty value, variable with no value). If value is set to 'hostname', 'fqdn' or 'hostIP' string, playbook will update field with ansible variable 'ansible_hostname', 'ansible_fqdn' or 'ansible_default_ipv4.address' respectively.
+
+         - comment: Comment. Optional attribute.
+
+         - disabled: Value yes|no. Optional attribute ('no' by default).
+     
+      Example:
+
+        mycnfGlobal:
+	  sections:
+ 	  - name: mysqld
+	    variables:
+            - label: port 
+              value: 3306
+            - label: skip-external-locking 
+              value:
+	    - label: bind-address
+	      value: hostIP
+
+
+    * 'mycnfGroup' -> 'my.cnf' file configuration for a specific group. It has two attributes:
+
+      - group: Group name (in inventory)
+
+      - sections: A list of sections with variables
+
+      'sections' list has two attributes: 'name' and 'variables', the same attributes and meaning than 'mycnfGlobal' variable. 'Variables' attribute is a variable list with the same attributes than 'mycnfGlobal'.
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global items) will be added to config file after global items.
+
+
+      Example:
+
+        mycnfGroup:
+        - group: bacula 
+          sections:
+          - name: mysqld
+	    variables:
+            - label: port
+              value: 3307 
+
+
+    * 'mycnfHost' -> 'my.cnf' file configuration for a specific server. It has two attributes: 
+
+      - host: Server name (in inventory)
+
+      - sections: A list of sections with variables
+
+      'sections' list has two attributes: 'name' and 'variables', the same attributes and meaning than 'mycnfGlobal' and 'mycnfGroup' variables. 'Variables' attribute is a variable list with the same attributes than 'mycnfGlobal' and 'mycnfGroup'.
+
+      At this point, we can delete or overwrite global or groups items, this way:
+
+        * Overwrite global or groups items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+
+      The rest of items defined (with label different than global and groups items) will be added to config file after global and groups items.
+
+
+      Example:
+
+        mycnfHost:
+        - host: server_23 
+          sections:
+	  - name: mysqld
+	    variables:
+            - label: bind-address 
+              value: 0.0.0.0 
+	    - label: max_connections
+	      value: 500
+

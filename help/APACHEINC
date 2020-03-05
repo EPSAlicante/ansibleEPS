@@ -1,0 +1,163 @@
+*** APACHEINC PlayBook ***
+
+ApacheInc playbook 'apacheInc.yml' is able to create and manage apache includes (in a directory 'includes' inside Apache Root directory) for servers of 'apache' group (except those belonging to 'noapacheInc' group), in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters. It checks file syntax before updating. In case of syntax error, it undoes updates.
+
+Creation and changes will be generated using some variables (through a template) to create includes for every server.
+
+Variables are defined by default in 'group_vars/all/apacheInc' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook apacheInc.yml'
+
+Scope: Playbook will update server of 'apache' group except those belonging to 'noapacheInc' group.
+
+Templates: 'roles/apacheInc/templates/etc/httpd/includes/file.j2'
+           'roles/apacheInc/templates/tmp/apacheFiles.j2'
+
+Variables:
+
+    * 'apacheIncGlobal' -> Apache includes for all servers
+
+      This variable is a list of Apache includes with five attributes: name (include's name, used as key), file (includes's filename, 'hostname'-'name' by default), path (include's path, 'includes' directory in apache base directory by default), indent (include's variables indentation, no indentation by default) and variables (an Apache includes variables list). Every item in variables list has five attributes: 
+
+         - label: This attribute play two roles, on the one side it will be the name of variable, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute. Required attribute.
+
+         - value: Value of variable. (Required).
+
+         - indent: Indentation of variable. Optional attribute (no indentation by default)
+
+         - comment: Comment. Optional attribute.
+
+         - disabled: Value yes|no. Optional attribute ('no' by default).
+     
+      Special strings: '#hostname#', '#fqdn#', '#hostIP#', '#name#', '#httpd_directory#', '#httpdConf_directory#', '#httpdInc_directory#' or '#httpdLogs_directory#' will be replaced with variables: 'ansible_hostname' (fact), 'ansible_fqdn' (fact), 'ansible_default_ipv4.address' (fact), name attribute, 'httpd_directory.stdout' (registered variable), 'httpdConf_directory.stdout' (registered variable) or 'httpdLogs_directory.stdout' (registered variable) respectively in attributes 'file', 'path' and 'value'.
+
+      Example:
+
+        apacheIncGlobal:
+          includes:
+ 	  - name: SSL 
+            file: ssl
+	    variables:
+            - label: SSLEngine 
+              value: 'On'
+              comment: SSL Config 
+            - label: SSLProtocol
+              value: 'all -SSLv2 -SSLv3'
+            - label: SSLHonorCipherOrder
+              value: 'On'
+            - label: SSLProxyEngine
+              value: 'off'
+            - label: SSLCipherSuite
+              value: 'HIGH:!ADH:!RC4:!3DES'
+            - label: SSLCertificateFile
+              value: '#httpd_directory#/ssl/#hostname#.crt'
+            - label: SSLCertificateKeyFile
+              value: '#httpd_directory#/ssl/#hostname#.key'
+
+
+    * 'apacheIncGroup' -> Apache includes for a specific group. It has two attributes:
+
+      - group: Group name (in inventory)
+
+      - includes: A list of Apache includes
+
+      'includes' list has six attributes: 'name', 'file', 'path', 'skip', 'indent' and 'variables', the same attributes and meaning than 'apacheIncGlobal' and a new one 'skip', to mantain same values of 'apacheIncGlobal' except 'variables'. 'variables' attribute is a variable list with the same attributes than 'apacheIncGlobal'.
+
+      * If 'skip' attribute is 'false' or nor defined (it's false by default), we can define all five attributes to replace global values.
+
+      At this point, we can delete or overwrite global includes, this way:
+
+        * Overwrite global includes -> Defining 'name' attribute with same string than global include, and the rest of attributes with values we want for this case
+
+        * Delete global includes -> Defining 'name' attribute with same string than global include, and nothing more (we must not define the rest of attributes)
+
+      The rest of includes defined (with name different than global includes) will be created and config in addition to global includes.
+
+      * If 'skip' attribute is true, we can't change attributes 'file', 'path' or 'indent', we only can change 'variable' list.
+
+      At this point, we can delete or overwrite global items of list, this way:
+
+        * Overwrite global items -> Defining 'label' attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global items -> Defining 'label' attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+      The rest of items defined (with label different than global items) will be added to list after global items.
+
+
+      Example:
+
+        apacheIncGroup:
+        - group: nagios 
+          includes:
+          - name: SSL 
+            file: ssl-nagios 
+	    variables:
+            - label: SSLEngine
+              value: 'On'
+              comment: SSL Config
+            - label: SSLProtocol
+              value: 'all -SSLv2 -SSLv3'
+            - label: SSLCipherSuite
+              value: 'HIGH:!ADH:!RC4:!3DES'
+            - label: SSLCertificateFile
+              value: '#httpd_directory#/ssl/nagios.crt'
+            - label: SSLCertificateKeyFile
+              value: '#httpd_directory#/ssl/nagios.key'
+        - group: munin
+          includes:
+          - name: SSL
+            skip: yes
+            variables:
+            - label: SSLCertificateFile
+              value: '#httpd_directory#/ssl/munin.crt'
+            - label: SSLCertificateKeyFile
+              value: '#httpd_directory#/ssl/munin.key'
+            - label: SSLCertificateChainFile
+              value: '#httpd_directory#/ssl/digicertca.crt'
+
+
+    * 'apacheIncHost' -> Apache includes for a specific server. It has two attributes:
+
+      - host: Server name (in inventory)
+
+      - includes: A list of Apache includes
+
+      'includes' list has six attributes: 'name', 'file', 'path', 'skip', 'indent' and 'variables', the same attributes and meaning than 'apacheIncGroup'. 'variables' attribute is a variable list with the same attributes than 'apacheIncGlobal' and 'apacheIncGroup'.
+
+      * If 'skip' attribute is 'false' or nor defined (it's false by default), we can define all five attributes to replace global or group values.
+
+      At this point, we can delete or overwrite global or group items, this way:
+
+        * Overwrite global or group includes -> Defining 'name' attribute with same string than global or group include, and the rest of attributes with values we want for this case
+
+        * Delete global or group includes -> Defining 'name' attribute with same string than global or group include, and nothing more (we must not define the rest of attributes)
+ 
+      The rest of includes defined (with name different than global and group includes) will be created and config in addition to global and group includes.
+
+      * If 'skip' attribute is true, we can't change attributes 'file', 'path' or 'indent', we only can change 'variable' list.
+
+      At this point, we can delete or overwrite global or group items of list, this way:
+
+        * Overwrite global or group items -> Defining 'label' attribute with same string than global or group item, and the rest of attributes with values we want for this case
+
+        * Delete global or group items -> Defining 'label' attribute with same string than global or group item, and nothing more (we must not define the rest of attributes)
+
+      The rest of items defined (with label different than global and group items) will be added to list after global and group items.
+
+
+      Example:
+
+        apacheIncHost:
+        - host: hermes
+          includes:
+          - name: SSL
+            skip: yes
+            variables:
+            - label: SSLCertificateFile
+              value: '#httpd_directory#/ssl/qmail-cert.crt'
+            - label: SSLCertificateKeyFile
+              value: '#httpd_directory#/ssl/qmail-key.key'
+            - label: SSLCertificateChainFile
+              value: '#httpd_directory#/ssl/digicertca.crt'
+

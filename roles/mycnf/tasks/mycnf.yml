@@ -1,0 +1,96 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Myslq (my.cnf) configuration 
+
+- name: Locate my.cnf
+  shell: "listMycnf=$(mysql --help|grep 'Default options' -A 1|grep my.cnf); for i in $listMycnf; do [[ -f $i ]] && echo $i && break; done; executable=/bin/bash" 
+  register: mycnfFile
+  changed_when: false
+
+- name: Make sections list
+  template: src=tmp/mySections.j2 dest=/tmp/mySections owner=root group=root mode=0600
+  changed_when: false
+  when: mycnfFile.stdout|default("") != ""
+
+- name: Get sections
+  shell: cat /tmp/mySections executable="/bin/bash"
+  register: mySections
+  changed_when: false
+  when: mycnfFile.stdout|default("") != ""
+
+- name: Configure my.cnf and copy to check extension 
+  template: src=etc/my.cnf.j2 dest={{ mycnfFile.stdout }}.check owner=root group=root mode=0644
+  register: checkFile
+  when: mycnfFile.stdout|default("") != ""
+
+- name: Check Syntax
+  shell: "{{ path.commands.mysqld }} --defaults-file={{ mycnfFile.stdout }}.check --help executable=/bin/bash"
+  register: checkResult
+  ignore_errors: True
+  changed_when: false
+  when: mycnfFile.stdout|default("") != "" and checkFile|changed
+
+- name: If execution OK -> copy my.cnf to server 
+  template: src=etc/my.cnf.j2 dest={{ mycnfFile.stdout }} owner=root group=root mode=0644 backup=yes
+  when: mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+
+- name: If execution OK -> clean backups (except last 5)
+  shell: "ls -t1 {{ mycnfFile.stdout }}.*|tail -n +6|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
+  when: mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+
+- name: If execution OK -> delete error file (if exists)
+  shell: "ls -1 {{ mycnfFile.stdout }}.error|xargs rm -f executable=/bin/bash"
+  ignore_errors: True
+  changed_when: false
+  when: mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+
+- name: If execution fails -> move .check a .error
+  shell: "mv {{ mycnfFile.stdout }}.check {{ mycnfFile.stdout }}.error executable=/bin/bash"
+  when: mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|failed
+
+- name: Delete sections list
+  file: path=/tmp/mySections state="absent"
+  changed_when: false
+  when: mycnfFile.stdout|default("") != ""
+
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.mysql.name|default("") == "" and checkFile|changed and checkResult|success
+
+- name: Restart mysql systemd
+  systemd: name={{ path.daemons.mysql.name }} state=restarted
+  when: path.daemons.mysql.type == "systemctl" and path.daemons.mysql.name != "" and mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+
+- name: Restart mysql service
+  service: name={{ path.daemons.mysql.name }} state=restarted
+  when: path.daemons.mysql.type == "service" and path.daemons.mysql.name != "" and mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success 
+
+- name: Restart mysql init
+  shell: '{{ path.daemons.mysql.name }} restart executable="/bin/bash"'
+  when: path.daemons.mysql.type == "init" and path.daemons.mysql.name != "" and mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success 
+
+- name: Checking mysql systemd
+  systemd: name={{ path.daemons.mysql.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.mysql.type == "systemctl" and path.daemons.mysql.name != "" and mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+
+- name: Checking mysql service
+  service: name={{ path.daemons.mysql.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.mysql.type == "service" and path.daemons.mysql.name != "" and mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+
+- name: Checking mysql init
+  shell: '{{ path.daemons.mysql.name }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons.mysql.name }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons.mysql.name }}) on) executable="/bin/bash"'
+  changed_when: False
+  when: path.daemons.mysql.type == "init" and path.daemons.mysql.name != "" and mycnfFile.stdout|default("") != "" and checkFile|changed and checkResult|success
+

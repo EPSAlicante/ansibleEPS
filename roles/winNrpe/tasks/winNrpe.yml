@@ -1,0 +1,52 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Windows NRPE Commands configuration (NSClient++)
+
+- name: Check nsclient.ini (NSClient++ 32 bits)
+  win_stat:
+    path: '{{ ansible_env["ProgramFiles(x86)"] }}\\NSClient++\\nsclient.ini'
+    follow: yes
+    get_checksum: no
+  register: nsclient32
+  changed_when: False
+
+- name: Show nsclient32 (NSClient++ 32 bits)
+  debug: msg={{ nsclient32.stat.exists }}
+  changed_when: False
+  
+- name: Check nsclient.ini (NSClient++ 64 bits)
+  win_stat:
+    path: '{{ ansible_env.ProgramFiles }}\\NSClient++\\nsclient.ini'
+    follow: yes
+    get_checksum: no
+  register: nsclient64
+  changed_when: False
+
+- name: Show nsclient64 (NSClient++ 64 bits)
+  debug: msg={{ nsclient64.stat.exists }}
+  changed_when: False
+
+
+- name: Set nrpePath variable
+  set_fact:
+    nrpePath: '{{ nsclient32.stat.path if (nsclient32.stat.exists) else nsclient64.stat.path if (nsclient64.stat.exists) else "" }}'
+
+- name: Show nrpePath
+  debug: msg={{ nrpePath }}
+  changed_when: False
+
+- name: Configure baseNrpe.ini
+  win_template: src=C/ProgramFiles/NSClient++/baseNrpe.ini.j2 dest={{ nrpePath|replace('nsclient.ini','baseNrpe.ini') }} newline_sequence='\r\n'
+  register: nrpeTemplate
+  when: nrpePath != ""
+
+- name: Restart NSClient++ Service
+  win_shell: 'Get-Service nscp | Restart-Service'
+  when: nrpeTemplate|changed
+

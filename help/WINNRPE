@@ -1,0 +1,116 @@
+*** Windows NRPE PlayBook ***
+
+Windows NRPE playbook 'winNrpe.yml' is able to manage Nagios (NSClient++) NRPE checks for Windows servers (servers belonging to 'windows' group), except those belonging to 'nowinNrpe' group, in a centralized way. Playbook can update changes at once for all servers, but It can also update just a server or a group, with '--limit serverName' or '--limit groupName' parameters.
+
+First playbook findis NSClient++ directory ('ProgramFiles(x86)' if 32 bits or 'ProgramFiles' if 64)
+
+Then creates 'C:\ProgramFiles|ProgramFiles(x86)\baseNrpe.ini' file with all NRPE checks inside ('command' lines).
+
+Finally it will restart Nagios NRPE (NSClient++) service if any change happens.
+
+Changes will be generated using some variables (through a template) to create 'C:\ProgramFiles|ProgramFiles(x86)\baseNrpe.ini' checks file for every server.
+
+Variables are defined by default in 'group_vars/all/winNrpe' file. We can overwrite values with groups or hosts files, but it's not a common case because global variables let us to define specific values for groups and hosts.
+
+
+Command-line execution: 'ansible-playbook winNrpe.yml'
+
+Scope: Playbook will update Windows servers except those belonging to 'nowinNrpe' group
+
+Templates: 'roles/winNrpe/templates/C/ProgramFiles/NSClient++/baseNrpe.ini.j2'
+
+Variables:
+
+    * 'winNrpeGlobal' -> 'baseNrpe.ini' file configuration with NRPE checks for Windows servers. It has two atributtes:
+
+      - rules: A list of items to define entries in file, with NRPE label and command to check. Every item has two attributes:
+
+        - label: This attribute play two roles, on the one side it will be the label of NRPE check, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
+
+        - command: Plugin to execute and its arguments (string format). 
+
+        Both attributes are required. If any of them are not defined, this item will be ignored.
+
+      - scripts: A list of items to define entries in file, with NRPE label and scripts to execute. Every item has two attributes:
+
+        - label: This attribute play two roles, on the one side it will be the label of NRPE script, on the other side it will be the item key. If we want to reference an item List (to delete or overwrite), we'll do using this attribute.
+
+        - command: Script to execute and its arguments (string format).
+
+        Both attributes are required. If any of them are not defined, this item will be ignored.
+
+      Examples:
+
+        winNrpeGlobal:
+          rules:
+          - label: check_load
+            command: 'check_cpu warn=80 crit=90 time=5m time=1m time=30s' 
+          - label: check_memory
+            command: 'check_memory MaxWarn=80% MaxCrit=90% ShowAll=long type=physical type=virtual type=paged type=page' 
+          - label: check_diskRoot
+            command: 'check_drivesize "crit=free<5%" "warn=free<10%" drive=C:' 
+          - label: check_nrpe
+            command: 'check_service service=nscp'
+
+          scripts:
+          - label: restart-ossecAgent
+            command: scripts\ossecAgent.bat
+
+
+    * 'winNrpeGroup' -> 'baseNrpe.ini' file configuration with NRPE checks for a specific group. It has three attributes:
+
+      - group: Group name (in inventory)
+
+      - rules: A list of entries in NRPE file, with the same attributes and meaning than 'winNrpeGlobal' variable (label and command)
+
+      - scripts: A list of entries in NRPE file, with the same attributes and meaning than 'winNrpeGlobal' variable (label and command)
+
+      At this point, we can delete or overwrite global items, this way:
+
+        * Overwrite global rules items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global rules items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+        * Overwrite global scripts items -> Defining label attribute with same string than global item, and the rest of attributes with values we want for this case
+
+        * Delete global scripts items -> Defining label attribute with same string than global item, and nothing more (we must not define the rest of attributes)
+
+      The rest of items defined (with label different than global items) will be added to config file after global items.
+
+
+
+    * 'winNrpeHost' -> 'baseNrpe.ini' file configuration with NRPE checks for a specific server. It has three attributes:
+
+      - host: Server name (in inventory)
+
+      - rules: A list of entries in NRPE file, with the same attributes and meaning than 'winNrpeGlobal' variable (label and command)
+
+      - scripts: A list of entries in NRPE file, with the same attributes and meaning than 'winNrpeGlobal' variable (label and command)
+
+      At this point, we can delete or overwrite global or groups items, this way:
+
+        * Overwrite global or groups rules items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups rules items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+        * Overwrite global or groups scripts items -> Defining label attribute with same string than global or groups item, and the rest of attributes with values we want for this case
+
+        * Delete global or groups scripts items -> Defining label attribute with same string than global or groups item, and nothing more (we must not define the rest of attributes)
+
+      The rest of items defined (with label different than global and groups items) will be added to config file after global and groups items.
+
+
+      Example:
+
+        winNrpeHost:
+        - host: wserver_35
+          rules:
+          - label: check_diskRoot
+            command: 'check_drivesize "crit=free<10%" "warn=free<20%" drive=C:'
+          - label: check_diskE
+            command: 'check_drivesize "crit=free<5%" "warn=free<10%" drive=E:'
+          
+          scripts:
+          - label: restart-ossecAgent
+            command: scripts\ossecAgentServer_31.bat
+          

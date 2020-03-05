@@ -1,0 +1,122 @@
+# Apache Includes 
+#
+# Apache Includes with variables
+#
+# apacheIncGlobal:
+#   includes: (List of includes)
+#   - name: value --> Include Name and key to be called from other variables (required)
+#     file: value --> File name (optional, 'hostname'-'name' by default)
+#     path: value --> File path (optional, 'includes' directory in apache base directory by default)
+#     indent: value --> Indentation of variables (optional attribute, no indentation by default)
+#     variables: (List of global variables by include)
+#     ...
+#
+# apacheIncGroup:
+# - group: value (group name)
+#   includes: (List of includes)
+#   - name: value --> Include Name and key to be called from other variables (required) 
+#     file: value --> File name (optional, 'hostname'-'name' by default)
+#     path: value --> File path (optional, 'includes' directory in apache base directory by default)
+#     skip: value --> value yes|no to skip header and only manage 'indent' and 'variables' attributes (optional, 'no' by default)
+#     indent: value --> Indentation of variables (optional attribute, no indentation by default)
+#     variables: (List of variables by group and include)
+#     ...
+#
+# apacheIncHost:
+# - host: value (host name)
+#   includes: (List of includes)
+#   - name: value --> Include name and key to be called from other variables (required attribute)
+#     file: value --> File name (optional, 'hostname'-'name' by default)
+#     path: value --> File path (optional, 'includes' directory in apache base directory by default)
+#     skip: value --> value yes|no to skip header and only manage 'indent' and 'variables' attributes (optional, 'no' by default)
+#     indent: value --> Indentation of variables (optional attribute, no indentation by default)
+#     variables: (List of variables by host and include)
+#     ...
+#
+# Variables definition (syntax)
+# -----------------------------
+# label: value --> name of variable and key to be called from other variables (required attribute)
+# value: value --> value of variable (required attribute)
+# indent: value --> indentation of variable (optional attribute, no indentation by default)
+# comment: value --> comment (optional attribute)
+# disabled: value --> value: yes|no (optional attribute, 'no' by default)
+#
+#
+# Special Values
+# --------------
+# '#hostname#' value in 'value', 'file' or 'path' attributes will be changed by 'ansible_hostname' (ansible variable)
+# '#hostIP#' value in 'value', 'file' or 'path' attributes will be changed by 'ansible_default_ipv4.address' (ansible variable)
+# '#fqdn#' value in 'value', 'file' or 'path' attributes will be changed by 'ansible_fqdn' (ansible variable)
+# '#name#' value in 'value', 'file' or 'path' attributes will be changed by 'name' attribute
+# '#httpd_directory#' value in 'value', 'file' or 'path' attributes will be changed by 'httpd_directory.stdout' (HTTPD base directory)
+# '#httpdConf_directory#' value in 'value', 'file' or 'path' attributes will be changed by 'httpdConf_directory.stdout' (HTTPD conf directory)
+# '#httpdInc_directory#' value in 'value', 'file' or 'path' attributes will be changed by 'httpdInc_directory.stdout' (HTTPD includes directory)
+# '#httpdLogs_directory#' value in 'value', 'file' or 'path' attributes will be changed by 'httpdLogs_directory.stdout' (HTTPD logs directory)
+#
+
+
+apacheIncGlobal:
+  includes:
+  - name: SSL
+    file: ssl
+    variables:
+    - label: SSLEngine
+      value: 'On'
+      comment: SSL Config
+    - label: SSLProtocol
+      value: 'all -SSLv2 -SSLv3'
+    - label: SSLHonorCipherOrder
+      value: 'On'
+    - label: SSLProxyEngine
+      value: 'off'
+    - label: SSLCipherSuite
+      value: 'HIGH:!ADH:!RC4:!3DES'
+    - label: SSLCertificateFile
+      value: '#httpd_directory#/ssl/#hostname#.crt'
+    - label: SSLCertificateKeyFile
+      value: '#httpd_directory#/ssl/#hostname#.key'
+
+
+apacheIncGroup:
+- group: nagios
+  includes:
+  - name: SSL
+    file: ssl-nagios
+    variables:
+    - label: SSLEngine
+      value: 'On'
+      comment: SSL Config
+    - label: SSLProtocol
+      value: 'all -SSLv2 -SSLv3'
+    - label: SSLCipherSuite
+      value: 'HIGH:!ADH:!RC4:!3DES'
+    - label: SSLCertificateFile
+      value: '#httpd_directory#/ssl/nagios.crt'
+    - label: SSLCertificateKeyFile
+      value: '#httpd_directory#/ssl/nagios.key'
+- group: munin
+  includes:
+  - name: SSL
+    skip: yes
+    variables:
+    - label: SSLCertificateFile
+      value: '#httpd_directory#/ssl/munin.crt'
+    - label: SSLCertificateKeyFile
+      value: '#httpd_directory#/ssl/munin.key'
+    - label: SSLCertificateChainFile
+      value: '#httpd_directory#/ssl/digicertca.crt'
+
+
+apacheIncHost:
+- host: hermes
+  includes:
+  - name: SSL
+    skip: yes
+    variables:
+    - label: SSLCertificateFile
+      value: '#httpd_directory#/ssl/qmail-cert.crt'
+    - label: SSLCertificateKeyFile
+      value: '#httpd_directory#/ssl/qmail-key.key'
+    - label: SSLCertificateChainFile
+      value: '#httpd_directory#/ssl/digicertca.crt'
+

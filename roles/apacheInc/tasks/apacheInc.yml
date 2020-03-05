@@ -1,0 +1,109 @@
+---
+# The source code packaged with this file is Free Software, Copyright (C) 2016 by
+# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>.
+# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise.
+# You can get copies of the licenses here: http://www.affero.org/oagpl.html
+# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE".
+
+
+# Apache Includes 
+
+- name: Get HTTPD ROOT directory
+  shell: (((httpd -V|grep 'HTTPD_ROOT' || apache2 -V|grep 'HTTPD_ROOT') > /dev/null && ((httpd -V || apache2 -V)|grep 'HTTPD_ROOT'|cut -d'=' -f2|tr -d '"')) || ((apachectl -S|grep 'ServerRoot' || apache2ctl -S|grep 'ServerRoot' || httpd -S|grep 'ServerRoot') > /dev/null && ((apachectl -S || apache2ctl -S || httpd -S)|grep 'ServerRoot'|cut -d':' -f2|tr -d '"'|sed 's/^ //'))) 2>/dev/null executable="/bin/bash"
+  register: httpd_directory
+  changed_when: false
+
+- name: Get HTTPD CONF directory
+  shell: '([ -d "{{ httpd_directory.stdout }}/conf.d" ] && echo "{{ httpd_directory.stdout }}/conf.d") || ([ -d "{{ httpd_directory.stdout }}/conf-available" ] && echo "{{ httpd_directory.stdout }}/conf-available") || (echo "{{ httpd_directory.stdout }}") executable="/bin/bash"'
+  register: httpdConf_directory
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Get HTTPD Logs directory
+  shell: '([ -d "/var/log/httpd" ] && echo "/var/log/httpd") || ([ -d "/var/log/apache2" ] && echo "/var/log/apache2") || (echo "/var/log") executable="/bin/bash"' 
+  register: httpdLogs_directory
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Create Includes directory
+  file: path="{{ httpd_directory.stdout }}/includes" mode=755 state=directory
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Get HTTPD Includes directory
+  shell: 'echo "{{ httpd_directory.stdout }}/includes" executable="/bin/bash"'
+  register: httpdInc_directory
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Make includes list
+  template: src=tmp/apacheFiles.j2 dest=/tmp/apacheFiles owner=root group=root mode=0600
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Get Apache files
+  shell: 'cat /tmp/apacheFiles executable="/bin/bash"'
+  register: apacheFiles
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Configure Apache files 
+  template: src=etc/httpd/includes/file.j2 dest={{ item.split(':')[2] }} owner=root group=root mode=0640
+  register: apacheConfigFiles
+  with_items: "{{ apacheFiles.stdout_lines }}"
+  when: httpd_directory.stdout|default("") != ""
+
+- name: Get ACTUAL apache configuration files
+  shell: 'cat /tmp/apacheFiles|cut -d":" -f3 executable="/bin/bash"'
+  register: apacheActualFiles
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Get ALL apache configuration files in includes directory
+  shell: 'find {{ httpdInc_directory.stdout }} -name "*" -exec ls -1 {} \; executable="/bin/bash"'
+  register: apacheAllFiles
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Delete OLD apache configuration files inside includes directory
+  file: path="{{ item }}" state="absent"
+  with_items: "{{ apacheAllFiles.stdout_lines }}"
+  when: httpd_directory.stdout|default("") != "" and item not in apacheActualFiles.stdout_lines
+ 
+- name: Delete Apache files list
+  file: path=/tmp/apacheFiles state="absent"
+  changed_when: false
+  when: httpd_directory.stdout|default("") != "" 
+
+- name: Getting Paths
+  action: path_EPS
+  changed_when: False
+  ignore_errors: yes
+  when: path.daemons.apache.name|default("") == "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+
+- name: Restart apache systemd
+  systemd: name={{ path.daemons.apache.name }} state=restarted
+  when: path.daemons.apache.type == "systemctl" and path.daemons.apache.name != "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+
+- name: Restart apache service
+  service: name={{ path.daemons.apache.name }} state=restarted
+  when: path.daemons.apache.type == "service" and path.daemons.apache.name != "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+
+- name: Restart apache init
+  shell: '{{ path.daemons.apache.name }} restart executable="/bin/bash"'
+  when: path.daemons.apache.type == "init" and path.daemons.apache.name != "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+
+- name: Checking apache systemd
+  systemd: name={{ path.daemons.apache.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.apache.type == "systemctl" and path.daemons.apache.name != "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+
+- name: Checking apache service
+  service: name={{ path.daemons.apache.name }} state=started enabled=true
+  changed_when: False
+  when: path.daemons.apache.type == "service" and path.daemons.apache.name != "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+
+- name: Checking apache init
+  shell: '{{ path.daemons.apache.name }} start; ([ \"{{ ansible_os_family }}\" == \"Debian\" ] && update-rc.d $(basename {{ path.daemons.apache.name }}) defaults) || ([ \"{{ ansible_os_family }}\" == \"RedHat\" ] && chkconfig $(basename {{ path.daemons.apache.name }}) on) executable="/bin/bash"'
+  changed_when: False
+  when: path.daemons.apache.type == "init" and path.daemons.apache.name != "" and httpd_directory.stdout|default("") != "" and apacheConfigFiles|changed
+

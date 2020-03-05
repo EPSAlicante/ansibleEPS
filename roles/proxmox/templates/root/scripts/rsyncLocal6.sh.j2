@@ -1,0 +1,737 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+#!/bin/bash
+ ###############################################################################################
+ ##### rsyncLocal6: Script to synchronize virtual machines & lxc (ZFS) in a secondary disk #####
+ ##### version: 2.0                                                                        #####
+ ###############################################################################################
+ ##### It synchronizes production directory and backup directory no stopping virtual       #####
+ ##### machines and containers (LXC), using ZFS snapshots.                                 #####
+ ##### Once ZFS snapshot done, it sinchronnizes directory with rsync command.              #####
+ ###############################################################################################
+
+
+ ### SIGNALS ###
+ # Trapping signals 
+ senales="SIGINT SIGTERM"
+ trap 'fin'  $senales
+
+
+ ### VARIABLES ###
+ # Global variables declaration 
+ fechaInicio="`date +%Y-%m-%d`"
+ horaInicio="`date +%H:%M:%S`"
+ fileLog="/var/log/rsync/rsyncLocal-$fechaInicio-$horaInicio.log"
+ errorLog="/var/log/rsync/error.log"
+ particionBackup="{{ backupDisk }}"
+ nombreSnapshot="backup"
+ zpoolName="data"
+ nombreSnapshot="foto"
+ lvmOpt="/dev/pve/data"
+ lvmSnapshot="/dev/pve/$nombreSnapshot"
+ mountSnapshot="/foto"
+ dirLocal="/var/lib/vz"
+ dirNFS="/mnt/pve"
+ dirNFSGeneral="$dirNFS/VM"
+ dirGlusterFS="/mnt/pve"
+ dirGlusterFSGeneral="$dirGlusterFS/gVM"
+ dirMaquinasKVM="$mountSnapshot/images"
+ dirLocalMaquinasKVM="$dirLocal/images"
+ mountBackup="/backup"
+ dirBackup="$mountBackup/rsync"
+ listaMaquinasLXC=""
+ listMaquinasKVM=""
+ dirConfLXC="/etc/pve/lxc"
+ dirConfKVM="/etc/pve/qemu-server"
+ excludeFile="exclude"
+ domain="{{ domain }}"
+ #user="rsync"
+
+
+ ### FUNTIONS ###
+ # Functions declaration 
+ # Function to show help on screen
+ function ayuda() {
+   echo ""
+   echo " Use: rsyncLocal6.sh OPTION [maquina1]...[maquinaN]"
+   echo ""
+   echo "  OPTION: "
+   echo ""
+   echo "   todos -> sinchronize all machines, running or stopped."
+   echo ""
+   echo "   produccion -> sinchronize only running machines."
+   echo ""
+   echo "   lista -> sinchronize a list of machines. List will be defined after 'lista' option, with whitespaces"
+   echo ""
+ }
+
+ # Function to trap signals and finish script in a proper way
+ function fin() {
+   # The most important thing is to delete snapshot if it has been created
+   echo "" >> $fileLog
+   echo "Script stopped, ending function..." >> $fileLog
+   echo "" >> $fileLog
+
+   # ZFS snapshot
+   if [[ `/usr/sbin/zfs list -t snapshot|grep "^${zpoolName}/"|grep "@${nombreSnapshot}"` ]]; then
+     for snap in `/usr/sbin/zfs list -t snapshot|grep "^${zpoolName}/"|grep "@${nombreSnapshot}"|cut -d ' ' -f1`; do
+       /usr/sbin/zfs destroy $snap
+     done
+   fi
+
+   # LVM snapshot
+   if [ -e $lvmSnapshot ]; then
+     cadenaMountSnapshot=" on $mountSnapshot type xfs"
+     if [[ `/bin/mount | grep "$cadenaMountSnapshot"` ]]; then
+       echo "" >> $fileLog
+       echo "Desmontando $mountSnapshot" >> $fileLog
+       echo "" >> $fileLog
+       /bin/umount $mountSnapshot >> $fileLog 2>> $fileLog
+     fi
+     /sbin/lvremove -f $lvmSnapshot >> $fileLog 2>> $fileLog
+   fi
+
+   exit
+ }
+
+function delZFSsnapshot() {
+
+  # Wait a few seconds to be sure dataset is not busy
+  sleep 10
+
+  # Delete Snapshot
+  echo "" >> $fileLog
+  echo "Deleting snapshot: $1" >> $fileLog
+  /usr/sbin/zfs destroy "$1" >> $fileLog 2>> $fileLog
+  erroresDestroySnapshot=$?
+  if [[ $erroresDestroySnapshot -gt 0 ]]; then
+    echo "Error ($erroresDestroySnapshot) running zfs destroy" | tee -a $fileLog $errorLog
+  fi
+
+}
+
+ ### ARGUMENTS ###
+ # Checking number of arguments
+ if [ $# -lt 1 ]; then
+   ayuda
+   exit 1
+ fi
+
+ # Get type of backup (argument)
+ case $1 in
+   todos|produccion|lista)
+          opcion=$1
+          shift
+          ;;
+   *)
+          ayuda
+          exit 1
+          ;;
+ esac
+
+
+ echo "### Local Sinchronization ($fechaInicio $horaInicio) in $HOSTNAME ###" > $fileLog
+
+ echo "" >> $fileLog
+ echo "--- Machines list to sinchronize. Option -> $opcion ----" >> $fileLog
+ echo "" >> $fileLog
+
+ ### MACHINES LIST ###
+ # Get machines list to sinchronize, depending on option selected
+ case $opcion in
+     todos)
+	# Get all machines ('conf' files) 
+        dirOld=$PWD
+
+        # LXC #
+        if [[ `/usr/bin/find "$dirConfLXC/" -name "*.conf"|/usr/bin/wc -l` -gt 0 ]]; then
+          cd $dirConfLXC
+          for maquina in *.conf
+          do
+            maqID=${maquina%.conf}
+	    # Get machine name
+            nombreID=`/bin/grep '^hostname' $maquina | /usr/bin/cut -d':' -f2 | /usr/bin/tr -d ' ' | /bin/sed "s/\.$domain//g"`
+            nombreID="${nombreID:-unknown}-$maqID"
+
+	    # Get disk path (rootfs in conf file)
+            pathMaquina=`/bin/grep "^rootfs" $maquina | /usr/bin/cut -d':' -f3 | /usr/bin/cut -d',' -f1 | /bin/grep $maqID`
+
+	    # Check if disk exists
+            if [ ! -z "$pathMaquina" ] && [[ `/usr/sbin/zfs list | /bin/grep "^${zpoolName}/${pathMaquina}"` ]]; then
+	 	# Copying conf files in machine root directory
+                echo "Copying ${maqID}.* ($nombreID) conf files to /${zpoolName}/${pathMaquina}/root" >> $fileLog
+                /bin/cp "$dirConfLXC/${maqID}".* "/${zpoolName}/${pathMaquina}/root"
+                erroresCP=$?
+                if [[ $erroresCP -gt 0 ]]; then
+                    echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfLXC/${maqID}.* /${zpoolName}/${pathMaquina}/root/ " | tee -a $fileLog $errorLog
+                fi
+                echo "" >> $fileLog
+		
+                listaMaquinasLXC="$listaMaquinasLXC $nombreID"
+            else
+		# Disk doesn't exist
+                echo "$nombreID machine with no disk ZFS ($pathMaquina not found). Ignored" >> $fileLog
+                echo "" >> $fileLog
+            fi
+          done
+        fi
+
+        # KVM #
+        if [[ `/usr/bin/find "$dirConfKVM/" -name "*.conf"|/usr/bin/wc -l` -gt 0 ]]; then
+          cd $dirConfKVM
+          for maquina in *.conf
+          do
+            maqID=${maquina%.conf}
+            # Get machine name
+            nombreID=`/usr/sbin/qm list | /bin/grep -v "VMID NAME" | /bin/grep "$maqID" | /usr/bin/cut -b 12-32 | /bin/sed "s/ //g" | /bin/sed "s/\.$domain//g"`
+            nombreID="${nombreID:-unknown}-$maqID"
+
+            # Get disk path
+            tipoPath=`/bin/grep "$maqID" $maquina | /usr/bin/head -1 | /usr/bin/cut -d':' -f2 | /bin/sed "s/ //g"`
+            if [ "$tipoPath" = "local" ]; then
+                # Local disk
+                pathMaquina="$dirLocalMaquinasKVM/$maqID"
+            elif [ "$tipoPath" = "gVM" ]; then
+                # GlusterFS disk
+                pathMaquina="$dirGlusterFSGeneral/images/$maqID"
+            elif [ "$tipoPath" = "VM" ]; then
+                # NFS disk
+                pathMaquina="$dirNFSGeneral/images/$maqID"
+            elif [ "$tipoPath" = "ZFS-Data" ]; then
+                # ZFS disk
+                pathMaquina=""
+            else
+                pathMaquina=""
+                echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $fileLog
+                echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $errorLog
+                echo "" >> $fileLog
+            fi
+	
+            #pathMaquina="$dirLocalMaquinasKVM/$maqID"
+            if [ -d "$pathMaquina" ]; then
+                # Copying conf files to disk directory
+                echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina" >> $fileLog
+                /bin/cp "$dirConfKVM/${maqID}".* "$pathMaquina"
+                erroresCP=$?
+                if [[ $erroresCP -gt 0 ]]; then
+                    echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.* $pathMaquina/ " >> $fileLog
+                    echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.* $pathMaquina/ " >> $errorLog
+                fi
+                echo "" >> $fileLog
+                listaMaquinasKVM="$listaMaquinasKVM $nombreID"
+            fi
+          done
+        fi
+
+        cd $dirOld
+        ;;
+
+     produccion)
+	# Get all machines (conf files)
+        dirOld=$PWD
+
+        # LXC #
+        if [[ `/usr/bin/find "$dirConfLXC/" -name "*.conf"|/usr/bin/wc -l` -gt 0 ]]; then
+          cd $dirConfLXC
+          for maquina in *.conf
+          do
+
+            maqID=${maquina%.conf}
+	    # Get machine name
+            nombreID=`/bin/grep '^hostname' $maquina | /usr/bin/cut -d':' -f2 | usr/bin/tr -d ' ' | /bin/sed "s/\.$domain//g"`
+            nombreID="${nombreID:-unknown}-$maqID"
+
+	    # Checking if machine is running
+            if [[ `/usr/sbin/lxc-ls --running | /bin/grep "$maqID"` ]]; then
+
+		# Get disk path (rootfs in conf file)
+                pathMaquina=`/bin/grep "^rootfs" $maquina | /usr/bin/cut -d':' -f3 | /usr/bin/cut -d',' -f1 | /bin/grep $maqID`
+
+		# Checking if disk path exists
+                if [ ! -z "$pathMaquina" ] && [[ `/usr/sbin/zfs list | /bin/grep "^${zpoolName}/${pathMaquina}"` ]]; then
+		    # Copying conf files to machine root directory
+		    echo "Copying ${maqID}.* ($nombreID) conf files to /${zpoolName}/${pathMaquina}/root" >> $fileLog
+                    /bin/cp "$dirConfLXC/${maqID}".* "/${zpoolName}/${pathMaquina}/root"
+                    erroresCP=$?
+                    if [[ $erroresCP -gt 0 ]]; then
+                        echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfLXC/${maqID}.* /${zpoolName}/${pathMaquina}/root/ " | tee -a $fileLog $errorLog
+                    fi
+                    echo "" >> $fileLog
+
+                    listaMaquinasLXC="$listaMaquinasLXC $nombreID"
+                else
+		    # Disk doesn't exist
+                    echo "$nombreID machine with no ZFS disk ($pathMaquina not found). Ignored" >> $fileLog
+                    echo "" >> $fileLog
+                fi
+            fi
+          done
+        fi
+
+        # KVM #
+        if [[ `/usr/bin/find "$dirConfKVM/" -name "*.conf"|/usr/bin/wc -l` -gt 0 ]]; then
+          cd $dirConfKVM
+          for maquina in *.conf
+          do
+            maqID=${maquina%.conf}
+            # Get machine name
+            nombreID=`/usr/sbin/qm list | /bin/grep -v "VMID NAME" | /bin/grep "$maqID" | /usr/bin/cut -b 12-32 | /bin/sed "s/ //g" | /bin/sed "s/\.$domain//g"`
+            nombreID="${nombreID:-unknown}-$maqID"
+
+            # Cheking if machine is running
+            if [[ `/usr/sbin/qm list | /bin/grep -v "VMID NAME" | /bin/grep " $maqID " | /bin/grep " running "` ]]; then
+
+              # Get disk path
+              tipoPath=`/bin/grep "$maqID" $maquina | /usr/bin/head -1 | /usr/bin/cut -d':' -f2 | /bin/sed "s/ //g"`
+              if [ "$tipoPath" = "local" ]; then
+                  # Local disk
+                  pathMaquina="$dirLocalMaquinasKVM/$maqID"
+              elif [ "$tipoPath" = "gVM" ]; then
+                  # GlusterFS disk
+                  pathMaquina="$dirGlusterFSGeneral/images/$maqID"
+              elif [ "$tipoPath" = "VM" ]; then
+                  # NFS disk
+                  pathMaquina="$dirNFSGeneral/images/$maqID"
+              elif [ "$tipoPath" = "ZFS-Data" ]; then
+                  # ZFS disk
+                  pathMaquina=""
+              else
+                  pathMaquina=""
+                  echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $fileLog
+                  echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $errorLog
+                  echo "" >> $fileLog
+              fi
+
+              #pathMaquina="$dirLocalMaquinasKVM/$maqID"
+              if [ -d "$pathMaquina" ]; then
+                  # Copying conf files to disk directory
+                  echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina" >> $fileLog
+                  /bin/cp "$dirConfKVM/${maqID}".* "$pathMaquina"
+                  erroresCP=$?
+                  if [[ $erroresCP -gt 0 ]]; then
+                      echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.* $pathMaquina/ " >> $fileLog
+                      echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.* $pathMaquina/ " >> $errorLog
+                  fi
+                  echo "" >> $fileLog
+                  listaMaquinasKVM="$listaMaquinasKVM $nombreID"
+              fi 
+            fi
+          done
+        fi
+
+        cd $dirOld
+        ;;
+
+     lista)
+	# Get machine list from arguments
+        while (( $# ))
+        do
+
+            maqID=""
+	    # Checking if it's a LXC machine
+            if [[ `/bin/grep -l -e "^hostname\: ${1}$" -e "^hostname\: ${1}\.${domain}$" *.conf` ]]; then
+                maqID=`/bin/grep -l -e "^hostname\: ${1}$" -e "^hostname\: ${1}\.${domain}$" *.conf | /bin/sed "s/\.conf//g"`
+                nombreID=`/bin/grep '^hostname' ${maqID}.conf | /usr/bin/cut -d':' -f2 | usr/bin/tr -d ' ' | /bin/sed "s/\.$domain//g"`
+                nombreID="${nombreID:-$1}-$maqID"
+
+		# Get path disk (rootfs in conf file)
+                pathMaquina=`/bin/grep "^rootfs" ${maqID}.conf | /usr/bin/cut -d':' -f3 | /usr/bin/cut -d',' -f1 | /bin/grep $maqID`
+
+		# Checking if disk path exists 
+                if [ ! -z "$pathMaquina" ] && [[ `/usr/sbin/zfs list | /bin/grep "^${zpoolName}/${pathMaquina}"` ]]; then
+		    # Copying conf files to machine root directory
+		    echo "Copying ${maqID}.* ($nombreID) conf files to /${zpoolName}/${pathMaquina}/root" >> $fileLog
+                    /bin/cp "$dirConfLXC/${maqID}".* "/${zpoolName}/${pathMaquina}/root"
+                    erroresCP=$?
+                    if [[ $erroresCP -gt 0 ]]; then
+                        echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfLXC/${maqID}.* /${zpoolName}/${pathMaquina}/root/ " | tee -a $fileLog $errorLog
+                    fi
+                    echo "" >> $fileLog
+
+                    listaMaquinasLXC="$listaMaquinasLXC $nombreID"
+                else
+                    echo "$nombreID machine (from 'lista' option) with no ZFS disk ($pathMaquina not found). Ignored" >> $fileLog
+                    echo "" >> $fileLog
+                fi
+            fi
+
+            # Checking if it's a KVM machine
+            if [[ `/usr/sbin/qm list | /bin/grep -v "VMID NAME" | /bin/grep -i " $1 " | /usr/bin/cut -b 1-11 | /bin/sed "s/ //g"` ]]; then
+                maqID=`/usr/sbin/qm list | /bin/grep -v "VMID NAME" | /bin/grep -i " $1 " | /usr/bin/cut -b 1-11 | /bin/sed "s/ //g"`
+                nombreID=`/usr/sbin/qm list | /bin/grep -v "VMID NAME" | /bin/grep "$maqID" | /usr/bin/cut -b 12-32 | /bin/sed "s/ //g" | /bin/sed "s/\.$domain//g"`
+                nombreID="${nombreID:-$1}-$maqID"
+
+                # Get path disk
+                tipoPath=`/bin/grep "$maqID" "$dirConfKVM/$maqID.conf" | /usr/bin/head -1 | /usr/bin/cut -d':' -f2 | /bin/sed "s/ //g"`
+                if [ "$tipoPath" = "local" ]; then
+                    # Local disk
+                    pathMaquina="$dirLocalMaquinasKVM/$maqID"
+                elif [ "$tipoPath" = "gVM" ]; then
+                    # GlusterFS disk
+                    pathMaquina="$dirGlusterFSGeneral/images/$maqID"
+                elif [ "$tipoPath" = "VM" ]; then
+                    # NFS disk
+                    pathMaquina="$dirNFSGeneral/images/$maqID"
+                elif [ "$tipoPath" = "ZFS-Data" ]; then
+                    # ZFS disk
+                    pathMaquina=""
+                else
+                    pathMaquina=""
+                    echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $fileLog
+                    echo "Error: Path not detected to copy conf files for $maqID ($nombreID)" >> $errorLog
+                    echo "" >> $fileLog
+                fi
+
+                #pathMaquina="$dirLocalMaquinasKVM/$maqID"
+                if [ -d "$pathMaquina" ]; then
+                    # Copying conf files to disk directory
+                    echo "Copying ${maqID}.* ($nombreID) conf files to $pathMaquina" >> $fileLog
+                    /bin/cp "$dirConfKVM/${maqID}".* "$pathMaquina"
+                    erroresCP=$?
+                    if [[ $erroresCP -gt 0 ]]; then
+                        echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.* $pathMaquina/ " >> $fileLog
+                        echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.* $pathMaquina/ " >> $errorLog
+                    fi
+                    echo "" >> $fileLog
+
+                    # Machine added to backup list if local disk (non NFS)
+                    if [ "$tipoPath" = "local" ]; then
+                        listaMaquinasKVM="$listaMaquinasKVM $nombreID"
+                    fi
+                else
+                    echo "$nombreID machine (from 'lista' option) with no directory (not found). Ignored" >> $fileLog
+                    echo "" >> $fileLog
+                fi
+            fi
+            if [ -z "$maqID" ]; then
+                echo "$1 machine (from 'lista' option) not found. Ignored" >> $fileLog
+                echo "" >> $fileLog
+            fi
+          shift
+        done
+        ;;
+ esac
+
+
+ ### SYNC ###
+ cadenaMountBackup="$particionBackup on $mountBackup type xfs"
+ # if mount shows cadenaMount string then backup partition 
+ # is mounted and we can start sinchronization
+ # We have to check if backup list is not empty, too
+ if [[ `/bin/mount | grep "$cadenaMountBackup"` ]] && ([[ -n "$listaMaquinasLXC" ]] || [[ -n "$listaMaquinasKVM" ]]); then 
+
+   echo "" >> $fileLog
+   echo "--- Backup started on $fechaInicio at $horaInicio ----" >> $fileLog
+   echo "" >> $fileLog
+
+
+   ### LXC RSYNC ###
+   # Let's start sinchronization for machines list (if it's not empty)
+   # First we sinchronize LXC machines
+   if [ -n "$listaMaquinasLXC" ]; then
+      echo "" >> $fileLog
+      echo "* LXC machines to sinchronize: $listaMaquinasLXC" >> $fileLog
+      echo "" >> $fileLog
+
+      for nombreID in $listaMaquinasLXC
+      do
+        horaLog="`date +%H:%M:%S`"
+        echo "" >> $fileLog
+        echo "* * [$horaLog] Starting backup for $nombreID..." >> $fileLog
+
+        maqID=`echo $nombreID|/usr/bin/cut -d'-' -f2`
+        snapshot="${zpoolName}/subvol-${maqID}-disk-0@${nombreSnapshot}"
+
+        # Freeze LXC if running
+        if [[ `/usr/bin/lxc-info -s -n $maqID|grep "RUNNING"` ]]; then
+          echo "Freezing $nombreID" >> $fileLog
+          /usr/bin/lxc-freeze -n $maqID
+          erroresFreeze=$?
+          if [[ $erroresFreeze -gt 0 ]]; then
+              echo "Error ($erroresFreeze) " | tee -a $fileLog $errorLog
+          fi
+        fi
+
+        # Create ZFS Snapshot
+        echo "Creating snapshot: ${snapshot}" >> $fileLog
+        /usr/sbin/zfs snapshot "${snapshot}" >> $fileLog 2>> $fileLog
+        erroresCreateSnapshot=$?
+        if [[ $erroresCreateSnapshot -gt 0 ]]; then
+            echo "Error ($erroresCreateSnapshot) running zfs snapshot" | tee -a $fileLog $errorLog
+            # Skipping sinchronization, next machine
+            continue 
+        fi
+
+        # Unfreeze LXC if frozen
+        if [[ `/usr/bin/lxc-info -s -n $maqID|grep "FROZEN"` ]]; then
+          echo "Unfreezing $nombreID" >> $fileLog
+          /usr/bin/lxc-unfreeze -n $maqID
+          erroresUnfreeze=$?
+          if [[ $erroresUnfreeze -gt 0 ]]; then
+              echo "Error ($erroresUnfreeze) " | tee -a $fileLog $errorLog
+          fi
+        fi
+
+        dirMaquinasLXC="/${zpoolName}/subvol-${maqID}-disk-0/.zfs/snapshot/${nombreSnapshot}"
+
+	# Get Mount points to exclude from rsync
+        exclude=""
+        mountpoints=`/bin/grep "^mp[0-99]:" "$dirConfLXC/${maqID}".conf | /bin/grep ",backup=1," | /usr/bin/cut -d':' -f3 | /usr/bin/cut -d',' -f2 | /usr/bin/cut -d'=' -f2 | /usr/bin/paste -s | /usr/bin/sed 's/\t/ --exclude /g'` 
+        if [ ! -z "$mountpoints" ]; then
+          exclude=" --exclude $mountpoints "
+          echo "Exclude Mount Points: $exclude" >> $fileLog
+        fi 
+         
+	# Looking for exclude file in / directory
+        if [ -r "$dirMaquinasLXC/$excludeFile" ]; then
+          excludeFrom=" --exclude-from=$dirMaquinasLXC/$excludeFile "
+          echo "Exclude file: $dirMaquinasLXC/$excludeFile" >> $fileLog
+        else
+          excludeFrom=""
+        fi
+
+	# If destination directory doesn't exist then it has to be created
+        if ! [[ -d "$dirBackup/$nombreID/$maqID" ]]; then
+            echo "Creating $dirBackup/$nombreID/$maqID directory ..." >> $fileLog
+            /bin/mkdir -p "$dirBackup/$nombreID/$maqID"
+            erroresMkdir=$?
+            if [[ $erroresMkdir -gt 0 ]]; then
+               echo "Error $erroresMkdir on mkdir: /bin/mkdir -p $dirBackup/$nombreID/$maqID" | tee -a $fileLog $errorLog
+	       # Skipping sinchronization, next machine
+               delZFSsnapshot $snapshot
+               continue
+            fi
+        fi
+
+	# Copying conf files to directory
+        echo "Copying ${maqID}.* conf files to $dirBackup/$nombreID/" >> $fileLog
+        /bin/cp "$dirConfLXC/${maqID}".* "$dirBackup/$nombreID/"
+        erroresCP=$?
+        echo "" >> $fileLog
+        if [[ $erroresCP -gt 0 ]]; then
+          echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfLXC/${maqID}.* $dirBackup/$nombreID/ " | tee -a $fileLog $errorLog
+        fi
+
+        horaLog="`date +%H:%M:%S`"
+        echo "" >> $fileLog
+        echo "* * [$horaLog] Sinchronizing $nombreID (Rootfs)..." >> $fileLog
+        echo "" >> $fileLog
+
+        # Starting sinchronization
+        echo "rsync --force -arvu --delete --inplace $excludeFrom $dirMaquinasLXC/ $dirBackup/$nombreID/$maqID" >> $fileLog
+        rsync --force -arvu --delete --inplace $exclude $excludeFrom "$dirMaquinasLXC/" "$dirBackup/$nombreID/$maqID" >> $fileLog 2>> $fileLog
+        erroresRsync=$?
+        echo "" >> $fileLog
+        if [[ $erroresRsync -gt 0 ]]; then
+          echo "Error $erroresRsync on rsyncLocal: rsync --force -arvu --delete --inplace $excludeFrom $dirMaquinasLCX/ $dirBackup/$nombreID/$maqID" | tee -a $fileLog $errorLog
+        fi
+
+        horaLog="`date +%H:%M:%S`"
+        echo "[$horaLog] End of sinchronization for $nombreID (Rootfs)" >> $fileLog
+        echo "" >> $fileLog
+
+        # Create directory /etc/vzdump and copy conf file as pct.conf
+        if ! [[ -d "$dirBackup/$nombreID/$maqID/etc/vzdump" ]]; then
+            echo "Creating $dirBackup/$nombreID/$maqID/etc/vzdump directory ..." >> $fileLog
+            /bin/mkdir -p "$dirBackup/$nombreID/$maqID/etc/vzdump"
+            erroresMkdir=$?
+            if [[ $erroresMkdir -gt 0 ]]; then
+               echo "Error $erroresMkdir on mkdir: /bin/mkdir -p $dirBackup/$nombreID/$maqID/etc/vzdump" | tee -a $fileLog $errorLog
+            fi
+        fi
+        if [[ -d "$dirBackup/$nombreID/$maqID/etc/vzdump" ]]; then
+          echo "Copying ${maqID}.conf file as /etc/vzdump/pct.conf" >> $fileLog
+          /bin/cp "$dirConfLXC/${maqID}".conf "$dirBackup/$nombreID/$maqID/etc/vzdump/pct.conf"
+          erroresCP=$?
+          echo "" >> $fileLog
+          if [[ $erroresCP -gt 0 ]]; then
+            echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfLXC/${maqID}.conf $dirBackup/$nombreID/$maqID/etc/vzdump/pct.conf " | tee -a $fileLog $errorLog
+          fi
+        fi
+
+        # Delete snapshot
+        delZFSsnapshot $snapshot
+
+
+        ### Checking Mount Points ###
+        echo "" >> $fileLog
+        echo "Checking mount points..." >> $fileLog 
+        echo "" >> $fileLog
+        /bin/grep "^mp[0-99]:" "$dirConfLXC/${maqID}".conf | /bin/grep ",backup=1," | while read -r mp
+        do
+          mpName=`echo ${mp} | /usr/bin/cut -d':' -f1`
+          mpDisk=`echo ${mp} | /usr/bin/cut -d':' -f3 | /usr/bin/cut -d',' -f1`
+          mpMount=`echo ${mp} | /usr/bin/cut -d':' -f3 | /usr/bin/cut -d',' -f2 | /usr/bin/cut -d'=' -f2`
+          mpSnapshot="${zpoolName}/${mpDisk}@${nombreSnapshot}"
+
+	  echo "" >> $fileLog
+	  echo "Mount Point ${mpName}: Disk ${mpDisk}   Dir Mount ${mpMount}" >> $fileLog
+	  echo "" >> $fileLog
+
+          # Create ZFS Snapshot
+          echo "Creating snapshot for Mount Point ${mpName}: ${mpSnapshot}" >> $fileLog
+          /usr/sbin/zfs snapshot "${mpSnapshot}" >> $fileLog 2>> $fileLog
+          erroresCreateSnapshot=$?
+          if [[ $erroresCreateSnapshot -gt 0 ]]; then
+            echo "Error ($erroresCreateSnapshot) running zfs snapshot for Mount Point ${mpName}" | tee -a $fileLog $errorLog
+            # Skipping sinchronization, next Mount Point 
+            continue
+          fi
+
+          mpDirSnapshot="/${zpoolName}/${mpDisk}/.zfs/snapshot/${nombreSnapshot}"
+
+          # Looking for exclude file in ${mpMount} directory
+          if [ -r "$mpDirSnapshot/$excludeFile" ]; then
+            excludeFrom=" --exclude-from=$mpDirSnapshot/$excludeFile "
+            echo "Exclude file: $mpDirSnapshot/$excludeFile" >> $fileLog
+          else
+            excludeFrom=""
+          fi
+
+          horaLog="`date +%H:%M:%S`"
+          echo "" >> $fileLog
+          echo "* * [$horaLog] Sinchronizing $nombreID (Mount Point ${mpName})..." >> $fileLog
+
+          # Starting sinchronization
+          echo "rsync --force -arvu --delete --inplace $excludeFrom $mpDirSnapshot/ $dirBackup/$nombreID/${maqID}${mpMount}" >> $fileLog
+          rsync --force -arvu --delete --inplace $excludeFrom "$mpDirSnapshot/" "$dirBackup/$nombreID/${maqID}${mpMount}" >> $fileLog 2>> $fileLog
+          erroresRsync=$?
+          echo "" >> $fileLog
+          if [[ $erroresRsync -gt 0 ]]; then
+            echo "Error $erroresRsync on rsyncLocal: rsync --force -arvu --delete --inplace $excludeFrom $mpDirSnapshot/ $dirBackup/$nombreID/${maqID}${mpMount}" | tee -a $fileLog $errorLog
+          fi
+
+          horaLog="`date +%H:%M:%S`"
+          echo "[$horaLog] End of sinchronization for $nombreID (Mount Point ${mpName})" >> $fileLog
+
+          # Delete snapshot
+          delZFSsnapshot $mpSnapshot
+
+        done
+         
+        horaLog="`date +%H:%M:%S`"
+        echo "" >> $fileLog
+        echo "* * [$horaLog] End of backup for $nombreID" >> $fileLog
+
+      done
+   fi
+
+
+   # If there are no machines to sinchronize, show on log file
+   if [ -z "$listaMaquinasLXC" ]; then
+     echo "" >> $fileLog
+     echo "No LXC containers to sinchronize" >> $fileLog
+     echo "" >> $fileLog
+   fi
+
+
+   ### KVM RSYNC ###
+   # Sinchronization for KVM machines
+   if [ -n "$listaMaquinasKVM" ]; then
+
+      ### SNAPSHOT ###
+      # start LVM snapshot y mount partition to access production data
+      /sbin/lvcreate -L{{ snapshotSpace }} -s -n $nombreSnapshot $lvmOpt >> $fileLog 2>> $fileLog
+      erroresLvcreate=$?
+      if [[ $erroresLvcreate -gt 0 ]]; then
+        echo "Error ($erroresLvcreate) running Lvcreate" >> $fileLog
+        echo "Error ($erroresLvcreate) running Lvcreate" >> $errorLog
+        fin
+      fi
+      /bin/mount -t xfs -o ro -o nouuid $lvmSnapshot $mountSnapshot >> $fileLog 2>> $fileLog
+      erroresMount=$?
+      if [[ $erroresMount -gt 0 ]]; then
+        echo "Error ($erroresMount) runnnig snapshot mount" >> $fileLog
+        echo "Error ($erroresMount) running snapshot mount" >> $errorLog
+        fin
+      fi
+
+      echo "" >> $fileLog
+      echo "* KVM  machines to sinchronize: $listaMaquinasKVM" >> $fileLog
+      for nombreID in $listaMaquinasKVM
+      do
+        horaLog="`date +%H:%M:%S`"
+        cow="`lvdisplay|grep 'Allocated'|tr -s ' '|cut -d' ' -f5`"
+        maqID=`echo $nombreID|/usr/bin/cut -d'-' -f2`
+        echo "" >> $fileLog
+        echo "* * [$horaLog] [$cow] Sinchronizing $nombreID (KVM)..." >> $fileLog
+        # If destination directory doesn't exist then it has to be created
+        if ! [[ -d "$dirBackup/$nombreID/$maqID" ]]; then
+            echo "Creating $dirBackup/$nombreID/$maqID directory ..." >> $fileLog
+            /bin/mkdir -p "$dirBackup/$nombreID/$maqID"
+            erroresMkdir=$?
+            if [[ $erroresMkdir -gt 0 ]]; then
+               echo "Error $erroresMkdir on mkdir: /bin/mkdir -p $dirBackup/$nombreID/$maqID" >> $fileLog
+               echo "Error $erroresMkdir on mkdir: /bin/mkdir -p $dirBackup/$nombreID/$maqID" >> $errorLog
+               # Skipping sinchronization, next machine
+               continue
+            fi
+        fi
+        # Copying conf file to directory
+        echo "Copying ${maqID}.conf conf file" >> $fileLog
+        /bin/cp "$dirConfKVM/${maqID}.conf" "$dirBackup/$nombreID/"
+        erroresCP=$?
+        echo "" >> $fileLog
+        if [[ $erroresCP -gt 0 ]]; then
+          echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.conf $dirBackup/$nombreID/ " >> $fileLo
+g
+          echo "Error $erroresCP on rsyncLocal: /bin/cp $dirConfKVM/${maqID}.conf $dirBackup/$nombreID/ " >> $errorLog
+        fi
+        # Starting sinchronization
+        rsync --force -arvu --delete --inplace "$dirMaquinasKVM/$maqID/" "$dirBackup/$nombreID/$maqID" >> $fileLog 2>> $fileLog
+        erroresRsync=$?
+        echo "" >> $fileLog
+        if [[ $erroresRsync -gt 0 ]]; then
+          echo "Error $erroresRsync on rsyncLocal: rsync --force -arvu --delete --inplace $dirMaquinasKVM/$maqID $dirBackup
+/$nombreID" >> $fileLog
+          echo "Error $erroresRsync on rsyncLocal: rsync --force -arvu --delete --inplace $dirMaquinasKVM/$maqID $dirBackup
+/$nombreID" >> $errorLog
+        fi
+        horaLog="`date +%H:%M:%S`"
+        echo "[$horaLog] End of sinchronization for $nombreID (KVM)" >> $fileLog
+        echo "" >> $fileLog
+      done
+
+      ### SNAPSHOT ###
+      # Unmont and delete snapshot
+      echo "" >> $fileLog
+      echo "--- LVM snapshot state before unmounting ---" >> $fileLog
+      echo "" >> $fileLog
+      /sbin/lvdisplay $lvmSnapshot >> $fileLog 2>> $fileLog
+      /bin/umount $mountSnapshot >> $fileLog 2>> $fileLog
+      /sbin/lvremove -f $lvmSnapshot >> $fileLog 2>> $fileLog
+
+   fi
+   # If there are no machines to sinchronize, show on log file
+   if [ -z "$listaMaquinasKVM" ]; then
+     echo "" >> $fileLog
+     echo "No KVM machines to sinchronize" >> $fileLog
+     echo "" >> $fileLog
+   fi
+
+   fin
+
+   fechaFin="`date +%Y-%m-%d`"
+   horaFin="`date +%H:%M:%S`"
+   echo "" >> $fileLog
+   echo "--- Sinchronization finished on $fechaFin at $horaFin ---" >> $fileLog
+
+ else
+   if ! [[ `/bin/mount | grep "$cadenaMountBackup"` ]]; then
+      echo "$particionBackup partition not mounted on $mountBackup" | tee -a $fileLog $errorLog
+   else
+     echo "" >> $fileLog
+     echo "No machines to sinchronize" >> $fileLog
+     echo "" >> $fileLog
+   fi
+ fi
+
+ # Sending email 
+ #/bin/cat $fileLog | mail admin@$domain -s "Results of local rsync in $HOSTNAME on $fechaInicio at $horaInicio"
+
+

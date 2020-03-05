@@ -1,0 +1,116 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+{# Global block -#}
+{% if apacheIncGlobal.includes is defined -%}
+{%  for inc in apacheIncGlobal.includes -%}
+{%   if inc.name == item.split(':')[1] and item.split(':')[0] == 'Global' and inc.variables is defined -%}
+{%    for var in inc.variables -%}
+{%     set printVar = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%     if apacheIncGroup is defined -%}
+{%      for rGroup in apacheIncGroup -%}
+{%       if rGroup.group in group_names -%}
+{%        for ginc in rGroup.includes -%}
+{%         if ginc.name == item.split(':')[1] and ginc.variables is defined -%}
+{%          for gvar in ginc.variables -%}
+{%           if gvar.label == var.label -%}
+{%            if printVar.update({'value': False}) -%}{% endif -%}
+{%           endif -%}
+{%          endfor -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endfor %}
+{%     endif -%}
+{# Looking for the same label in Host block -#}
+{%     if printVar.value -%}
+{%      if apacheIncHost is defined -%}
+{%       for rHost in apacheIncHost -%}
+{%        if rHost.host==inventory_hostname -%}
+{%         for hinc in rHost.includes -%}
+{%          if hinc.name == item.split(':')[1] and hinc.variables is defined  -%}
+{%           for hvar in hinc.variables -%}
+{%            if hvar.label == var.label -%}
+{%             if printVar.update({'value': False}) -%}{% endif -%}
+{%            endif -%}
+{%           endfor -%}
+{%          endif -%}
+{%         endfor -%}
+{%        endif -%}
+{%       endfor %}
+{%      endif -%}
+{%     endif -%}
+{# Print variable -#}
+{%     if printVar.value and var.value is defined -%}
+{%      if var.comment is defined -%}
+{{ "%s" % ""|indent(var.indent,true) if var.indent is defined and var.indent is number else "%s" % ""|indent(inc.indent,true) if inc.indent is defined and inc.indent is number else "" }}# {{ var.comment }}
+{%      endif -%}
+{{ "%s" % ""|indent(var.indent,true) if var.indent is defined and var.indent is number else "%s" % ""|indent(inc.indent,true) if inc.indent is defined and inc.indent is number else "" }}{{ "%s" % "# " if var.disabled is defined and var.disabled else "" }}{{ var.label }} {{ "%s" % var.value|replace("#hostname#",ansible_hostname)|replace("#hostIP#",ansible_default_ipv4.address)|replace("#fqdn#",ansible_fqdn)|replace("#name#",inc.name)|replace("#httpd_directory#",httpd_directory.stdout)|replace("#httpdConf_directory#",httpdConf_directory.stdout)|replace("#httpdInc_directory#",httpdInc_directory.stdout)|replace("#httpdLogs_directory#",httpdLogs_directory.stdout) }} 
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if apacheIncGroup is defined -%}
+{%  for rGroup in apacheIncGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    for ginc in rGroup.includes -%}
+{%     if ginc.name == item.split(':')[1] and item.split(':')[0] != 'Host' and ginc.variables is defined -%}
+{%      for gvar in ginc.variables -%}
+{%       set printVar = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%       for rHost in apacheIncHost -%}
+{%        if rHost.host==inventory_hostname -%}
+{%         for hinc in rHost.includes -%}
+{%          if hinc.name == item.split(':')[1] and hinc.variables is defined -%}
+{%           for hvar in hinc.variables -%}
+{%            if hvar.label == gvar.label -%}
+{%             if printVar.update({'value': False}) -%}{% endif -%}
+{%            endif -%}
+{%           endfor -%}
+{%          endif -%}
+{%         endfor -%}
+{%        endif -%}
+{%       endfor %}
+{# Print variable -#}
+{%       if printVar.value and gvar.value is defined -%}
+{%        if gvar.comment is defined -%}
+{{ "%s" % ""|indent(gvar.indent,true) if gvar.indent is defined and gvar.indent is number else "%s" % ""|indent(ginc.indent,true) if ginc.indent is defined and ginc.indent is number else "" }}# {{ gvar.comment }}
+{%        endif -%}
+{{ "%s" % ""|indent(gvar.indent,true) if gvar.indent is defined and gvar.indent is number else "%s" % ""|indent(ginc.indent,true) if ginc.indent is defined and ginc.indent is number else "" }}{{ "%s" % "# " if gvar.disabled is defined and gvar.disabled else "" }}{{ gvar.label }} {{ "%s" % gvar.value|replace("#hostname#",ansible_hostname)|replace("#hostIP#",ansible_default_ipv4.address)|replace("#fqdn#",ansible_fqdn)|replace("#name#",ginc.name)|replace("#httpd_directory#",httpd_directory.stdout)|replace("#httpdConf_directory#",httpdConf_directory.stdout)|replace("#httpdInc_directory#",httpdInc_directory.stdout)|replace("#httpdLogs_directory#",httpdLogs_directory.stdout) }}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if apacheIncHost is defined -%}
+{%  for rHost in apacheIncHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    for hinc in rHost.includes -%}
+{%     if hinc.name == item.split(':')[1] and hinc.variables is defined -%}
+{%      for hvar in hinc.variables -%}
+{# Print variable -#}
+{%       if hvar.value is defined -%}
+{%        if hvar.comment is defined -%} 
+{{ "%s" % ""|indent(hvar.indent,true) if hvar.indent is defined and hvar.indent is number else "%s" % ""|indent(hinc.indent,true) if hinc.indent is defined and hinc.indent is number else "" }}# {{ hvar.comment }}
+{%        endif -%}
+{{ "%s" % ""|indent(hvar.indent,true) if hvar.indent is defined and hvar.indent is number else "%s" % ""|indent(hinc.indent,true) if hinc.indent is defined and hinc.indent is number else "" }}{{ "%s" % "# " if hvar.disabled is defined and hvar.disabled else "" }}{{ hvar.label }} {{ "%s" % hvar.value|replace("#hostname#",ansible_hostname)|replace("#hostIP#",ansible_default_ipv4.address)|replace("#fqdn#",ansible_fqdn)|replace("#name#",hinc.name)|replace("#httpd_directory#",httpd_directory.stdout)|replace("#httpdConf_directory#",httpdConf_directory.stdout)|replace("#httpdInc_directory#",httpdInc_directory.stdout)|replace("#httpdLogs_directory#",httpdLogs_directory.stdout) }}
+{%       endif -%}
+{%      endfor -%}
+{%     endif -%}
+{%    endfor -%}
+{%   endif -%}
+{%  endfor %}
+{% endif %}
+

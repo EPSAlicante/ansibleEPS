@@ -1,0 +1,55 @@
+# Windows NRPE Commands (NSClient++)
+#
+# Variables to generate NRPE commands on windows nrpeBase.ini file
+#
+# winNrpeGlobal: (List of global NRPE rules)
+#   rules: (List of global NRPE rules)
+#   ...
+#   scripts: (List of global NRPE scripts)
+#   ...
+#
+# winNrpeGroup:
+# - group: value (group name)
+#   rules: (List of NRPE rules by group)
+#   ...
+#   scripts: (List of NRPE scripts by group)
+#   ...
+#
+# winNrpeHost:
+# - host: value (host name)
+#   rules: (List of NRPE rules by host)
+#   ...
+#   scripts: (List of NRPE scripts by host)
+#   ...
+#
+# NRPE rules & scripts definition (syntax)
+# ----------------------------------------
+# label: value --> name used as key to be called from other variables (required attribute)
+# command: value --> Check command (required attribute)
+#
+
+winNrpeGlobal:
+  rules:
+  - label: check_load
+    command: 'check_cpu warn=80 crit=90 time=5m time=1m time=30s' 
+  - label: check_memory
+    command: 'check_memory MaxWarn=80% MaxCrit=90% ShowAll=long type=physical type=virtual type=paged type=page'
+  - label: check_diskRoot
+    command: 'check_drivesize "crit=free<5%" "warn=free<10%" drive=C:' 
+  - label: check_nrpe
+    command: 'check_service service=nscp'
+  - label: check_ossecAgent
+    command: 'check_service service=OssecSvc'
+
+  scripts:
+  - label: restart-ossecAgent
+    command: scripts\ossecAgent.bat
+
+winNrpeGroup: []
+
+winNrpeHost:
+- host: wserver_35 
+  rules:
+  - label: check_diskE
+    command: 'check_drivesize "crit=free<5%" "warn=free<10%" drive=E:'
+

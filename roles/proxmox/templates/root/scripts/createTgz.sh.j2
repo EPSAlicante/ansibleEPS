@@ -1,0 +1,111 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+#!/bin/bash
+ ###############################################################################
+ ##### createTGZ: Script to create backup file (TGZ) ready to be restored  #####
+ ##### version: 1.0                                                        #####
+ ###############################################################################
+
+
+ ### VARIABLES ###
+ # Global variables declaration 
+ fechaInicio="`date +%Y-%m-%d`"
+ horaInicio="`date +%H:%M:%S`"
+ fileLog="/var/log/rsync/createTgz-$fechaInicio-$horaInicio.log"
+ errorLog="/var/log/rsync/error.log"
+ particionBackup="{{ backupDisk }}"
+ mountBackup="/backup"
+ dirBackup="$mountBackup/rsync"
+ dirTgz="$mountBackup/dump"
+ decScript="/root/scripts/decrease-uid-gid.pl"
+
+
+ ### FUNTIONS ###
+ # Functions declaration 
+ # Function to show help on screen
+ function ayuda() {
+   echo ""
+   echo " Use: createTgz.sh OPTION [LXC: nombre]"
+   echo ""
+ }
+
+ ### ARGUMENTS ###
+ # Checking number of arguments
+ if [ $# -ne 1 ]; then
+   ayuda
+   exit 1
+ fi
+
+ nombreLXC=$1
+
+ # Checking backup directory (only 1 directory) 
+ numBackups=`/usr/bin/find "$dirBackup" -name "$nombreLXC-*"|wc -l`
+ if ! [[ $numBackups -eq 1 ]]; then
+   echo "Error: $numBackups directorios de backup para $nombreLXC" | tee -a $fileLog $errorLog
+   exit 1
+ fi
+
+ # Get LXC id 
+ idLXC=`/usr/bin/find "$dirBackup" -name "$nombreLXC-*" -printf "%f\n" | /usr/bin/cut -d'-' -f2`
+ 
+ # Checking backup directory for idLXC 
+ if ! [[ -d "$dirBackup/$nombreLXC-$idLXC" ]]; then
+   echo "Error: No existe directorio $dirBackup/$nombreLXC-$idLXC"  | tee -a $fileLog $errorLog
+   exit 2
+ fi
+
+ echo "### Creation of TGZ Backup ($fechaInicio $horaInicio) for $nombreLXC ###" > $fileLog
+ echo "" >> $fileLog
+
+ horaLog="`date +%H:%M:%S`"
+ echo "" >> $fileLog
+ echo "* * [$horaLog] Decreasing uid.guid for $nombreLXC..." >> $fileLog
+ echo "" >> $fileLog
+
+ $decScript --path=$dirBackup/$nombreLXC-$idLXC/$idLXC --decrease=100000 --limit 0 >> $fileLog
+ erroresDec=$?
+ echo "" >> $fileLog
+ if [[ $erroresDec -gt 0 ]]; then
+   echo "Error $erroresDec on: $decScript --path=$dirBackup/$nombreLXC-$idLXC/$idLXC --decrease=100000 --limit 0" | tee -a $fileLog $errorLog
+   exit 3
+ fi
+
+ horaLog="`date +%H:%M:%S`"
+ echo "[$horaLog] End of decrease for $nombreLXC" >> $fileLog
+ echo "" >> $fileLog
+
+ # Creating TGZ
+ oldPwd=$PWD
+ cd "$dirBackup/$nombreLXC-$idLXC/$idLXC"
+ dateTgz="`date +%Y_%m_%d-%H_%M_%S`" 
+
+ horaLog="`date +%H:%M:%S`"
+ echo "" >> $fileLog
+ echo "* * [$horaLog] Creating backup $dirTgz/vzdump-lxc-$idLXC-$dateTgz.tar.gz..." >> $fileLog
+ echo "" >> $fileLog
+ /usr/bin/tar cvpzf "$dirTgz/vzdump-lxc-$idLXC-$dateTgz.tar.gz" ./* >> $fileLog 2>> $fileLog 
+ erroresTar=$?
+ if [[ $erroresTar -gt 0 ]]; then
+   echo "Error $erroresTar on create: /usr/bin/tar cvpzf $dirTgz/vzdump-lxc-$idLXC-$dateTgz.tar.gz" | tee -a $fileLog $errorLog
+ fi
+
+ horaLog="`date +%H:%M:%S`"
+ echo "" >> $fileLog
+ echo "[$horaLog] End of creation for $nombreLXC" >> $fileLog
+ echo "" >> $fileLog
+
+ fechaFin="`date +%Y-%m-%d`"
+ horaFin="`date +%H:%M:%S`"
+ echo "" >> $fileLog
+ echo "--- Creation of TGZ Backup finished on $fechaFin at $horaFin ---" >> $fileLog
+ cd $PWD
+
+ # Sending email 
+ #/bin/cat $fileLog | mail admin@$domain -s "Results of local rsync in $HOSTNAME on $fechaInicio at $horaInicio"
+
+

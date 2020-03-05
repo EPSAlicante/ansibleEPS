@@ -1,0 +1,121 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+{# Sections list -#}
+{% for sectionItem in mySections.stdout_lines -%}
+{{ "[%s]" % sectionItem }}
+
+{# Global block -#}
+{%  if mycnfGlobal.sections is defined -%}
+{%   for section in mycnfGlobal.sections -%}
+{%    if section.name == sectionItem -%}
+{%     for var in section.variables -%}
+{%      set printVar = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%      if mycnfGroup is defined -%}
+{%       for rGroup in mycnfGroup -%}
+{%        if rGroup.group in group_names -%}
+{%         for gsection in rGroup.sections -%}
+{%          if gsection.name == sectionItem -%}
+{%           for gvar in gsection.variables -%}
+{%            if gvar.label == var.label -%}
+{%             if printVar.update({'value': False}) -%}{% endif -%}
+{%            endif -%}
+{%           endfor -%}
+{%          endif -%}
+{%         endfor -%}
+{%        endif -%}
+{%       endfor %}
+{%      endif -%}
+{# Looking for the same label in Host block -#}
+{%      if printVar.value -%}
+{%       if mycnfHost is defined -%}
+{%        for rHost in mycnfHost -%}
+{%         if rHost.host==inventory_hostname -%}
+{%          for hsection in rHost.sections -%}
+{%           if hsection.name == sectionItem -%}
+{%            for hvar in hsection.variables -%}
+{%             if hvar.label == var.label -%}
+{%              if printVar.update({'value': False}) -%}{% endif -%}
+{%             endif -%}
+{%            endfor -%}
+{%           endif -%}
+{%          endfor -%}
+{%         endif -%}
+{%        endfor %}
+{%       endif -%}
+{%      endif -%}
+{# Print variable -#}
+{%      if printVar.value and var.value is defined -%}
+{%       if var.comment is defined -%}
+# {{ var.comment }}
+{%       endif -%}
+{{ "%s" % "# " if var.disabled is defined and var.disabled else "" }}{{ "%s" % var.printLabel if var.printLabel is defined else var.label }}{{ " = %s" % ansible_default_ipv4.address if var.value == "hostIP" else " = %s" % ansible_hostname if var.value == "hostname" else " = %s" % ansible_fqdn if var.value == "fqdn" else " = %s" % var.value if var.value is not none else "" }}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{%  endif -%}
+{# Group block -#}
+{%  if mycnfGroup is defined -%}
+{%   for rGroup in mycnfGroup -%}
+{%    if rGroup.group in group_names -%}
+{%     for gsection in rGroup.sections -%}
+{%      if gsection.name == sectionItem -%}
+{%       for gvar in gsection.variables -%}
+{%        set printVar = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%        for rHost in mycnfHost -%}
+{%         if rHost.host==inventory_hostname -%}
+{%          for hsection in rHost.sections -%}
+{%           if hsection.name == sectionItem -%}
+{%            for hvar in hsection.variables -%}
+{%             if hvar.label == gvar.label -%}
+{%              if printVar.update({'value': False}) -%}{% endif -%}
+{%             endif -%}
+{%            endfor -%}
+{%           endif -%}
+{%          endfor -%}
+{%         endif -%}
+{%        endfor %}
+{# Print variable -#}
+{%        if printVar.value and gvar.value is defined -%}
+{%         if gvar.comment is defined -%}
+# {{ gvar.comment }}
+{%         endif -%}
+{{ "%s" % "# " if gvar.disabled is defined and gvar.disabled else "" }}{{ "%s" % gvar.printLabel if gvar.printLabel is defined else gvar.label }}{{ " = %s" % ansible_default_ipv4.address if gvar.value == "hostIP" else " = %s" % ansible_hostname if gvar.value == "hostname" else " = %s" % ansible_fqdn if gvar.value == "fqdn" else " = %s" % gvar.value if gvar.value is not none else "" }} 
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{%  endif -%}
+{# Host block -#}
+{%  if mycnfHost is defined -%}
+{%   for rHost in mycnfHost -%}
+{%    if rHost.host==inventory_hostname -%}
+{%     for hsection in rHost.sections -%}
+{%      if hsection.name == sectionItem -%}
+{%       for hvar in hsection.variables -%}
+{# Print variable -#}
+{%        if hvar.value is defined -%}
+{%         if hvar.comment is defined -%}
+# {{ hvar.comment }}
+{%         endif -%}
+{{ "%s" % "# " if hvar.disabled is defined and hvar.disabled else "" }}{{ "%s" % hvar.printLabel if hvar.printLabel is defined else hvar.label }}{{ " = %s" % ansible_default_ipv4.address if hvar.value == "hostIP" else " = %s" % ansible_hostname if hvar.value == "hostname" else " = %s" % ansible_fqdn if hvar.value == "fqdn" else " = %s" % hvar.value if hvar.value is not none else "" }} 
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endfor %}
+{%  endif %}
+
+{% endfor %}

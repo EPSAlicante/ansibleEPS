@@ -1,0 +1,88 @@
+# Operating System
+#SO: Ubuntu 
+
+
+# Version
+#vSO: Ubuntu18
+
+
+# Password of manager user
+managerPassword: $6$RPUGac1n$wHPxc17vtvaj0L1Tnof7yVT5wfRsIVaS.N364QKMvPuH.glX82cFnROcoMh/o8N1QhQVUhpU8yFq5VOZ7oLqi/ 
+
+
+# Groups with manager
+managerGroups: 
+- root
+- adm
+- cdrom
+- floppy
+- audio
+- dip
+- www-data
+- video
+- plugdev
+
+
+# Debian Repositories
+reposDebian:
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic main restricted
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic-updates main restricted
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic universe
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic-updates universe
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic multiverse
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic-updates multiverse
+- deb http://es.archive.ubuntu.com/ubuntu/ bionic-backports main restricted universe multiverse
+- deb http://security.ubuntu.com/ubuntu bionic-security main restricted
+- deb http://security.ubuntu.com/ubuntu bionic-security universe
+- deb http://security.ubuntu.com/ubuntu bionic-security multiverse
+
+
+# Proxmox Repositories
+reposProxmox:
+- deb http://proxmox.eps.ua.es/debian wheezy pve-no-subscription
+
+
+# Concurrency
+concurrency: none
+
+
+# List of services to stop 
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LC_ALL=es_ES.UTF-8"
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind9-host
+- lsof
+- traceroute
+- telnet
+- openssh-client
+- manpages
+
+
+# Syslog conf file 
+syslogConf: /etc/rsyslog.conf
+
+
+sudoOptions:
+- Defaults !visiblepw
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+- Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron/crontabs
+
+
+# Crontab Group file
+crontabGroupFile: crontab

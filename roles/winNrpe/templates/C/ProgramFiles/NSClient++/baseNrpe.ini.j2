@@ -1,0 +1,188 @@
+{# The source code packaged with this file is Free Software, Copyright (C) 2016 by #}
+{# Unidad de Laboratorios, Escuela Politecnica Superior, Universidad de Alicante :: <aeps at eps.ua.es>. #}
+{# It's licensed under the AFFERO GENERAL PUBLIC LICENSE unless stated otherwise. #}
+{# You can get copies of the licenses here: http://www.affero.org/oagpl.html #}
+{# AFFERO GENERAL PUBLIC LICENSE is also included in the file called "LICENSE". #}
+{#                                                                              #}
+{#                                                                              #}
+# Made by AnsibleEPS
+
+# Windows NRPE Commands configuration
+
+
+[/settings/external scripts/alias]
+
+{# Global block -#}
+{% if winNrpeGlobal.rules is defined -%}
+{%  for rule in winNrpeGlobal.rules -%}
+{%   set printRule = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if winNrpeGroup is defined -%}
+{%    for rGroup in winNrpeGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      if rGroup.rules is defined -%}
+{%       for grule in rGroup.rules -%}
+{%        if grule.label == rule.label -%}
+{%         if printRule.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printRule.value -%}
+{%    if winNrpeHost is defined -%}
+{%     for rHost in winNrpeHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       if rHost.rules is defined -%}
+{%        for hrule in rHost.rules -%}
+{%         if hrule.label == rule.label -%}
+{%          if printRule.update({'value': False}) -%}{% endif -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printRule.value and rule.command is defined %}
+{{ rule.label }} = {{ rule.command }}
+{%   endif %}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if winNrpeGroup is defined -%}
+{%  for rGroup in winNrpeGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    if rGroup.rules is defined -%}
+{%     for grule in rGroup.rules -%}
+{%      set printRule = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%      if winNrpeHost is defined -%}
+{%       for rHost in winNrpeHost -%}
+{%        if rHost.host==inventory_hostname -%}
+{%         if rHost.rules is defined -%}
+{%          for hrule in rHost.rules -%}
+{%           if hrule.label == grule.label -%}
+{%            if printRule.update({'value': False}) -%}{% endif -%}
+{%           endif -%}
+{%          endfor -%}
+{%         endif -%}
+{%        endif -%}
+{%       endfor %}
+{%      endif -%}
+{# Print label -#}
+{%      if printRule.value and grule.command is defined -%}
+{{ grule.label }} = {{ grule.command }}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endif %}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if winNrpeHost is defined -%}
+{%  for rHost in winNrpeHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    if rHost.rules is defined -%}
+{%     for hrule in rHost.rules -%}
+{# Print label -#}
+{%      if hrule.command is defined -%}
+{{ hrule.label }} = {{ hrule.command }}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endif %}
+{%  endfor %}
+{% endif %}
+
+[/settings/external scripts/scripts]
+
+{# Global block -#}
+{% if winNrpeGlobal.scripts is defined -%}
+{%  for script in winNrpeGlobal.scripts -%}
+{%   set printScript = {'value': True} -%}
+{# Looking for the same label in Group block -#}
+{%   if winNrpeGroup is defined -%}
+{%    for rGroup in winNrpeGroup -%}
+{%     if rGroup.group in group_names -%}
+{%      if rGroup.scripts is defined -%}
+{%       for gscript in rGroup.scripts -%}
+{%        if gscript.label == script.label -%}
+{%         if printScript.update({'value': False}) -%}{% endif -%}
+{%        endif -%}
+{%       endfor -%}
+{%      endif -%}
+{%     endif -%}
+{%    endfor %}
+{%   endif -%}
+{# Looking for the same label in Host block -#}
+{%   if printScript.value -%}
+{%    if winNrpeHost is defined -%}
+{%     for rHost in winNrpeHost -%}
+{%      if rHost.host==inventory_hostname -%}
+{%       if rHost.scripts is defined -%}
+{%        for hscript in rHost.scripts -%}
+{%         if hscript.label == script.label -%}
+{%          if printScript.update({'value': False}) -%}{% endif -%}
+{%         endif -%}
+{%        endfor -%}
+{%       endif -%}
+{%      endif -%}
+{%     endfor %}
+{%    endif -%}
+{%   endif -%}
+{# Print label -#}
+{%   if printScript.value and script.command is defined %}
+{{ script.label }} = {{ script.command }}
+{%   endif %}
+{%  endfor %}
+{% endif -%}
+{# Group block -#}
+{% if winNrpeGroup is defined -%}
+{%  for rGroup in winNrpeGroup -%}
+{%   if rGroup.group in group_names -%}
+{%    if rGroup.scripts is defined -%} 
+{%     for gscript in rGroup.scripts -%}
+{%      set printScript = {'value': True} -%}
+{# Looking for the same label in Host block -#}
+{%      if winNrpeHost is defined -%}
+{%       for rHost in winNrpeHost -%}
+{%        if rHost.host==inventory_hostname -%}
+{%         if rHost.scripts is defined -%}
+{%          for hscript in rHost.scripts -%}
+{%           if hscript.label == gscript.label -%}
+{%            if printScript.update({'value': False}) -%}{% endif -%}
+{%           endif -%}
+{%          endfor -%}
+{%         endif -%}
+{%        endif -%}
+{%       endfor %}
+{%      endif -%}
+{# Print label -#}
+{%      if printScript.value and gscript.command is defined -%}
+{{ gscript.label }} = {{ gscript.command }}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endif %}
+{%  endfor %}
+{% endif -%}
+{# Host block -#}
+{% if winNrpeHost is defined -%}
+{%  for rHost in winNrpeHost -%}
+{%   if rHost.host==inventory_hostname -%}
+{%    if rHost.scripts is defined -%}
+{%     for hscript in rHost.scripts -%}
+{# Print label -#}
+{%      if hscript.command is defined -%}
+{{ hscript.label }} = {{ hscript.command }}
+{%      endif -%}
+{%     endfor -%}
+{%    endif -%}
+{%   endif %}
+{%  endfor %}
+{% endif %}
+

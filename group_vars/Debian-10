@@ -1,0 +1,85 @@
+# Operating System
+#SO: Debian
+
+
+# Version
+#vSO: Debian10
+
+
+# Password of manager user
+managerPassword: $6$IKILqKT2$R3qCndgHVtA1L/b09UuQmbs1M5BsEWidOu0P6ADojauXplRrIvM0GBPDH5aOrJY92jsqCIBmwmZQsOnFwyzlS/ 
+
+
+# Groups with manager
+managerGroups: 
+- root
+- adm
+- cdrom
+- floppy
+- audio
+- dip
+- www-data
+- video
+- plugdev
+
+
+# Debian Repositories
+reposDebian:
+- deb http://debian.eps.ua.es/debian/ buster main
+- deb-src http://debian.eps.ua.es/debian/ buster main
+- deb http://security.debian.eps.ua.es/ buster/updates main
+- deb-src http://security.debian.eps.ua.es/ buster/updates main
+- deb http://debian.eps.ua.es/debian/ buster-updates main
+- deb-src http://debian.eps.ua.es/debian/ buster-updates main
+
+
+# Proxmox Repositories
+reposProxmox:
+#- deb http://proxmox.eps.ua.es/debian/pve buster pve-no-subscription
+- deb http://download.proxmox.com/debian buster pve-no-subscription
+
+
+# Concurrency
+concurrency: none
+
+
+# List of services to stop 
+stopServices:
+- postfix
+
+
+# /etc/profile
+profileEtc:
+- "export LC_ALL=es_ES.UTF-8"
+- "export LANG=es_ES.UTF-8"
+
+
+# Installing utils
+utils:
+- wget
+- bind9-host
+- lsof
+- traceroute
+- telnet
+- openssh-client
+- manpages
+
+
+# Syslog conf file 
+syslogConf: /etc/rsyslog.conf
+
+
+sudoOptions:
+- Defaults !visiblepw
+- Defaults always_set_home
+- Defaults env_reset
+- Defaults timestamp_timeout=5
+- Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+
+
+# Crontab directory
+crontabDirectory: /var/spool/cron/crontabs
+
+
+# Crontab Group file
+crontabGroupFile: crontab
